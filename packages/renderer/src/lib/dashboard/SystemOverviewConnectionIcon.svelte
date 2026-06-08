@@ -24,6 +24,6 @@ let connectionType = $derived(connection?.connectionType);
   {:else if connectionType === 'vm'}
     <Icon icon={faDesktop} size="sm" class="text-[var(--pd-content-text)]" />
   {:else}
-    <EngineIcon class="w-6 h-auto [&_path]:stroke-current text-[var(--pd-content-text)]" />
+    <EngineIcon class="w-6 h-auto [&_path]:!stroke-[var(--pd-content-text)] [&_.stroke-shape_path]:!stroke-[var(--pd-content-text)]" />
   {/if}
 </IconImage>
