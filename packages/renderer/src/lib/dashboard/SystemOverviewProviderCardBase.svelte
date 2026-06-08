@@ -24,8 +24,7 @@ let resolvedVersion = $derived(version ?? provider.version);
 let labelText = $derived([vmType, resolvedVersion ? `v${resolvedVersion}` : undefined].filter(Boolean).join(' - '));
 </script>
 
-<div
-  class="flex flex-col gap-2 rounded-lg p-4 bg-[var(--pd-content-card-carousel-card-bg)] border border-[var(--pd-content-divider)]">
+<div class="flex flex-col gap-2 rounded-lg p-4 bg-[var(--pd-content-card-carousel-card-bg)]">
   <div class="flex items-start gap-3">
     <SystemOverviewProviderCardCompact {connection} {provider} expanded={false} />
 
