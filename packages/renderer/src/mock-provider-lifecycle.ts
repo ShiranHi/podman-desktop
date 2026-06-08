@@ -71,7 +71,7 @@ function computeSystemOverviewStatus(provider: RuntimeProviderState): SystemOver
   if (hasWarnings) {
     return {
       status: 'stable',
-      text: provider.warnings.length === 1 ? '1 warning detected' : `${provider.warnings.length} warnings detected`,
+      text: provider.warnings.length === 1 ? provider.warnings[0] : `${provider.warnings.length} warnings detected`,
     };
   }
 
