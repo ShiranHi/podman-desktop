@@ -2,26 +2,19 @@
 import type { ContainerProviderConnection } from '@podman-desktop/api';
 import type { ProviderContainerConnectionInfo, ProviderInfo } from '@podman-desktop/core-api';
 import type { IConfigurationPropertyRecordedSchema } from '@podman-desktop/core-api/configuration';
-import { ProgressBar } from '@podman-desktop/ui-svelte';
-import { filesize } from 'filesize';
 
-import { extractConnectionResourceMetrics } from '/@/lib/preferences/connection-resource-metrics';
+import Donut from '/@/lib/donut/Donut.svelte';
+import { extractConnectionResourceMetrics, toDisplayMetrics } from '/@/lib/preferences/connection-resource-metrics';
 import type { IProviderConnectionConfigurationPropertyRecorded } from '/@/lib/preferences/Util';
 import { configurationProperties } from '/@/stores/configurationProperties';
 
 interface Props {
   provider: ProviderInfo;
   connection: ProviderContainerConnectionInfo;
+  variant?: 'standalone' | 'inline';
 }
 
-let { provider, connection }: Props = $props();
-
-type ResourceData = {
-  name: string;
-  cpu: { value: string; percent: number };
-  memory: { value: string; percent: number };
-  disk: { value: string; percent: number };
-};
+let { provider, connection, variant = 'standalone' }: Props = $props();
 
 let configurationKeys: IConfigurationPropertyRecordedSchema[] = $derived(
   $configurationProperties
@@ -55,43 +48,21 @@ $effect(() => {
     .catch((err: unknown) => console.error('Error fetching resource usage:', err));
 });
 
-let resourceData = $derived.by((): ResourceData | undefined => {
+let displayMetrics = $derived.by(() => {
   const metrics = extractConnectionResourceMetrics(resourceConfig);
-  if (!metrics) return undefined;
-
-  const cpuUsed = metrics.cpu && metrics.cpu.used > 0 ? metrics.cpu.used.toFixed(1) : '0';
-
-  return {
-    name: connection?.displayName,
-    cpu: {
-      value: `${cpuUsed}/${metrics.cpu?.total ?? 0} cores`,
-      percent: metrics.cpu?.usagePercent ?? 0,
-    },
-    memory: {
-      value: `${filesize(metrics.memory?.used ?? 0)}/${filesize(metrics.memory?.total ?? 0)}`,
-      percent: metrics.memory?.usagePercent ?? 0,
-    },
-    disk: {
-      value: `${filesize(metrics.disk?.used ?? 0)} / ${filesize(metrics.disk?.total ?? 0)}`,
-      percent: metrics.disk?.usagePercent ?? 0,
-    },
-  };
+  return metrics ? toDisplayMetrics(metrics) : [];
 });
 </script>
 
-{#if resourceData}
-  <div class="flex flex-col gap-1 text-xs">
-    <div class="flex items-center gap-1.5">
-      <span class="w-7 text-right text-[10px] text-[var(--pd-content-text-sub)]">CPU</span>
-      <ProgressBar progress={resourceData.cpu.percent} width="w-12" height="h-1.5" class="items-center" aria-label="CPU usage" />
-    </div>
-    <div class="flex items-center gap-1.5">
-      <span class="w-7 text-right text-[10px] text-[var(--pd-content-text-sub)]">Mem</span>
-      <ProgressBar progress={resourceData.memory.percent} width="w-12" height="h-1.5" class="items-center" aria-label="Mem usage" />
-    </div>
-    <div class="flex items-center gap-1.5">
-      <span class="w-7 text-right text-[10px] text-[var(--pd-content-text-sub)]">Disk</span>
-      <ProgressBar progress={resourceData.disk.percent} width="w-12" height="h-1.5" class="items-center" aria-label="Disk usage" />
-    </div>
+{#if displayMetrics.length > 0}
+  <div
+    class="flex flex-wrap gap-3 {variant === 'standalone'
+      ? 'pt-3 border-t border-[var(--pd-content-divider)]'
+      : ''}"
+    role="group"
+    aria-label="Resource usage">
+    {#each displayMetrics as metric (metric.title)}
+      <Donut title={metric.title} value={metric.value} percent={metric.percent} />
+    {/each}
   </div>
 {/if}

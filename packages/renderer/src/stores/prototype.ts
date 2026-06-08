@@ -32,6 +32,7 @@ export interface PrototypeConfig<T> {
   name: string;
   screens: PrototypeScreen[];
   overrides: Record<string, T>;
+  /** Optional timed phase transitions. Key = screen value, value = array of `{ delay, phase }`. */
   timelines?: Record<string, PhaseSchedule[]>;
 }
 
@@ -77,15 +78,7 @@ function startScreenSubscription(): void {
   });
 }
 
-export interface RegisterPrototypeOptions {
-  /** Restore a previously selected screen instead of defaulting to the first screen. */
-  initialScreen?: string;
-}
-
-export function registerPrototype<T>(
-  config: PrototypeConfig<T>,
-  options?: RegisterPrototypeOptions,
-): Readable<T | undefined> {
+export function registerPrototype<T>(config: PrototypeConfig<T>): Readable<T | undefined> {
   if (!config.name?.trim()) {
     throw new Error('registerPrototype: name must be a non-empty string');
   }
@@ -107,11 +100,7 @@ export function registerPrototype<T>(
   currentTimelines = config.timelines ?? {};
   activePrototype.set({ name: config.name, screens: config.screens });
   startScreenSubscription();
-  const initialScreen =
-    options?.initialScreen && config.screens.some(screen => screen.value === options.initialScreen)
-      ? options.initialScreen
-      : (config.screens[0]?.value ?? '');
-  currentScreen.set(initialScreen);
+  currentScreen.set(config.screens[0]?.value ?? '');
   return currentOverride as Readable<T | undefined>;
 }
 

@@ -26,14 +26,17 @@ let subtitleText = $derived.by(() => {
   return 'No container engine (machine) created yet. Create one to run containers and pods.';
 });
 
-function handleClick(): void {
+async function handleClick(): Promise<void> {
   if (canStart) {
     startInProgress = true;
-    window
-      .startProvider(provider.internalId)
-      .then(() => window.telemetryTrack('dashboard.healthCard.provider.started', { providerName: provider.name }))
-      .catch((err: unknown) => console.error('Provider failed to start:', err))
-      .finally(() => (startInProgress = false));
+    try {
+      await window.startProvider(provider.internalId);
+      await window.telemetryTrack('dashboard.healthCard.provider.started', { providerName: provider.name });
+    } catch (err: unknown) {
+      console.error('Provider failed to start:', err);
+    } finally {
+      startInProgress = false;
+    }
   } else {
     handleNavigation({
       page: NavigationPage.ONBOARDING,
@@ -52,6 +55,10 @@ function handleClick(): void {
     </div>
   {/snippet}
   {#snippet actions()}
-    <Button type={statusConfig.buttonType} onclick={handleClick} inProgress={startInProgress}>{statusConfig.buttonText}</Button>
+    <div class="pt-2 border-t border-[var(--pd-content-divider)]">
+      <Button type={statusConfig.buttonType} onclick={handleClick} inProgress={startInProgress}>
+        {statusConfig.buttonText}
+      </Button>
+    </div>
   {/snippet}
 </SystemOverviewProviderCardBase>

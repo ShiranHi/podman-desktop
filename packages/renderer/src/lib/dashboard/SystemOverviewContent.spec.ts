@@ -90,19 +90,40 @@ beforeEach(() => {
   providerInfos.set([]);
 });
 
-test('should render overall status button and show initial status', async () => {
+test('should render Resource Overview and Connections headings', async () => {
   render(SystemOverviewContent);
-  expect(screen.getByRole('button', { name: 'System Overview - Overall status' })).toBeInTheDocument();
-  expect(screen.getByText('Initializing...')).toBeInTheDocument();
+  await vi.waitFor(() => expect(screen.getByText('Resource Overview')).toBeInTheDocument());
+  expect(screen.getByText('Connections')).toBeInTheDocument();
 });
 
-test('should render Container providers heading', async () => {
-  render(SystemOverviewContent);
-  await vi.waitFor(() => expect(screen.getByText('Container providers:')).toBeInTheDocument());
+describe('resource overview navigation', () => {
+  test('should navigate to Containers when Containers tile is clicked', async () => {
+    render(SystemOverviewContent);
+    await fireEvent.click(screen.getByRole('button', { name: /View Containers/i }));
+    expect(router.goto).toHaveBeenCalledWith('/containers');
+  });
+
+  test('should navigate to Pods when Pods tile is clicked', async () => {
+    render(SystemOverviewContent);
+    await fireEvent.click(screen.getByRole('button', { name: /View Pods:/i }));
+    expect(router.goto).toHaveBeenCalledWith('/pods');
+  });
+
+  test('should navigate to Images when Images tile is clicked', async () => {
+    render(SystemOverviewContent);
+    await fireEvent.click(screen.getByRole('button', { name: /View Images/i }));
+    expect(router.goto).toHaveBeenCalledWith('/images');
+  });
+
+  test('should navigate to Kubernetes Pods when Kubernetes Pods tile is clicked', async () => {
+    render(SystemOverviewContent);
+    await fireEvent.click(screen.getByRole('button', { name: /View Kubernetes Pods/i }));
+    expect(router.goto).toHaveBeenCalledWith('/kubernetes/pods');
+  });
 });
 
 describe('provider rendering', () => {
-  test('should not render Kubernetes/VM heading for not-installed provider needing setup', async () => {
+  test('should not render Other Connections heading for not-installed provider needing setup', async () => {
     const provider: ProviderInfo = {
       ...baseProvider,
       status: 'not-installed',
@@ -111,11 +132,11 @@ describe('provider rendering', () => {
     providerInfos.set([provider]);
     render(SystemOverviewContent);
 
-    await vi.waitFor(() => expect(screen.getByText('Container providers:')).toBeInTheDocument());
-    expect(screen.queryByText('Kubernetes/VM connections:')).not.toBeInTheDocument();
+    await vi.waitFor(() => expect(screen.getByText('Connections')).toBeInTheDocument());
+    expect(screen.queryByText('Other Connections')).not.toBeInTheDocument();
   });
 
-  test('should not render Kubernetes/VM heading for provider with only container connections', async () => {
+  test('should not render Other Connections heading for provider with only container connections', async () => {
     const provider: ProviderInfo = {
       ...baseProvider,
       containerConnections: [containerConnection],
@@ -123,13 +144,13 @@ describe('provider rendering', () => {
     providerInfos.set([provider]);
     render(SystemOverviewContent);
 
-    await vi.waitFor(() => expect(screen.getByText('Container providers:')).toBeInTheDocument());
-    expect(screen.queryByText('Kubernetes/VM connections:')).not.toBeInTheDocument();
+    await vi.waitFor(() => expect(screen.getByText('Connections')).toBeInTheDocument());
+    expect(screen.queryByText('Other Connections')).not.toBeInTheDocument();
   });
 });
 
 describe('standalone connections section', () => {
-  test('should render Kubernetes/VM heading when standalone connections exist', async () => {
+  test('should render Other Connections heading when standalone connections exist', async () => {
     const provider: ProviderInfo = {
       ...baseProvider,
       kubernetesConnections: [kubernetesConnection],
@@ -137,24 +158,29 @@ describe('standalone connections section', () => {
     providerInfos.set([provider]);
     render(SystemOverviewContent);
 
-    await vi.waitFor(() => expect(screen.getByText('Kubernetes/VM connections:')).toBeInTheDocument());
+    await vi.waitFor(() => expect(screen.getByText('Other Connections')).toBeInTheDocument());
   });
 
-  test('should not render Kubernetes/VM heading when no non-container connections exist', async () => {
+  test('should nest kubernetes under the sole container connection before containers load', async () => {
+    const provider: ProviderInfo = {
+      ...baseProvider,
+      containerConnections: [containerConnection],
+      kubernetesConnections: [kubernetesConnection],
+    };
+    providerInfos.set([provider]);
+    render(SystemOverviewContent);
+
+    await vi.waitFor(() => expect(screen.getByText('Connections')).toBeInTheDocument());
+    expect(screen.queryByText('Other Connections')).not.toBeInTheDocument();
+  });
+
+  test('should not render Other Connections heading when no non-container connections exist', async () => {
     providerInfos.set([baseProvider]);
     render(SystemOverviewContent);
 
-    await vi.waitFor(() => expect(screen.getByText('Container providers:')).toBeInTheDocument());
-    expect(screen.queryByText('Kubernetes/VM connections:')).not.toBeInTheDocument();
+    await vi.waitFor(() => expect(screen.getByText('Connections')).toBeInTheDocument());
+    expect(screen.queryByText('Other Connections')).not.toBeInTheDocument();
   });
-});
-
-test('should navigate to Resources on overall status button click', async () => {
-  render(SystemOverviewContent);
-  const button = screen.getByRole('button', { name: 'System Overview - Overall status' });
-  await fireEvent.click(button);
-
-  await vi.waitFor(() => expect(vi.mocked(router.goto)).toHaveBeenCalledWith('/preferences/resources'));
 });
 
 describe('telemetry', () => {

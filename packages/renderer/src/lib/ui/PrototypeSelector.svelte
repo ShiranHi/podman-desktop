@@ -1,27 +1,20 @@
 <script lang="ts">
 import { Dropdown } from '@podman-desktop/ui-svelte';
 
-import { registerDeveloperSandboxPromptPrototype } from '/@/lib/kube/developer-sandbox-prompt-prototype';
 import { activePrototype, currentScreen } from '/@/stores/prototype';
+
+let prototype = $derived($activePrototype);
+let selectedScreen = $derived($currentScreen);
 
 function handleChange(value: string): void {
   currentScreen.set(value);
 }
-
-$effect(() => {
-  if ($activePrototype?.name === 'Developer Sandbox prompt') {
-    const hasCurrentScreen = $activePrototype.screens.some(screen => screen.value === 'current');
-    if (!hasCurrentScreen) {
-      registerDeveloperSandboxPromptPrototype();
-    }
-  }
-});
 </script>
 
-{#if $activePrototype}
+{#if prototype}
   <div class="flex items-center gap-2 pr-2" style="-webkit-app-region: none;">
     <span class="text-sm font-medium text-lime-400 whitespace-nowrap select-none">
-      Prototype: {$activePrototype.name}
+      Prototype: {prototype.name}
     </span>
 
     <div class="prototype-dropdown">
@@ -29,15 +22,16 @@ $effect(() => {
         ariaLabel="Prototype screen selector"
         name="prototype-screen"
         class="min-w-60"
-        value={$currentScreen}
+        value={selectedScreen}
         onChange={handleChange}
-        options={$activePrototype.screens} />
+        options={prototype.screens} />
     </div>
   </div>
 {/if}
 
 <style>
-  .prototype-dropdown :global(button) {
+  /* Highlight only the closed trigger — not each menu item button. */
+  .prototype-dropdown :global(div.relative > button:first-child) {
     border: 1px solid rgb(239 68 68);
     border-radius: 4px;
   }

@@ -190,7 +190,7 @@ describe('warnings', () => {
       childConnections: [],
     });
 
-    await vi.waitFor(() => expect(screen.getByText('Low disk')).toBeInTheDocument());
+    await vi.waitFor(() => expect(screen.getByLabelText('Connection warning')).toHaveTextContent('Low disk'));
   });
 });
 
@@ -302,7 +302,7 @@ describe('aria labels', () => {
     expect(errorEl).toHaveTextContent('Connection refused');
   });
 
-  test('should have Connection error aria label when provider has warnings', async () => {
+  test('should have Connection warning aria label when provider has warnings only', async () => {
     const provider: ProviderInfo = {
       ...baseProvider,
       containerConnections: [containerConnection],
@@ -314,8 +314,32 @@ describe('aria labels', () => {
       childConnections: [],
     });
 
+    const warningEl = await vi.waitFor(() => screen.getByLabelText('Connection warning'));
+    expect(warningEl).toHaveTextContent('Disk is almost full');
+    expect(screen.queryByLabelText('Connection error')).not.toBeInTheDocument();
+  });
+
+  test('should have Connection error aria label when provider has warnings and connection error', async () => {
+    const errorConnection = {
+      ...containerConnection,
+      status: 'starting' as const,
+      error: 'Connection refused',
+    };
+    const provider: ProviderInfo = {
+      ...baseProvider,
+      canStart: true,
+      containerConnections: [errorConnection],
+      warnings: [{ name: 'Low disk', details: 'Disk is almost full' }],
+    };
+    render(SystemOverviewProviderCardDetailed, {
+      connection: errorConnection,
+      provider,
+      childConnections: [],
+    });
+
     const errorEl = await vi.waitFor(() => screen.getByLabelText('Connection error'));
     expect(errorEl).toHaveTextContent('Disk is almost full');
+    expect(errorEl).toHaveTextContent('Connection refused');
   });
 
   test('should not have Connection error aria label when no errors or warnings', async () => {

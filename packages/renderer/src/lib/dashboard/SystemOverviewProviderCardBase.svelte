@@ -24,24 +24,27 @@ let resolvedVersion = $derived(version ?? provider.version);
 let labelText = $derived([vmType, resolvedVersion ? `v${resolvedVersion}` : undefined].filter(Boolean).join(' - '));
 </script>
 
-<div class="flex flex-col gap-3 rounded-lg p-2 bg-[var(--pd-content-card-carousel-card-bg)]">
-  <div class="flex flex-row items-center gap-3">
+<div
+  class="flex flex-col gap-2 rounded-lg p-4 bg-[var(--pd-content-card-carousel-card-bg)] border border-[var(--pd-content-divider)]">
+  <div class="flex items-start gap-3">
     <SystemOverviewProviderCardCompact {connection} {provider} expanded={false} />
 
     <div class="flex-1 min-w-0 flex flex-col gap-0.5">
       <div
-        class="flex items-center gap-2 text-[var(--pd-content-card-text)] [--pd-label-bg:var(--pd-content-card-bg)] [--pd-label-text:var(--pd-content-text-sub)]">
-        <span class="font-medium" aria-label='Connection name'>{name ?? provider.name}</span>
+        class="flex flex-wrap items-center gap-2 text-[var(--pd-content-card-text)] [--pd-label-bg:var(--pd-content-card-bg)] [--pd-label-text:var(--pd-content-text-sub)]">
+        <span class="font-semibold text-base" aria-label="Connection name">{name ?? provider.name}</span>
         {#if labelText}
-          <span aria-label='Connection version'>
+          <span aria-label="Connection version">
             <Label name={labelText} />
           </span>
         {/if}
       </div>
       {@render subtitle?.()}
     </div>
+
     {@render trailing?.()}
-    {@render actions?.()}
   </div>
+
+  {@render actions?.()}
   {@render children?.()}
 </div>

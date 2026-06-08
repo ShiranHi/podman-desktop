@@ -40,6 +40,31 @@ export const STATUS_BG_CLASS: Record<SystemOverviewStatus, string> = {
   critical: 'bg-[var(--pd-status-terminated-bg)]',
 } as const;
 
+export const WARNING_TEXT_CLASS = 'text-[var(--pd-state-warning)]';
+export const WARNING_BG_CLASS = 'bg-[var(--pd-state-warning-bg,var(--pd-status-starting-bg))]';
+
+/** User-facing aggregate label; maps internal `progressing` to Starting/Stopping. */
+export function getSystemOverviewDisplayText(status: SystemOverviewStatus, text: string): string {
+  if (status !== 'progressing') {
+    return text;
+  }
+  return /stop/i.test(text) ? 'Stopping' : 'Starting';
+}
+
+/** Lower number = higher priority (shown first). */
+export function getConnectionSortPriority(
+  status: ProviderConnectionStatus | ProviderStatus,
+  error?: string,
+  hasWarnings?: boolean,
+): number {
+  if (error) return 0;
+  if (hasWarnings) return 1;
+  if (status === 'starting' || status === 'stopping') return 2;
+  if (status === 'stopped' || status === 'unknown') return 3;
+  if (status === 'error') return 0;
+  return 4;
+}
+
 export interface ConnectionStatusConfig {
   label: string;
   buttonText: string;
@@ -48,6 +73,56 @@ export interface ConnectionStatusConfig {
 
 export function hasStartLifecycle(provider: ProviderInfo): boolean {
   return provider.canStart;
+}
+
+/** Engine id used to nest Kubernetes/VM connections under a container connection card. */
+export function getContainerConnectionEngineId(provider: ProviderInfo, connection: ProviderConnectionInfo): string {
+  return `${provider.id}.${connection.name}`;
+}
+
+/**
+ * Resolve which container connection owns a Kubernetes context.
+ * Prefer container label match; fall back to the sole container connection on the provider
+ * so nested connections do not flash in "Other Connections" while containers are loading.
+ */
+export function resolveKubernetesOwnerEngineId(
+  connectionName: string,
+  provider: ProviderInfo,
+  containers: Array<{ Labels?: Record<string, string>; engineId?: string }>,
+): string | undefined {
+  const fromLabels = containers.find(
+    container => container.Labels && Object.values(container.Labels).includes(connectionName),
+  )?.engineId;
+  if (fromLabels !== undefined) {
+    return fromLabels;
+  }
+
+  if (provider.containerConnections.length === 1) {
+    return getContainerConnectionEngineId(provider, provider.containerConnections[0]);
+  }
+
+  return undefined;
+}
+
+/**
+ * Resolve which container connection owns a VM connection.
+ * Prefer container engineName match; fall back to the sole container connection on the provider.
+ */
+export function resolveVmOwnerEngineId(
+  connectionName: string,
+  provider: ProviderInfo,
+  containers: Array<{ engineName?: string; engineId?: string }>,
+): string | undefined {
+  const fromEngineName = containers.find(container => container.engineName === connectionName)?.engineId;
+  if (fromEngineName !== undefined) {
+    return fromEngineName;
+  }
+
+  if (provider.containerConnections.length === 1) {
+    return getContainerConnectionEngineId(provider, provider.containerConnections[0]);
+  }
+
+  return undefined;
 }
 
 const CONNECTION_STATUS_LABELS: Record<ProviderConnectionStatus, string> = {
@@ -66,7 +141,7 @@ export function getConnectionStatusConfig(
   const label = error ? 'Error' : (CONNECTION_STATUS_LABELS[status as ProviderConnectionStatus] ?? status);
 
   if (error && hasStartLifecycle(provider))
-    return { label, buttonText: `Retry ${provider.name}`, buttonType: 'danger' };
+    return { label, buttonText: `Retry ${provider.name}`, buttonType: 'primary' };
   if ((status === 'stopped' || status === 'configured') && hasStartLifecycle(provider))
     return { label, buttonText: `Start ${provider.name}`, buttonType: 'primary' };
   if (status === 'unknown') return { label, buttonText: 'See Details in Resources', buttonType: 'danger' };

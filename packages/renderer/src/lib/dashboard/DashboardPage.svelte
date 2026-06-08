@@ -33,7 +33,7 @@ function getDefaultDashboardItems(): ListOrganizerItem[] {
   return dashboardPageRegistry.entries.map(entry => ({
     id: entry.id,
     label: entry.id,
-    enabled: true,
+    enabled: entry.defaultEnabled !== false,
     originalOrder: entry.originalOrder,
   }));
 }
@@ -118,6 +118,34 @@ onMount(async () => {
   await initializeDashboard();
 });
 
+// Keep layout items in sync when the registry gains sections (e.g. enhanced dashboard).
+$effect(() => {
+  if (dashboardPageRegistry.entries.length === 0) {
+    return;
+  }
+
+  const registryIds = new SvelteSet(dashboardPageRegistry.entries.map(entry => entry.id));
+  const defaults = getDefaultDashboardItems();
+  const currentById = new SvelteMap(dashboardSections.map(item => [item.id, item]));
+
+  let nextSections = dashboardSections.filter(item => registryIds.has(item.id));
+  let changed = nextSections.length !== dashboardSections.length;
+
+  for (const entry of dashboardPageRegistry.entries) {
+    if (!currentById.has(entry.id)) {
+      const defaultItem = defaults.find(item => item.id === entry.id);
+      if (defaultItem) {
+        nextSections.push(defaultItem);
+        changed = true;
+      }
+    }
+  }
+
+  if (changed) {
+    dashboardSections = nextSections.toSorted((a, b) => a.originalOrder - b.originalOrder);
+  }
+});
+
 // Reset function for dashboard layout
 async function resetDashboardLayout(): Promise<void> {
   if (!tablePersistence.storage) return;
@@ -182,13 +210,13 @@ function handleDashboardToggle(itemId: string, enabled: boolean): void {
   {#snippet content()}
   <div class="flex flex-col min-w-full h-full bg-[var(--pd-content-bg)] py-5">
     <div class="min-w-full flex-1">
-      <NotificationsBox />
       <div class="px-5 space-y-5 h-full">
         {#each sortedDashboardRegistry as dashboardRegistryItem (dashboardRegistryItem.id)}
           {@const Component = dashboardRegistryItem.component}
           <Component />
         {/each}
       </div>
+      <NotificationsBox />
     </div>
   </div>
   {/snippet}

@@ -22,8 +22,13 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { eventCollect, registerConnectionCallback } from '/@/lib/preferences/preferences-connection-rendering-task';
 
 import {
+  getConnectionSortPriority,
   getConnectionStatusConfig,
+  getContainerConnectionEngineId,
+  getSystemOverviewDisplayText,
   hasStartLifecycle,
+  resolveKubernetesOwnerEngineId,
+  resolveVmOwnerEngineId,
   startConnection,
   STATUS_BG_CLASS,
   STATUS_TEXT_CLASS,
@@ -151,12 +156,12 @@ describe('getConnectionStatusConfig', () => {
     });
   });
 
-  test('should return Retry with danger type when error is present and start lifecycle exists', () => {
+  test('should return Retry with primary type when error is present and start lifecycle exists', () => {
     const config = getConnectionStatusConfig('starting', { ...baseProvider, canStart: true }, 'Connection refused');
     expect(config).toStrictEqual({
       label: 'Error',
       buttonText: 'Retry Podman',
-      buttonType: 'danger',
+      buttonType: 'primary',
     });
   });
 
@@ -165,7 +170,7 @@ describe('getConnectionStatusConfig', () => {
     expect(config).toStrictEqual({
       label: 'Error',
       buttonText: 'Retry Podman',
-      buttonType: 'danger',
+      buttonType: 'primary',
     });
   });
 
@@ -232,5 +237,92 @@ describe('startConnection', () => {
       eventCollect,
     );
     expect(result).toBe(mockKey);
+  });
+});
+
+describe('getConnectionSortPriority', () => {
+  test('should rank critical errors first', () => {
+    expect(getConnectionSortPriority('started', 'Connection refused', false)).toBe(0);
+    expect(getConnectionSortPriority('stopped', undefined, false)).toBeGreaterThan(0);
+  });
+
+  test('should rank warnings before stopped connections', () => {
+    expect(getConnectionSortPriority('started', undefined, true)).toBe(1);
+    expect(getConnectionSortPriority('stopped', undefined, false)).toBe(3);
+  });
+});
+
+describe('resolveKubernetesOwnerEngineId', () => {
+  const containerConnection: ProviderContainerConnectionInfo = {
+    connectionType: 'container',
+    name: 'Podman Machine',
+    status: 'started',
+    endpoint: { socketPath: '/mock/podman.sock' },
+    type: 'podman',
+    canStart: true,
+    canStop: true,
+    canEdit: true,
+    canDelete: true,
+  };
+
+  const provider: ProviderInfo = {
+    ...baseProvider,
+    containerConnections: [containerConnection],
+  };
+
+  test('should resolve from container labels when present', () => {
+    expect(
+      resolveKubernetesOwnerEngineId('minikube', provider, [
+        {
+          Labels: { 'io.kubernetes.context': 'minikube' },
+          engineId: 'podman.Podman Machine',
+        },
+      ]),
+    ).toBe('podman.Podman Machine');
+  });
+
+  test('should fall back to sole container connection when labels are unavailable', () => {
+    expect(resolveKubernetesOwnerEngineId('minikube', provider, [])).toBe(
+      getContainerConnectionEngineId(provider, containerConnection),
+    );
+  });
+});
+
+describe('resolveVmOwnerEngineId', () => {
+  const containerConnection: ProviderContainerConnectionInfo = {
+    connectionType: 'container',
+    name: 'Podman Machine',
+    status: 'started',
+    endpoint: { socketPath: '/mock/podman.sock' },
+    type: 'podman',
+    canStart: true,
+    canStop: true,
+    canEdit: true,
+    canDelete: true,
+  };
+
+  const provider: ProviderInfo = {
+    ...baseProvider,
+    containerConnections: [containerConnection],
+  };
+
+  test('should resolve from container engineName when present', () => {
+    expect(
+      resolveVmOwnerEngineId('my-vm', provider, [{ engineName: 'my-vm', engineId: 'podman.Podman Machine' }]),
+    ).toBe('podman.Podman Machine');
+  });
+
+  test('should fall back to sole container connection when engineName is unavailable', () => {
+    expect(resolveVmOwnerEngineId('my-vm', provider, [])).toBe(
+      getContainerConnectionEngineId(provider, containerConnection),
+    );
+  });
+});
+
+describe('getSystemOverviewDisplayText', () => {
+  test('should map progressing status to Starting or Stopping labels', () => {
+    expect(getSystemOverviewDisplayText('progressing', 'Starting')).toBe('Starting');
+    expect(getSystemOverviewDisplayText('progressing', 'Stopping')).toBe('Stopping');
+    expect(getSystemOverviewDisplayText('healthy', 'All systems operational')).toBe('All systems operational');
   });
 });
