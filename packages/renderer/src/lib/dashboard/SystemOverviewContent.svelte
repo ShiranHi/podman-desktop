@@ -7,9 +7,11 @@ import {
 import { onMount } from 'svelte';
 import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 
+import SystemOverviewComposeStatus from '/@/lib/dashboard/SystemOverviewComposeStatus.svelte';
 import SystemOverviewProviderCardCompact from '/@/lib/dashboard/SystemOverviewProviderCardCompact.svelte';
 import SystemOverviewProviderCardDetailed from '/@/lib/dashboard/SystemOverviewProviderCardDetailed.svelte';
 import SystemOverviewProviderSetup from '/@/lib/dashboard/SystemOverviewProviderSetup.svelte';
+import SystemOverviewResourceTiles from '/@/lib/dashboard/SystemOverviewResourceTiles.svelte';
 import { containersInfos } from '/@/stores/containers';
 import { providerInfos } from '/@/stores/providers';
 
@@ -131,9 +133,13 @@ let providersNeedingSetup = $derived(
 );
 </script>
 
-<div class="pt-2" aria-label="System Overview">
-  <div class="text-md font-semibold text-[var(--pd-content-card-header-text)]">Connections</div>
-  <div class="flex flex-col gap-2 pt-2">
+<div class="pt-2 flex flex-col gap-4" aria-label="System Overview">
+  <SystemOverviewResourceTiles />
+  <SystemOverviewComposeStatus />
+
+  <div>
+    <div class="text-md font-semibold text-[var(--pd-content-card-header-text)]">Connections</div>
+    <div class="flex flex-col gap-2 pt-2">
     {#each providersNeedingSetup as provider (provider.id)}
       <SystemOverviewProviderSetup {provider} />
     {/each}
@@ -151,5 +157,6 @@ let providersNeedingSetup = $derived(
         {/each}
       </div>
     {/if}
+    </div>
   </div>
 </div>
