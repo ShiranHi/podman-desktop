@@ -2,6 +2,7 @@
 import { faBox, faDesktop, faDharmachakra, faFileImage, faLayerGroup } from '@fortawesome/free-solid-svg-icons';
 import { NavigationPage } from '@podman-desktop/core-api';
 import { Icon } from '@podman-desktop/ui-svelte/icons';
+import { router } from 'tinro';
 
 import { handleNavigation } from '/@/navigation';
 import { containersInfos } from '/@/stores/containers';
@@ -37,7 +38,8 @@ interface TileProps {
   icon: typeof faBox;
   label: string;
   stats: { running?: number; total: number };
-  page: NavigationPage;
+  page?: NavigationPage;
+  route?: string;
 }
 
 let tiles: TileProps[] = $derived([
@@ -49,12 +51,16 @@ let tiles: TileProps[] = $derived([
     icon: faDharmachakra,
     label: 'Kubernetes Pods',
     stats: { total: kubernetesPodCount },
-    page: NavigationPage.RESOURCES,
+    route: '/kubernetes/pods',
   },
 ]);
 
-function navigateToPage(page: NavigationPage): void {
-  handleNavigation({ page });
+function navigateToTile(tile: TileProps): void {
+  if (tile.route) {
+    router.goto(tile.route);
+  } else if (tile.page) {
+    handleNavigation({ page: tile.page });
+  }
 }
 </script>
 
@@ -62,7 +68,7 @@ function navigateToPage(page: NavigationPage): void {
     {#each tiles as tile (tile.label)}
       <button
         class="flex flex-col gap-2 p-3 rounded-lg bg-[var(--pd-content-card-carousel-card-bg)] border border-transparent hover:border-[var(--pd-button-primary-bg)] hover:bg-[var(--pd-content-card-carousel-card-hover-bg)] transition-all cursor-pointer text-left"
-        onclick={(): void => navigateToPage(tile.page)}
+        onclick={(): void => navigateToTile(tile)}
         aria-label="Navigate to {tile.label}">
         <div class="flex items-center gap-2 text-[var(--pd-content-text)]">
           <Icon icon={tile.icon} size="sm" />
