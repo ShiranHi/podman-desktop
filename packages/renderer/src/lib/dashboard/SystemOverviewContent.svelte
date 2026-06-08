@@ -1,26 +1,17 @@
 <script lang="ts">
-import { faChevronRight } from '@fortawesome/free-solid-svg-icons';
 import {
-  NavigationPage,
   type ProviderConnectionInfo,
   type ProviderContainerConnectionInfo,
   type ProviderInfo,
 } from '@podman-desktop/core-api';
-import { Icon } from '@podman-desktop/ui-svelte/icons';
 import { onMount } from 'svelte';
 import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 
 import SystemOverviewProviderCardCompact from '/@/lib/dashboard/SystemOverviewProviderCardCompact.svelte';
 import SystemOverviewProviderCardDetailed from '/@/lib/dashboard/SystemOverviewProviderCardDetailed.svelte';
 import SystemOverviewProviderSetup from '/@/lib/dashboard/SystemOverviewProviderSetup.svelte';
-import { handleNavigation } from '/@/navigation';
 import { containersInfos } from '/@/stores/containers';
-import { systemOverviewInfos } from '/@/stores/dashboard/system-overview.svelte';
 import { providerInfos } from '/@/stores/providers';
-
-import { STATUS_BG_CLASS, STATUS_TEXT_CLASS } from './system-overview-utils.svelte';
-
-const backgroundClass = $derived(STATUS_BG_CLASS[$systemOverviewInfos.status.status]);
 
 // Container connections (shown as detailed cards)
 let containerConnectionsWithProvider = $derived.by(() => {
@@ -138,25 +129,10 @@ let providersNeedingSetup = $derived(
         !p.vmConnections.length),
   ),
 );
-
-async function navigateToResources(): Promise<void> {
-  handleNavigation({ page: NavigationPage.RESOURCES });
-}
 </script>
 
 <div class="pt-2" aria-label="System Overview">
-  <button
-    class="inline-flex items-center gap-2 px-3 py-2 rounded-lg transition-colors border border-transparent {backgroundClass} {STATUS_TEXT_CLASS[$systemOverviewInfos.status.status]}"
-    aria-label="System Overview - Overall status"
-    onclick={navigateToResources}>
-    {#key $systemOverviewInfos.status.status}
-      <Icon icon={$systemOverviewInfos.status.icon} size={$systemOverviewInfos.status.status === 'progressing' ? '1.25em' : 'lg'} />
-    {/key}
-    <span class="text-sm leading-none">{$systemOverviewInfos.text}</span>
-    <Icon icon={faChevronRight} size="sm" />
-  </button>
-
-  <div class="text-md font-semibold text-[var(--pd-content-card-header-text)] pt-2">Container providers:</div>
+  <div class="text-md font-semibold text-[var(--pd-content-card-header-text)]">Connections</div>
   <div class="flex flex-col gap-2 pt-2">
     {#each providersNeedingSetup as provider (provider.id)}
       <SystemOverviewProviderSetup {provider} />
@@ -169,13 +145,10 @@ async function navigateToResources(): Promise<void> {
 
     <!-- Standalone K8s/VM connections as stacked minimal cards -->
     {#if standaloneConnections.length > 0}
-      <div class="text-md font-semibold text-[var(--pd-content-card-header-text)]">Kubernetes/VM connections:</div>
-      <div class="rounded-lg p-2 bg-[var(--pd-content-card-carousel-card-bg)]">
-        <div class="flex flex-wrap items-center gap-2">
-          {#each standaloneConnections as { connection, provider } (provider.id + ':' + connection.name)}
-            <SystemOverviewProviderCardCompact {connection} {provider} />
-          {/each}
-        </div>
+      <div class="flex flex-wrap items-center gap-2">
+        {#each standaloneConnections as { connection, provider } (provider.id + ':' + connection.name)}
+          <SystemOverviewProviderCardCompact {connection} {provider} />
+        {/each}
       </div>
     {/if}
   </div>
