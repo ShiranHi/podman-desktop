@@ -90,8 +90,13 @@ export function registerDashboardHealthPrototype(): void {
 
   overrideUnsubscribe = override.subscribe(value => {
     if (!value?.scenario) {
-      // "Current" option selected or no override - clear all prototype API returns
+      // "Current" option selected or no override - clear all prototype API returns and trigger refresh
       clearPrototypeApiReturns();
+      window.events?.send('enhanced-dashboard-enabled', false);
+      window.events?.send('provider-change');
+      window.events?.send('provider-container-connection-update-status');
+      window.events?.send('dashboard:system-overview-status');
+      window.events?.send('status-bar-updated');
       return;
     }
     applyDashboardHealthScenario(value.scenario);
