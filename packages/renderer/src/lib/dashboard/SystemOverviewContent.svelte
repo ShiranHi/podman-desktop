@@ -1,37 +1,26 @@
 <script lang="ts">
-import { faBox, faCompactDisc, faCubes, faLayerGroup, faServer } from '@fortawesome/free-solid-svg-icons';
+import { faChevronRight } from '@fortawesome/free-solid-svg-icons';
 import {
   NavigationPage,
   type ProviderConnectionInfo,
   type ProviderContainerConnectionInfo,
   type ProviderInfo,
 } from '@podman-desktop/core-api';
+import { Icon } from '@podman-desktop/ui-svelte/icons';
 import { onMount } from 'svelte';
 import { SvelteMap, SvelteSet } from 'svelte/reactivity';
-import { router } from 'tinro';
 
-import SystemOverviewComposeStatus from '/@/lib/dashboard/SystemOverviewComposeStatus.svelte';
-import SystemOverviewMetricTile from '/@/lib/dashboard/SystemOverviewMetricTile.svelte';
 import SystemOverviewProviderCardCompact from '/@/lib/dashboard/SystemOverviewProviderCardCompact.svelte';
 import SystemOverviewProviderCardDetailed from '/@/lib/dashboard/SystemOverviewProviderCardDetailed.svelte';
 import SystemOverviewProviderSetup from '/@/lib/dashboard/SystemOverviewProviderSetup.svelte';
 import { handleNavigation } from '/@/navigation';
 import { containersInfos } from '/@/stores/containers';
-import { imagesInfos } from '/@/stores/images';
-import { kubernetesResourcesCount } from '/@/stores/kubernetes-resources-count';
-import { podsInfos } from '/@/stores/pods';
+import { systemOverviewInfos } from '/@/stores/dashboard/system-overview.svelte';
 import { providerInfos } from '/@/stores/providers';
 
-import {
-  getConnectionSortPriority,
-  getContainerConnectionEngineId,
-  resolveKubernetesOwnerEngineId,
-  resolveVmOwnerEngineId,
-} from './system-overview-utils.svelte';
+import { STATUS_BG_CLASS, STATUS_TEXT_CLASS } from './system-overview-utils.svelte';
 
-let runningContainers = $derived($containersInfos.filter(c => c.State === 'running').length);
-let runningPods = $derived($podsInfos.filter(p => p.Status === 'Running').length);
-let kubernetesPodCount = $derived($kubernetesResourcesCount.find(r => r.resourceName === 'pods')?.count ?? 0);
+const backgroundClass = $derived(STATUS_BG_CLASS[$systemOverviewInfos.status.status]);
 
 // Container connections (shown as detailed cards)
 let containerConnectionsWithProvider = $derived.by(() => {
@@ -43,11 +32,6 @@ let containerConnectionsWithProvider = $derived.by(() => {
   }
   return result;
 });
-
-let machineCount = $derived(containerConnectionsWithProvider.length);
-let runningMachines = $derived(
-  containerConnectionsWithProvider.filter(({ connection }) => connection.status === 'started').length,
-);
 
 // Non-container connections (Kubernetes + VM, always shown as minimal cards)
 let nonContainerConnectionsWithProvider = $derived.by(() => {
@@ -63,13 +47,6 @@ let nonContainerConnectionsWithProvider = $derived.by(() => {
   return result;
 });
 
-let hasStoppedKubernetesCluster = $derived(
-  nonContainerConnectionsWithProvider.some(
-    ({ connection }) =>
-      connection.connectionType === 'kubernetes' && connection.status === 'stopped' && !connection.error,
-  ),
-);
-
 onMount(async () => {
   const allConnections = [
     ...containerConnectionsWithProvider.map(c => c.connection),
@@ -82,13 +59,23 @@ onMount(async () => {
   });
 });
 
-// Map engineId -> non-container connections that run on that engine
+// Go through all containers and find the matching label to a connection name.
+function resolveKubernetesOwnerEngineId(connectionName: string): string | undefined {
+  return $containersInfos.find(c => c.Labels && Object.values(c.Labels).includes(connectionName))?.engineId;
+}
+
+// Go through all containers and find the matching engineName to a connection name.
+function resolveVmOwnerEngineId(connectionName: string): string | undefined {
+  return $containersInfos.find(c => c.engineName === connectionName)?.engineId;
+}
+
+// Map engineId (= containerConnection.name) -> non-container connections that run on that engine
 let childConnectionsByEngineId = $derived.by(() => {
   const map = new SvelteMap<string, { connection: ProviderConnectionInfo; provider: ProviderInfo }[]>();
 
   for (const provider of $providerInfos) {
     for (const conn of provider.kubernetesConnections) {
-      const engineId = resolveKubernetesOwnerEngineId(conn.name, provider, $containersInfos);
+      const engineId = resolveKubernetesOwnerEngineId(conn.name);
       if (engineId !== undefined) {
         const list = map.get(engineId) ?? [];
         list.push({ connection: conn, provider });
@@ -96,7 +83,7 @@ let childConnectionsByEngineId = $derived.by(() => {
       }
     }
     for (const conn of provider.vmConnections) {
-      const engineId = resolveVmOwnerEngineId(conn.name, provider, $containersInfos);
+      const engineId = resolveVmOwnerEngineId(conn.name);
       if (engineId !== undefined) {
         const list = map.get(engineId) ?? [];
         list.push({ connection: conn, provider });
@@ -119,27 +106,13 @@ let groupedConnectionKeys = $derived.by(() => {
   return keys;
 });
 
-// Container connections with their grouped Kubernetes/VM children, sorted by severity.
+// Container connections with their grouped Kubernetes/VM children.
 let containerConnectionsWithChildren = $derived(
-  containerConnectionsWithProvider
-    .map(({ connection, provider }) => ({
-      connection,
-      provider,
-      childConnections: childConnectionsByEngineId.get(getContainerConnectionEngineId(provider, connection)) ?? [],
-    }))
-    .toSorted((a, b) => {
-      const aPriority = getConnectionSortPriority(
-        a.connection.status,
-        a.connection.error,
-        (a.provider.warnings?.length ?? 0) > 0,
-      );
-      const bPriority = getConnectionSortPriority(
-        b.connection.status,
-        b.connection.error,
-        (b.provider.warnings?.length ?? 0) > 0,
-      );
-      return aPriority - bPriority;
-    }),
+  containerConnectionsWithProvider.map(({ connection, provider }) => ({
+    connection,
+    provider,
+    childConnections: childConnectionsByEngineId.get(`${provider.id}.${connection.name}`) ?? [],
+  })),
 );
 
 // Non-container connections not grouped under any container connection (standalone minimal cards)
@@ -166,88 +139,44 @@ let providersNeedingSetup = $derived(
   ),
 );
 
-function navigateToContainers(): void {
-  router.goto('/containers');
-}
-
-function navigateToPods(): void {
-  router.goto('/pods');
-}
-
-function navigateToImages(): void {
-  router.goto('/images');
-}
-
-function navigateToKubernetesPods(): void {
-  router.goto('/kubernetes/pods');
-}
-
-function navigateToMachines(): void {
+async function navigateToResources(): Promise<void> {
   handleNavigation({ page: NavigationPage.RESOURCES });
 }
 </script>
 
-<div class="flex flex-col gap-6 pt-5" aria-label="System Overview">
-  <section aria-label="Resource Overview" class="pt-1">
-    <h3 class="text-md font-semibold text-[var(--pd-content-card-header-text)] mb-1">Resource Overview</h3>
-    <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-2">
-      <SystemOverviewMetricTile
-        label="Containers"
-        count={$containersInfos.length}
-        activeCount={runningContainers}
-        icon={faBox}
-        onNavigate={navigateToContainers} />
-      <SystemOverviewMetricTile
-        label="Pods"
-        count={$podsInfos.length}
-        activeCount={runningPods}
-        icon={faLayerGroup}
-        onNavigate={navigateToPods} />
-      <SystemOverviewMetricTile
-        label="Images"
-        count={$imagesInfos.length}
-        icon={faCompactDisc}
-        onNavigate={navigateToImages} />
-      <SystemOverviewMetricTile
-        label="Machines"
-        count={machineCount}
-        activeCount={machineCount > 0 ? runningMachines : undefined}
-        icon={faServer}
-        onNavigate={navigateToMachines} />
-      <SystemOverviewMetricTile
-        label="Kubernetes Pods"
-        count={kubernetesPodCount}
-        icon={faCubes}
-        statusNote={hasStoppedKubernetesCluster ? 'Cluster stopped' : undefined}
-        onNavigate={navigateToKubernetesPods} />
-    </div>
-  </section>
+<div class="pt-2" aria-label="System Overview">
+  <button
+    class="inline-flex items-center gap-2 px-3 py-2 rounded-lg transition-colors border border-transparent {backgroundClass} {STATUS_TEXT_CLASS[$systemOverviewInfos.status.status]}"
+    aria-label="System Overview - Overall status"
+    onclick={navigateToResources}>
+    {#key $systemOverviewInfos.status.status}
+      <Icon icon={$systemOverviewInfos.status.icon} size={$systemOverviewInfos.status.status === 'progressing' ? '1.25em' : 'lg'} />
+    {/key}
+    <span class="text-sm leading-none">{$systemOverviewInfos.text}</span>
+    <Icon icon={faChevronRight} size="sm" />
+  </button>
 
-  <SystemOverviewComposeStatus />
+  <div class="text-md font-semibold text-[var(--pd-content-card-header-text)] pt-2">Container providers:</div>
+  <div class="flex flex-col gap-2 pt-2">
+    {#each providersNeedingSetup as provider (provider.id)}
+      <SystemOverviewProviderSetup {provider} />
+    {/each}
 
-  <section aria-label="Connections" class="pt-2">
-    <h3 class="text-md font-semibold text-[var(--pd-content-card-header-text)] mb-1">Connections</h3>
-    <div class="flex flex-col gap-2">
-      {#each providersNeedingSetup as provider (provider.id)}
-        <SystemOverviewProviderSetup {provider} />
-      {/each}
+    <!-- Container providers as detailed cards (started, error, or progressing) -->
+    {#each containerConnectionsWithChildren as { connection, provider, childConnections } (provider.id + ':' + connection.name)}
+      <SystemOverviewProviderCardDetailed {connection} {provider} {childConnections} />
+    {/each}
 
-      <div class="grid grid-cols-1 gap-2">
-        {#each containerConnectionsWithChildren as { connection, provider, childConnections } (provider.id + ':' + connection.name)}
-          <SystemOverviewProviderCardDetailed {connection} {provider} {childConnections} />
-        {/each}
-      </div>
-
-      {#if standaloneConnections.length > 0}
-        <h4 class="text-sm font-semibold text-[var(--pd-content-card-header-text)] pt-1">Other Connections</h4>
-        <div class="rounded-lg p-3 bg-[var(--pd-content-card-carousel-card-bg)]">
-          <div class="flex flex-wrap items-center gap-2">
-            {#each standaloneConnections as { connection, provider } (provider.id + ':' + connection.name)}
-              <SystemOverviewProviderCardCompact {connection} {provider} />
-            {/each}
-          </div>
+    <!-- Standalone K8s/VM connections as stacked minimal cards -->
+    {#if standaloneConnections.length > 0}
+      <div class="text-md font-semibold text-[var(--pd-content-card-header-text)]">Kubernetes/VM connections:</div>
+      <div class="rounded-lg p-2 bg-[var(--pd-content-card-carousel-card-bg)]">
+        <div class="flex flex-wrap items-center gap-2">
+          {#each standaloneConnections as { connection, provider } (provider.id + ':' + connection.name)}
+            <SystemOverviewProviderCardCompact {connection} {provider} />
+          {/each}
         </div>
-      {/if}
-    </div>
-  </section>
+      </div>
+    {/if}
+  </div>
 </div>
