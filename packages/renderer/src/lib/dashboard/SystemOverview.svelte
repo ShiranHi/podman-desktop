@@ -20,7 +20,7 @@ let statusDisplayText = $derived(
   <Expandable bind:initialized={expandableState.initialized} bind:expanded={expandableState.expanded} onclick={expandableState.toggle.bind(expandableState)}>
     {#snippet title()}
       <div class="flex items-center gap-2 flex-nowrap whitespace-nowrap min-w-0 overflow-hidden">
-        <span class="text-lg font-semibold text-[var(--pd-content-card-header-text)] shrink-0">System Overview:</span>
+        <span class="text-lg font-semibold text-[var(--pd-content-card-header-text)] shrink-0">System Overview</span>
         <Tooltip tip={$systemOverviewInfos.text} class="inline-flex items-center gap-1.5 shrink-0">
           <span
             class="inline-flex items-center gap-1.5"

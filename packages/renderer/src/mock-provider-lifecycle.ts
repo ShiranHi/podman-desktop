@@ -132,8 +132,7 @@ function delay(ms: number): Promise<void> {
 
 export function resetRuntimeProviderState(scenarioData: HealthScenarioData): void {
   runtimeProvider = cloneProvider(scenarioData.provider);
-  runtimeSystemOverview = { ...scenarioData.systemOverviewStatus };
-  runtimeStatusBarEntries = [...scenarioData.statusBarEntries];
+  syncDerivedState();
   lifecycleInProgress = false;
 }
 
