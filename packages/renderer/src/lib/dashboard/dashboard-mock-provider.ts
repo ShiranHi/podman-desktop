@@ -29,7 +29,7 @@ const MOCK_PROVIDER_BASE = {
   vmConnections: [] as never[],
   lifecycleMethods: [],
   detectionChecks: [],
-  images: {},
+  images: { icon: '/podman-icon.png' },
   version: '5.4.0',
   links: [],
   installationSupport: false,
