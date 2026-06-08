@@ -142,7 +142,9 @@ $effect(() => {
   }
 
   if (changed) {
+    // Sort by originalOrder AND clear any custom ordering to respect registry order for new items
     dashboardSections = nextSections.toSorted((a, b) => a.originalOrder - b.originalOrder);
+    dashboardOrdering.clear();
   }
 });
 
