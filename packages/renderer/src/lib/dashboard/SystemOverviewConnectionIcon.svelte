@@ -20,10 +20,10 @@ let connectionType = $derived(connection?.connectionType);
 
 <IconImage image={provider.images?.icon} alt={provider.name} class={className}>
   {#if connectionType === 'kubernetes'}
-    <KubernetesIcon size="20" class="text-[var(--pd-content-text-sub)]" />
+    <KubernetesIcon size="20" class="text-[var(--pd-content-text)]" />
   {:else if connectionType === 'vm'}
-    <Icon icon={faDesktop} size="sm" class="text-[var(--pd-content-text-sub)]" />
+    <Icon icon={faDesktop} size="sm" class="text-[var(--pd-content-text)]" />
   {:else}
-    <EngineIcon class="w-6 h-auto text-[var(--pd-content-text-sub)]" />
+    <EngineIcon class="w-6 h-auto [&_path]:stroke-current text-[var(--pd-content-text)]" />
   {/if}
 </IconImage>
