@@ -58,9 +58,7 @@ function navigateToPage(page: NavigationPage): void {
 }
 </script>
 
-<div>
-  <h2 class="text-md font-semibold text-[var(--pd-content-card-header-text)] pb-2">Resource Overview</h2>
-  <div class="grid grid-cols-5 gap-3">
+<div class="grid grid-cols-5 gap-3">
     {#each tiles as tile (tile.label)}
       <button
         class="flex flex-col gap-2 p-3 rounded-lg bg-[var(--pd-content-card-carousel-card-bg)] hover:bg-[var(--pd-content-card-carousel-card-hover-bg)] transition-colors cursor-pointer text-left"
@@ -89,5 +87,4 @@ function navigateToPage(page: NavigationPage): void {
         </div>
       </button>
     {/each}
-  </div>
 </div>
