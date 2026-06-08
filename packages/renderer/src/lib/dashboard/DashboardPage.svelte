@@ -145,6 +145,10 @@ $effect(() => {
     // Sort by originalOrder AND clear any custom ordering to respect registry order for new items
     dashboardSections = nextSections.toSorted((a, b) => a.originalOrder - b.originalOrder);
     dashboardOrdering.clear();
+    // Save the new configuration to persist the correct order
+    saveDashboardConfiguration().catch((error: unknown) => {
+      console.error(`Failed to save dashboard configuration after registry change: ${error}`);
+    });
   }
 });
 
