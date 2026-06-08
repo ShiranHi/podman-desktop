@@ -121,9 +121,11 @@ async function handleActionButtonClick(): Promise<void> {
     {#if connection.connectionType === 'container' && connection.status === 'started'}
       <SystemOverviewResourceUsage {provider} connection={connection as ProviderContainerConnectionInfo} />
     {:else if connection.error ?? (connection.status !== 'starting' && connection.status !== 'stopping')}
-      <Button type={statusConfig.buttonType} onclick={handleActionButtonClick}>
-        {statusConfig.buttonText}
-      </Button>
+      <div class="flex justify-end">
+        <Button type={statusConfig.buttonType} onclick={handleActionButtonClick}>
+          {statusConfig.buttonText}
+        </Button>
+      </div>
     {/if}
   {/snippet}
 
