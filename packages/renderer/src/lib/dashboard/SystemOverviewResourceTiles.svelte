@@ -4,7 +4,7 @@ import { Icon } from '@podman-desktop/ui-svelte/icons';
 
 import { containersInfos } from '/@/stores/containers';
 import { imagesInfos } from '/@/stores/images';
-import { kubernetesContextsState } from '/@/stores/kubernetes-contexts-state';
+import { kubernetesCurrentContextState } from '/@/stores/kubernetes-contexts-state';
 import { podsInfos } from '/@/stores/pods';
 import { providerInfos } from '/@/stores/providers';
 
@@ -29,10 +29,7 @@ let machineStats = $derived.by(() => {
   return { running, total };
 });
 
-let kubernetesPodCount = $derived.by(() => {
-  const contexts = $kubernetesContextsState;
-  return contexts.reachableClusters.flatMap(cluster => cluster.resources?.pods ?? []).length;
-});
+let kubernetesPodCount = $derived($kubernetesCurrentContextState.resources?.pods ?? 0);
 
 interface TileProps {
   icon: typeof faBox;
