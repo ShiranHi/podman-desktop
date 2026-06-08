@@ -69,9 +69,11 @@ function computeSystemOverviewStatus(provider: RuntimeProviderState): SystemOver
 
   // Check for warnings first, regardless of container state
   if (hasWarnings) {
+    const warning = provider.warnings[0];
+    const warningText = warning.details ?? warning.name;
     return {
       status: 'stable',
-      text: provider.warnings.length === 1 ? provider.warnings[0] : `${provider.warnings.length} warnings detected`,
+      text: provider.warnings.length === 1 ? warningText : `${provider.warnings.length} warnings detected`,
     };
   }
 
