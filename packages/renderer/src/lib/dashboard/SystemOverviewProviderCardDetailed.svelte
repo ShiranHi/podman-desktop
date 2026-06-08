@@ -121,28 +121,27 @@ async function handleActionButtonClick(): Promise<void> {
     {#if connection.connectionType === 'container' && connection.status === 'started'}
       <SystemOverviewResourceUsage {provider} connection={connection as ProviderContainerConnectionInfo} />
     {:else if connection.error ?? (connection.status !== 'starting' && connection.status !== 'stopping')}
-      <div class="flex justify-end">
+      <div class="flex items-center justify-between gap-3">
+        {#if provider.warnings.length || (connection.error ?? errorMessage)}
+          <div
+            class="flex items-center gap-1.5 text-sm text-[var(--pd-status-terminated)]"
+            aria-label="Connection error">
+            {#each provider.warnings as warning, index (index)}
+              {warning.details ?? warning.name}
+            {/each}
+            {#if connection.error}
+              {connection.error}
+            {:else if errorMessage}
+              {errorMessage}
+            {/if}
+          </div>
+        {/if}
         <Button type={statusConfig.buttonType} onclick={handleActionButtonClick}>
           {statusConfig.buttonText}
         </Button>
       </div>
     {/if}
   {/snippet}
-
-  {#if provider.warnings.length || (connection.error ?? errorMessage)}
-    <div
-      class="flex items-center gap-1.5 text-sm text-[var(--pd-status-terminated)]"
-      aria-label="Connection error">
-      {#each provider.warnings as warning, index (index)}
-        {warning.details ?? warning.name}
-      {/each}
-      {#if connection.error}
-        {connection.error}
-      {:else if errorMessage}
-        {errorMessage}
-      {/if}
-    </div>
-  {/if}
 
   {#if childConnections.length > 0}
     <div class="flex flex-wrap items-center gap-2">
