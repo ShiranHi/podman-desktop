@@ -42,14 +42,14 @@ interface TileProps {
 
 let tiles: TileProps[] = $derived([
   { icon: faBox, label: 'Containers', stats: containerStats, page: NavigationPage.CONTAINERS },
-  { icon: faLayerGroup, label: 'Pods', stats: podStats, page: NavigationPage.PODS },
+  { icon: faLayerGroup, label: 'Pods', stats: podStats, page: NavigationPage.PODMAN_PODS },
   { icon: faFileImage, label: 'Images', stats: { total: imageCount }, page: NavigationPage.IMAGES },
   { icon: faDesktop, label: 'Machines', stats: machineStats, page: NavigationPage.RESOURCES },
   {
     icon: faDharmachakra,
     label: 'Kubernetes Pods',
     stats: { total: kubernetesPodCount },
-    page: NavigationPage.KUBERNETES_PODS,
+    page: NavigationPage.RESOURCES,
   },
 ]);
 
