@@ -21,10 +21,10 @@ import SystemOverview from '/@/lib/dashboard/SystemOverview.svelte';
 import type { DashboardPageRegistryEntry } from './dashboard-page-registry.svelte';
 
 export function createSystemOverview(): DashboardPageRegistryEntry {
-  // order should be same as providers, since we should show this instead of provider cards if enhanced dashboard is enabled
+  // order should be after Explore Features (3) and before Learning Center (4)
   return {
     id: 'System Overview',
-    originalOrder: 1,
+    originalOrder: 3.5,
     component: SystemOverview,
   };
 }
