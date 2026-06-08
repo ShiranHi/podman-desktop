@@ -46,7 +46,7 @@ let tiles: TileProps[] = $derived([
 ]);
 </script>
 
-<div class="pb-4 border-b border-[var(--pd-content-divider)]">
+<div>
   <h2 class="text-md font-semibold text-[var(--pd-content-card-header-text)] pb-2">Resource Overview</h2>
   <div class="grid grid-cols-5 gap-3">
     {#each tiles as tile (tile.label)}
