@@ -1,7 +1,9 @@
 <script lang="ts">
 import { faBox, faDesktop, faDharmachakra, faFileImage, faLayerGroup } from '@fortawesome/free-solid-svg-icons';
+import { NavigationPage } from '@podman-desktop/core-api';
 import { Icon } from '@podman-desktop/ui-svelte/icons';
 
+import { handleNavigation } from '/@/navigation';
 import { containersInfos } from '/@/stores/containers';
 import { imagesInfos } from '/@/stores/images';
 import { kubernetesCurrentContextState } from '/@/stores/kubernetes-contexts-state';
@@ -35,22 +37,35 @@ interface TileProps {
   icon: typeof faBox;
   label: string;
   stats: { running?: number; total: number };
+  page: NavigationPage;
 }
 
 let tiles: TileProps[] = $derived([
-  { icon: faBox, label: 'Containers', stats: containerStats },
-  { icon: faLayerGroup, label: 'Pods', stats: podStats },
-  { icon: faFileImage, label: 'Images', stats: { total: imageCount } },
-  { icon: faDesktop, label: 'Machines', stats: machineStats },
-  { icon: faDharmachakra, label: 'Kubernetes Pods', stats: { total: kubernetesPodCount } },
+  { icon: faBox, label: 'Containers', stats: containerStats, page: NavigationPage.CONTAINERS },
+  { icon: faLayerGroup, label: 'Pods', stats: podStats, page: NavigationPage.PODS },
+  { icon: faFileImage, label: 'Images', stats: { total: imageCount }, page: NavigationPage.IMAGES },
+  { icon: faDesktop, label: 'Machines', stats: machineStats, page: NavigationPage.RESOURCES },
+  {
+    icon: faDharmachakra,
+    label: 'Kubernetes Pods',
+    stats: { total: kubernetesPodCount },
+    page: NavigationPage.KUBERNETES_PODS,
+  },
 ]);
+
+function navigateToPage(page: NavigationPage): void {
+  handleNavigation({ page });
+}
 </script>
 
 <div>
   <h2 class="text-md font-semibold text-[var(--pd-content-card-header-text)] pb-2">Resource Overview</h2>
   <div class="grid grid-cols-5 gap-3">
     {#each tiles as tile (tile.label)}
-      <div class="flex flex-col gap-2 p-3 rounded-lg bg-[var(--pd-content-card-carousel-card-bg)]">
+      <button
+        class="flex flex-col gap-2 p-3 rounded-lg bg-[var(--pd-content-card-carousel-card-bg)] hover:bg-[var(--pd-content-card-carousel-card-hover-bg)] transition-colors cursor-pointer text-left"
+        onclick={(): void => navigateToPage(tile.page)}
+        aria-label="Navigate to {tile.label}">
         <div class="flex items-center gap-2 text-[var(--pd-content-text)]">
           <Icon icon={tile.icon} size="sm" />
           <span class="text-sm font-medium">{tile.label}</span>
@@ -72,7 +87,7 @@ let tiles: TileProps[] = $derived([
             </div>
           {/if}
         </div>
-      </div>
+      </button>
     {/each}
   </div>
 </div>
