@@ -52,6 +52,15 @@ function syncPrototypeApiReturns(): void {
   prototypeWindow.setPrototypeApiReturn?.('isExperimentalConfigurationEnabled', {
     'dashboard.enhancedDashboard': true,
   });
+  // Mock extension banner to always show AI Lab banner in prototype mode
+  prototypeWindow.setPrototypeApiReturn?.('getExtensionBanners', [
+    {
+      extensionId: 'podman-desktop.ai-lab',
+      title: 'Supercharge your apps with Podman AI Lab!',
+      icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMTIgMkM2LjQ4IDIgMiA2LjQ4IDIgMTJzNC40OCAxMCAxMCAxMCAxMC00LjQ4IDEwLTEwUzE3LjUyIDIgMTIgMnptMCAxOGMtNC40MSAwLTgtMy41OS04LThzMy41OS04IDgtOCA4IDMuNTkgOCA4LTMuNTkgOC04IDh6IiBmaWxsPSIjODkyMmZmIi8+PC9zdmc+',
+      description: 'Build, test, and tune LLM-based applications with Podman AI Lab.',
+    },
+  ]);
 }
 
 function clearPrototypeApiReturns(): void {
