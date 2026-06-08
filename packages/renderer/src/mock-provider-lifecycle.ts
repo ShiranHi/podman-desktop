@@ -67,15 +67,16 @@ function computeSystemOverviewStatus(provider: RuntimeProviderState): SystemOver
   );
   const hasWarnings = provider.warnings.length > 0;
 
-  if (hasStartedContainer && !hasStoppedConnections && !hasWarnings) {
-    return { status: 'healthy', text: 'All systems operational' };
-  }
-
-  if (hasWarnings && !hasStoppedConnections) {
+  // Check for warnings first, regardless of container state
+  if (hasWarnings) {
     return {
       status: 'stable',
       text: provider.warnings.length === 1 ? '1 warning detected' : `${provider.warnings.length} warnings detected`,
     };
+  }
+
+  if (hasStartedContainer && !hasStoppedConnections) {
+    return { status: 'healthy', text: 'All systems operational' };
   }
 
   if (hasStartedContainer && hasStoppedConnections) {
