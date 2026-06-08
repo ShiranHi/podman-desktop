@@ -1,0 +1,1532 @@
+[
+  {
+    "id": "default-text",
+    "cssVar": "--pd-default-text",
+    "value": "#fff"
+  },
+  {
+    "id": "default-text-link",
+    "cssVar": "--pd-default-text-link",
+    "value": "#9f78ff"
+  },
+  {
+    "id": "default-item-hover",
+    "cssVar": "--pd-default-item-hover",
+    "value": "color(srgb 0.7803921568627451 0.7215686274509804 1 / 0.1)"
+  },
+  {
+    "id": "item-disabled",
+    "cssVar": "--pd-item-disabled",
+    "value": "oklch(0.8690000000000001 0.005 56.366 / 0.4)"
+  },
+  {
+    "id": "shadow-color",
+    "cssVar": "--pd-shadow-color",
+    "value": "color(srgb 0 0 0 / 0.1)"
+  },
+  {
+    "id": "shadow-color-strong",
+    "cssVar": "--pd-shadow-color-strong",
+    "value": "color(srgb 0 0 0 / 0.3)"
+  },
+  {
+    "id": "notification-dot",
+    "cssVar": "--pd-notification-dot",
+    "value": "#9f78ff"
+  },
+  {
+    "id": "global-nav-bg",
+    "cssVar": "--pd-global-nav-bg",
+    "value": "#27272a"
+  },
+  {
+    "id": "global-nav-bg-border",
+    "cssVar": "--pd-global-nav-bg-border",
+    "value": "#36363d"
+  },
+  {
+    "id": "global-nav-icon",
+    "cssVar": "--pd-global-nav-icon",
+    "value": "#b4b4b4"
+  },
+  {
+    "id": "global-nav-icon-hover",
+    "cssVar": "--pd-global-nav-icon-hover",
+    "value": "#b4b4b4"
+  },
+  {
+    "id": "global-nav-icon-hover-bg",
+    "cssVar": "--pd-global-nav-icon-hover-bg",
+    "value": "transparent"
+  },
+  {
+    "id": "global-nav-icon-inset-bg",
+    "cssVar": "--pd-global-nav-icon-inset-bg",
+    "value": "#18181b"
+  },
+  {
+    "id": "global-nav-icon-selected",
+    "cssVar": "--pd-global-nav-icon-selected",
+    "value": "#fff"
+  },
+  {
+    "id": "global-nav-icon-selected-bg",
+    "cssVar": "--pd-global-nav-icon-selected-bg",
+    "value": "#36363d"
+  },
+  {
+    "id": "global-nav-icon-selected-highlight",
+    "cssVar": "--pd-global-nav-icon-selected-highlight",
+    "value": "#9f78ff"
+  },
+  {
+    "id": "secondary-nav-bg",
+    "cssVar": "--pd-secondary-nav-bg",
+    "value": "#222222"
+  },
+  {
+    "id": "secondary-nav-header-text",
+    "cssVar": "--pd-secondary-nav-header-text",
+    "value": "#fff"
+  },
+  {
+    "id": "secondary-nav-text",
+    "cssVar": "--pd-secondary-nav-text",
+    "value": "#e4e4e4"
+  },
+  {
+    "id": "secondary-nav-text-hover",
+    "cssVar": "--pd-secondary-nav-text-hover",
+    "value": "#e7e7e7"
+  },
+  {
+    "id": "secondary-nav-text-hover-bg",
+    "cssVar": "--pd-secondary-nav-text-hover-bg",
+    "value": "transparent"
+  },
+  {
+    "id": "secondary-nav-text-selected",
+    "cssVar": "--pd-secondary-nav-text-selected",
+    "value": "#fff"
+  },
+  {
+    "id": "secondary-nav-selected-bg",
+    "cssVar": "--pd-secondary-nav-selected-bg",
+    "value": "#36363d"
+  },
+  {
+    "id": "secondary-nav-selected-highlight",
+    "cssVar": "--pd-secondary-nav-selected-highlight",
+    "value": "#9f78ff"
+  },
+  {
+    "id": "secondary-nav-expander",
+    "cssVar": "--pd-secondary-nav-expander",
+    "value": "#fff"
+  },
+  {
+    "id": "titlebar-bg",
+    "cssVar": "--pd-titlebar-bg",
+    "value": "#0f0f11"
+  },
+  {
+    "id": "titlebar-text",
+    "cssVar": "--pd-titlebar-text",
+    "value": "#fff"
+  },
+  {
+    "id": "titlebar-icon",
+    "cssVar": "--pd-titlebar-icon",
+    "value": "#fff"
+  },
+  {
+    "id": "titlebar-hover-bg",
+    "cssVar": "--pd-titlebar-hover-bg",
+    "value": "#464649"
+  },
+  {
+    "id": "titlebar-windows-hover-exit-bg",
+    "cssVar": "--pd-titlebar-windows-hover-exit-bg",
+    "value": "#c42b1c"
+  },
+  {
+    "id": "titlebar-windows-hover-exit-text",
+    "cssVar": "--pd-titlebar-windows-hover-exit-text",
+    "value": "#fff"
+  },
+  {
+    "id": "titlebar-windows-hover-bg",
+    "cssVar": "--pd-titlebar-windows-hover-bg",
+    "value": "#2d2d2d"
+  },
+  {
+    "id": "content-breadcrumb",
+    "cssVar": "--pd-content-breadcrumb",
+    "value": "#9f78ff"
+  },
+  {
+    "id": "content-breadcrumb-2",
+    "cssVar": "--pd-content-breadcrumb-2",
+    "value": "#9f78ff"
+  },
+  {
+    "id": "content-header",
+    "cssVar": "--pd-content-header",
+    "value": "#fff"
+  },
+  {
+    "id": "content-text",
+    "cssVar": "--pd-content-text",
+    "value": "#aaabac"
+  },
+  {
+    "id": "content-sub-header",
+    "cssVar": "--pd-content-sub-header",
+    "value": "#9f78ff"
+  },
+  {
+    "id": "content-header-icon",
+    "cssVar": "--pd-content-header-icon",
+    "value": "#b4b4b4"
+  },
+  {
+    "id": "content-card-header-text",
+    "cssVar": "--pd-content-card-header-text",
+    "value": "#dadada"
+  },
+  {
+    "id": "content-card-bg",
+    "cssVar": "--pd-content-card-bg",
+    "value": "#18181b"
+  },
+  {
+    "id": "content-card-hover-bg",
+    "cssVar": "--pd-content-card-hover-bg",
+    "value": "#18181b"
+  },
+  {
+    "id": "content-card-selected-bg",
+    "cssVar": "--pd-content-card-selected-bg",
+    "value": "#4a4b4f"
+  },
+  {
+    "id": "content-card-text",
+    "cssVar": "--pd-content-card-text",
+    "value": "#dadada"
+  },
+  {
+    "id": "content-card-title",
+    "cssVar": "--pd-content-card-title",
+    "value": "#d1d1d1"
+  },
+  {
+    "id": "content-card-light-title",
+    "cssVar": "--pd-content-card-light-title",
+    "value": "#9a9a9a"
+  },
+  {
+    "id": "content-card-inset-bg",
+    "cssVar": "--pd-content-card-inset-bg",
+    "value": "#000"
+  },
+  {
+    "id": "content-card-hover-inset-bg",
+    "cssVar": "--pd-content-card-hover-inset-bg",
+    "value": "#000"
+  },
+  {
+    "id": "content-bg",
+    "cssVar": "--pd-content-bg",
+    "value": "#222222"
+  },
+  {
+    "id": "content-card-icon",
+    "cssVar": "--pd-content-card-icon",
+    "value": "#9f78ff"
+  },
+  {
+    "id": "content-divider",
+    "cssVar": "--pd-content-divider",
+    "value": "#4a4b4f"
+  },
+  {
+    "id": "content-card-carousel-card-bg",
+    "cssVar": "--pd-content-card-carousel-card-bg",
+    "value": "#27272a"
+  },
+  {
+    "id": "content-card-carousel-card-hover-bg",
+    "cssVar": "--pd-content-card-carousel-card-hover-bg",
+    "value": "#27272a"
+  },
+  {
+    "id": "content-card-carousel-card-header-text",
+    "cssVar": "--pd-content-card-carousel-card-header-text",
+    "value": "#f6f6f6"
+  },
+  {
+    "id": "content-card-carousel-card-text",
+    "cssVar": "--pd-content-card-carousel-card-text",
+    "value": "#d1d1d1"
+  },
+  {
+    "id": "content-card-carousel-nav",
+    "cssVar": "--pd-content-card-carousel-nav",
+    "value": "#9a9a9a"
+  },
+  {
+    "id": "content-card-carousel-hover-nav",
+    "cssVar": "--pd-content-card-carousel-hover-nav",
+    "value": "#b4b4b4"
+  },
+  {
+    "id": "content-card-carousel-disabled-nav",
+    "cssVar": "--pd-content-card-carousel-disabled-nav",
+    "value": "#222222"
+  },
+  {
+    "id": "content-card-border",
+    "cssVar": "--pd-content-card-border",
+    "value": "#18181b"
+  },
+  {
+    "id": "content-card-border-selected",
+    "cssVar": "--pd-content-card-border-selected",
+    "value": "#9f78ff"
+  },
+  {
+    "id": "content-table-border",
+    "cssVar": "--pd-content-table-border",
+    "value": "#4a4b4f"
+  },
+  {
+    "id": "invert-content-bg",
+    "cssVar": "--pd-invert-content-bg",
+    "value": "#18181b"
+  },
+  {
+    "id": "invert-content-header-text",
+    "cssVar": "--pd-invert-content-header-text",
+    "value": "#fff"
+  },
+  {
+    "id": "invert-content-header2-text",
+    "cssVar": "--pd-invert-content-header2-text",
+    "value": "#fff"
+  },
+  {
+    "id": "invert-content-card-bg",
+    "cssVar": "--pd-invert-content-card-bg",
+    "value": "#27272a"
+  },
+  {
+    "id": "invert-content-card-header-text",
+    "cssVar": "--pd-invert-content-card-header-text",
+    "value": "#fff"
+  },
+  {
+    "id": "invert-content-card-text",
+    "cssVar": "--pd-invert-content-card-text",
+    "value": "#e4e4e4"
+  },
+  {
+    "id": "invert-content-button-active",
+    "cssVar": "--pd-invert-content-button-active",
+    "value": "#9f78ff"
+  },
+  {
+    "id": "invert-content-button-inactive",
+    "cssVar": "--pd-invert-content-button-inactive",
+    "value": "#767676"
+  },
+  {
+    "id": "invert-content-info-icon",
+    "cssVar": "--pd-invert-content-info-icon",
+    "value": "#9f78ff"
+  },
+  {
+    "id": "invert-content-divider",
+    "cssVar": "--pd-invert-content-divider",
+    "value": "#4a4b4f"
+  },
+  {
+    "id": "card-bg",
+    "cssVar": "--pd-card-bg",
+    "value": "#18181b"
+  },
+  {
+    "id": "card-header-text",
+    "cssVar": "--pd-card-header-text",
+    "value": "#fff"
+  },
+  {
+    "id": "card-text",
+    "cssVar": "--pd-card-text",
+    "value": "#e4e4e4"
+  },
+  {
+    "id": "input-field-bg",
+    "cssVar": "--pd-input-field-bg",
+    "value": "transparent"
+  },
+  {
+    "id": "input-field-focused-bg",
+    "cssVar": "--pd-input-field-focused-bg",
+    "value": "#0f0f11"
+  },
+  {
+    "id": "input-field-disabled-bg",
+    "cssVar": "--pd-input-field-disabled-bg",
+    "value": "transparent"
+  },
+  {
+    "id": "input-field-hover-bg",
+    "cssVar": "--pd-input-field-hover-bg",
+    "value": "transparent"
+  },
+  {
+    "id": "input-field-focused-text",
+    "cssVar": "--pd-input-field-focused-text",
+    "value": "#fff"
+  },
+  {
+    "id": "input-field-error-text",
+    "cssVar": "--pd-input-field-error-text",
+    "value": "#f0561d"
+  },
+  {
+    "id": "input-field-disabled-text",
+    "cssVar": "--pd-input-field-disabled-text",
+    "value": "#707073"
+  },
+  {
+    "id": "input-field-hover-text",
+    "cssVar": "--pd-input-field-hover-text",
+    "value": "#aaabac"
+  },
+  {
+    "id": "input-field-placeholder-text",
+    "cssVar": "--pd-input-field-placeholder-text",
+    "value": "#aaabac"
+  },
+  {
+    "id": "input-field-stroke",
+    "cssVar": "--pd-input-field-stroke",
+    "value": "#4a4b4f"
+  },
+  {
+    "id": "input-field-hover-stroke",
+    "cssVar": "--pd-input-field-hover-stroke",
+    "value": "#fff"
+  },
+  {
+    "id": "input-field-stroke-error",
+    "cssVar": "--pd-input-field-stroke-error",
+    "value": "#f0561d"
+  },
+  {
+    "id": "input-field-stroke-readonly",
+    "cssVar": "--pd-input-field-stroke-readonly",
+    "value": "#707073"
+  },
+  {
+    "id": "input-field-icon",
+    "cssVar": "--pd-input-field-icon",
+    "value": "#aaabac"
+  },
+  {
+    "id": "input-field-focused-icon",
+    "cssVar": "--pd-input-field-focused-icon",
+    "value": "#c8c8c8"
+  },
+  {
+    "id": "input-field-disabled-icon",
+    "cssVar": "--pd-input-field-disabled-icon",
+    "value": "#707073"
+  },
+  {
+    "id": "input-field-hover-icon",
+    "cssVar": "--pd-input-field-hover-icon",
+    "value": "#aaabac"
+  },
+  {
+    "id": "input-checkbox-disabled",
+    "cssVar": "--pd-input-checkbox-disabled",
+    "value": "#48484c"
+  },
+  {
+    "id": "input-checkbox-indeterminate",
+    "cssVar": "--pd-input-checkbox-indeterminate",
+    "value": "#9f78ff"
+  },
+  {
+    "id": "input-checkbox-focused-indeterminate",
+    "cssVar": "--pd-input-checkbox-focused-indeterminate",
+    "value": "#9f78ff"
+  },
+  {
+    "id": "input-checkbox-checked",
+    "cssVar": "--pd-input-checkbox-checked",
+    "value": "#9f78ff"
+  },
+  {
+    "id": "input-checkbox-focused-checked",
+    "cssVar": "--pd-input-checkbox-focused-checked",
+    "value": "#9f78ff"
+  },
+  {
+    "id": "input-checkbox-unchecked",
+    "cssVar": "--pd-input-checkbox-unchecked",
+    "value": "#e7e7e7"
+  },
+  {
+    "id": "input-checkbox-focused-unchecked",
+    "cssVar": "--pd-input-checkbox-focused-unchecked",
+    "value": "#e7e7e7"
+  },
+  {
+    "id": "input-toggle-off-bg",
+    "cssVar": "--pd-input-toggle-off-bg",
+    "value": "#818181"
+  },
+  {
+    "id": "input-toggle-off-focused-bg",
+    "cssVar": "--pd-input-toggle-off-focused-bg",
+    "value": "#9a9a9a"
+  },
+  {
+    "id": "input-toggle-on-bg",
+    "cssVar": "--pd-input-toggle-on-bg",
+    "value": "#9f78ff"
+  },
+  {
+    "id": "input-toggle-on-focused-bg",
+    "cssVar": "--pd-input-toggle-on-focused-bg",
+    "value": "#9f78ff"
+  },
+  {
+    "id": "input-toggle-switch",
+    "cssVar": "--pd-input-toggle-switch",
+    "value": "#fff"
+  },
+  {
+    "id": "input-toggle-focused-switch",
+    "cssVar": "--pd-input-toggle-focused-switch",
+    "value": "#fff"
+  },
+  {
+    "id": "input-toggle-on-text",
+    "cssVar": "--pd-input-toggle-on-text",
+    "value": "#e4e4e4"
+  },
+  {
+    "id": "input-toggle-off-text",
+    "cssVar": "--pd-input-toggle-off-text",
+    "value": "#e4e4e4"
+  },
+  {
+    "id": "input-toggle-disabled-text",
+    "cssVar": "--pd-input-toggle-disabled-text",
+    "value": "#aaabac"
+  },
+  {
+    "id": "input-toggle-off-disabled-bg",
+    "cssVar": "--pd-input-toggle-off-disabled-bg",
+    "value": "#0f0f11"
+  },
+  {
+    "id": "input-toggle-on-disabled-bg",
+    "cssVar": "--pd-input-toggle-on-disabled-bg",
+    "value": "#0f0f11"
+  },
+  {
+    "id": "input-toggle-disabled-switch",
+    "cssVar": "--pd-input-toggle-disabled-switch",
+    "value": "#efefef"
+  },
+  {
+    "id": "table-header-text",
+    "cssVar": "--pd-table-header-text",
+    "value": "#b4b4b4"
+  },
+  {
+    "id": "table-header-unsorted",
+    "cssVar": "--pd-table-header-unsorted",
+    "value": "#5c5c5c"
+  },
+  {
+    "id": "table-body-text",
+    "cssVar": "--pd-table-body-text",
+    "value": "#aaabac"
+  },
+  {
+    "id": "table-body-text-highlight",
+    "cssVar": "--pd-table-body-text-highlight",
+    "value": "#e4e4e4"
+  },
+  {
+    "id": "table-body-text-sub-secondary",
+    "cssVar": "--pd-table-body-text-sub-secondary",
+    "value": "#9f78ff"
+  },
+  {
+    "id": "table-body-text-sub-highlight",
+    "cssVar": "--pd-table-body-text-sub-highlight",
+    "value": "#d1d1d1"
+  },
+  {
+    "id": "details-body-text",
+    "cssVar": "--pd-details-body-text",
+    "value": "#efefef"
+  },
+  {
+    "id": "details-empty-icon",
+    "cssVar": "--pd-details-empty-icon",
+    "value": "#b4b4b4"
+  },
+  {
+    "id": "details-empty-header",
+    "cssVar": "--pd-details-empty-header",
+    "value": "#efefef"
+  },
+  {
+    "id": "details-empty-sub-header",
+    "cssVar": "--pd-details-empty-sub-header",
+    "value": "#b4b4b4"
+  },
+  {
+    "id": "details-empty-cmdline-bg",
+    "cssVar": "--pd-details-empty-cmdline-bg",
+    "value": "#0f0f11"
+  },
+  {
+    "id": "details-empty-cmdline-text",
+    "cssVar": "--pd-details-empty-cmdline-text",
+    "value": "#d1d1d1"
+  },
+  {
+    "id": "details-bg",
+    "cssVar": "--pd-details-bg",
+    "value": "#0f0f11"
+  },
+  {
+    "id": "details-card-bg",
+    "cssVar": "--pd-details-card-bg",
+    "value": "#27272a"
+  },
+  {
+    "id": "details-card-header",
+    "cssVar": "--pd-details-card-header",
+    "value": "#aaabac"
+  },
+  {
+    "id": "details-card-text",
+    "cssVar": "--pd-details-card-text",
+    "value": "#fff"
+  },
+  {
+    "id": "tab-text",
+    "cssVar": "--pd-tab-text",
+    "value": "#b4b4b4"
+  },
+  {
+    "id": "tab-text-highlight",
+    "cssVar": "--pd-tab-text-highlight",
+    "value": "#fff"
+  },
+  {
+    "id": "tab-highlight",
+    "cssVar": "--pd-tab-highlight",
+    "value": "#e7e7e7"
+  },
+  {
+    "id": "tab-hover",
+    "cssVar": "--pd-tab-hover",
+    "value": "#757373"
+  },
+  {
+    "id": "modal-fade",
+    "cssVar": "--pd-modal-fade",
+    "value": "#000"
+  },
+  {
+    "id": "modal-text",
+    "cssVar": "--pd-modal-text",
+    "value": "#c8c8c8"
+  },
+  {
+    "id": "modal-text-hover",
+    "cssVar": "--pd-modal-text-hover",
+    "value": "#e4e4e4"
+  },
+  {
+    "id": "modal-bg",
+    "cssVar": "--pd-modal-bg",
+    "value": "#18181b"
+  },
+  {
+    "id": "modal-border",
+    "cssVar": "--pd-modal-border",
+    "value": "#36363d"
+  },
+  {
+    "id": "modal-header-bg",
+    "cssVar": "--pd-modal-header-bg",
+    "value": "#000"
+  },
+  {
+    "id": "modal-header-text",
+    "cssVar": "--pd-modal-header-text",
+    "value": "#f2f2f2"
+  },
+  {
+    "id": "modal-header-divider",
+    "cssVar": "--pd-modal-header-divider",
+    "value": "#9f78ff"
+  },
+  {
+    "id": "link",
+    "cssVar": "--pd-link",
+    "value": "#9f78ff"
+  },
+  {
+    "id": "link-hover-bg",
+    "cssVar": "--pd-link-hover-bg",
+    "value": "transparent"
+  },
+  {
+    "id": "button-primary-bg",
+    "cssVar": "--pd-button-primary-bg",
+    "value": "#8e51ff"
+  },
+  {
+    "id": "button-primary-hover-bg",
+    "cssVar": "--pd-button-primary-hover-bg",
+    "value": "#9f78ff"
+  },
+  {
+    "id": "button-primary-border",
+    "cssVar": "--pd-button-primary-border",
+    "value": "color(srgb 0.6980392156862745 0.6 1 / 0.4)"
+  },
+  {
+    "id": "button-primary-text",
+    "cssVar": "--pd-button-primary-text",
+    "value": "#fff"
+  },
+  {
+    "id": "button-secondary",
+    "cssVar": "--pd-button-secondary",
+    "value": "oklch(37.4% 0.01 67.558)"
+  },
+  {
+    "id": "button-secondary-bg",
+    "cssVar": "--pd-button-secondary-bg",
+    "value": "oklch(37.4% 0.01 67.558)"
+  },
+  {
+    "id": "button-secondary-hover",
+    "cssVar": "--pd-button-secondary-hover",
+    "value": "oklch(44.6% 0.043 257.281)"
+  },
+  {
+    "id": "button-secondary-hover-bg",
+    "cssVar": "--pd-button-secondary-hover-bg",
+    "value": "oklch(44.6% 0.043 257.281)"
+  },
+  {
+    "id": "button-secondary-border",
+    "cssVar": "--pd-button-secondary-border",
+    "value": "color(srgb 0.7058823529411765 0.7058823529411765 0.7058823529411765 / 0.4)"
+  },
+  {
+    "id": "button-secondary-text",
+    "cssVar": "--pd-button-secondary-text",
+    "value": "#efefef"
+  },
+  {
+    "id": "button-text",
+    "cssVar": "--pd-button-text",
+    "value": "#fff"
+  },
+  {
+    "id": "button-disabled",
+    "cssVar": "--pd-button-disabled",
+    "value": "oklch(37.4% 0.01 67.558)"
+  },
+  {
+    "id": "button-disabled-bg",
+    "cssVar": "--pd-button-disabled-bg",
+    "value": "oklch(37.4% 0.01 67.558)"
+  },
+  {
+    "id": "button-disabled-text",
+    "cssVar": "--pd-button-disabled-text",
+    "value": "oklch(0.8690000000000001 0.005 56.366 / 0.4)"
+  },
+  {
+    "id": "button-danger-bg",
+    "cssVar": "--pd-button-danger-bg",
+    "value": "#c13414"
+  },
+  {
+    "id": "button-danger-border",
+    "cssVar": "--pd-button-danger-border",
+    "value": "#f0561d"
+  },
+  {
+    "id": "button-danger-text",
+    "cssVar": "--pd-button-danger-text",
+    "value": "#fff"
+  },
+  {
+    "id": "button-danger-hover-text",
+    "cssVar": "--pd-button-danger-hover-text",
+    "value": "#fff"
+  },
+  {
+    "id": "button-danger-hover-bg",
+    "cssVar": "--pd-button-danger-hover-bg",
+    "value": "#e5421d"
+  },
+  {
+    "id": "button-danger-disabled-border",
+    "cssVar": "--pd-button-danger-disabled-border",
+    "value": "#767676"
+  },
+  {
+    "id": "button-danger-disabled-text",
+    "cssVar": "--pd-button-danger-disabled-text",
+    "value": "#767676"
+  },
+  {
+    "id": "button-danger-disabled-bg",
+    "cssVar": "--pd-button-danger-disabled-bg",
+    "value": "transparent"
+  },
+  {
+    "id": "button-tab-border",
+    "cssVar": "--pd-button-tab-border",
+    "value": "transparent"
+  },
+  {
+    "id": "button-tab-border-selected",
+    "cssVar": "--pd-button-tab-border-selected",
+    "value": "#9f78ff"
+  },
+  {
+    "id": "button-tab-hover-border",
+    "cssVar": "--pd-button-tab-hover-border",
+    "value": "color(srgb 0.7803921568627451 0.7215686274509804 1 / 0.1)"
+  },
+  {
+    "id": "button-tab-text",
+    "cssVar": "--pd-button-tab-text",
+    "value": "#9f78ff"
+  },
+  {
+    "id": "button-tab-text-selected",
+    "cssVar": "--pd-button-tab-text-selected",
+    "value": "#9f78ff"
+  },
+  {
+    "id": "button-close-hover-bg",
+    "cssVar": "--pd-button-close-hover-bg",
+    "value": "#464649"
+  },
+  {
+    "id": "button-link-bg",
+    "cssVar": "--pd-button-link-bg",
+    "value": "transparent"
+  },
+  {
+    "id": "button-link-text",
+    "cssVar": "--pd-button-link-text",
+    "value": "#9f78ff"
+  },
+  {
+    "id": "button-link-hover-bg",
+    "cssVar": "--pd-button-link-hover-bg",
+    "value": "color(srgb 0.7803921568627451 0.7215686274509804 1 / 0.1)"
+  },
+  {
+    "id": "button-focus-ring",
+    "cssVar": "--pd-button-focus-ring",
+    "value": "#9f78ff"
+  },
+  {
+    "id": "button-focus-ring-danger",
+    "cssVar": "--pd-button-focus-ring-danger",
+    "value": "#f0561d"
+  },
+  {
+    "id": "button-help-link-text",
+    "cssVar": "--pd-button-help-link-text",
+    "value": "#f6f6f6"
+  },
+  {
+    "id": "action-button-text",
+    "cssVar": "--pd-action-button-text",
+    "value": "#d1d1d1"
+  },
+  {
+    "id": "action-button-bg",
+    "cssVar": "--pd-action-button-bg",
+    "value": "#0f0f11"
+  },
+  {
+    "id": "action-button-hover-bg",
+    "cssVar": "--pd-action-button-hover-bg",
+    "value": "transparent"
+  },
+  {
+    "id": "action-button-hover-text",
+    "cssVar": "--pd-action-button-hover-text",
+    "value": "#d1d1d1"
+  },
+  {
+    "id": "action-button-primary-text",
+    "cssVar": "--pd-action-button-primary-text",
+    "value": "#e7e7e7"
+  },
+  {
+    "id": "action-button-primary-hover-text",
+    "cssVar": "--pd-action-button-primary-hover-text",
+    "value": "#e7e7e7"
+  },
+  {
+    "id": "action-button-disabled-text",
+    "cssVar": "--pd-action-button-disabled-text",
+    "value": "#818181"
+  },
+  {
+    "id": "action-button-details-text",
+    "cssVar": "--pd-action-button-details-text",
+    "value": "#d1d1d1"
+  },
+  {
+    "id": "action-button-details-bg",
+    "cssVar": "--pd-action-button-details-bg",
+    "value": "#18181b"
+  },
+  {
+    "id": "action-button-details-hover-text",
+    "cssVar": "--pd-action-button-details-hover-text",
+    "value": "#d1d1d1"
+  },
+  {
+    "id": "action-button-details-disabled-text",
+    "cssVar": "--pd-action-button-details-disabled-text",
+    "value": "#818181"
+  },
+  {
+    "id": "action-button-details-disabled-bg",
+    "cssVar": "--pd-action-button-details-disabled-bg",
+    "value": "#18181b"
+  },
+  {
+    "id": "action-button-spinner",
+    "cssVar": "--pd-action-button-spinner",
+    "value": "#9f78ff"
+  },
+  {
+    "id": "tooltip-bg",
+    "cssVar": "--pd-tooltip-bg",
+    "value": "oklch(0.26899999999999996 0 0 / 0.8)"
+  },
+  {
+    "id": "tooltip-text",
+    "cssVar": "--pd-tooltip-text",
+    "value": "#fff"
+  },
+  {
+    "id": "tooltip-border",
+    "cssVar": "--pd-tooltip-border",
+    "value": "#36363d"
+  },
+  {
+    "id": "tooltip-inner-border",
+    "cssVar": "--pd-tooltip-inner-border",
+    "value": "color(srgb 1 1 1 / 0.33)"
+  },
+  {
+    "id": "tooltip-outer-border",
+    "cssVar": "--pd-tooltip-outer-border",
+    "value": "color(srgb 0 0 0 / 0.8)"
+  },
+  {
+    "id": "dropdown-bg",
+    "cssVar": "--pd-dropdown-bg",
+    "value": "#27272a"
+  },
+  {
+    "id": "select-bg",
+    "cssVar": "--pd-select-bg",
+    "value": "#18181b"
+  },
+  {
+    "id": "dropdown-ring",
+    "cssVar": "--pd-dropdown-ring",
+    "value": "#5b00c0"
+  },
+  {
+    "id": "dropdown-hover-ring",
+    "cssVar": "--pd-dropdown-hover-ring",
+    "value": "#7000ed"
+  },
+  {
+    "id": "dropdown-divider",
+    "cssVar": "--pd-dropdown-divider",
+    "value": "#27272a"
+  },
+  {
+    "id": "dropdown-item-text",
+    "cssVar": "--pd-dropdown-item-text",
+    "value": "#d1d1d1"
+  },
+  {
+    "id": "dropdown-item-hover-bg",
+    "cssVar": "--pd-dropdown-item-hover-bg",
+    "value": "transparent"
+  },
+  {
+    "id": "dropdown-item-hover-text",
+    "cssVar": "--pd-dropdown-item-hover-text",
+    "value": "#d1d1d1"
+  },
+  {
+    "id": "dropdown-disabled-item-text",
+    "cssVar": "--pd-dropdown-disabled-item-text",
+    "value": "#818181"
+  },
+  {
+    "id": "dropdown-disabled-item-bg",
+    "cssVar": "--pd-dropdown-disabled-item-bg",
+    "value": "#18181b"
+  },
+  {
+    "id": "modal-dropdown-highlight",
+    "cssVar": "--pd-modal-dropdown-highlight",
+    "value": "#450096"
+  },
+  {
+    "id": "modal-dropdown-text",
+    "cssVar": "--pd-modal-dropdown-text",
+    "value": "#fff"
+  },
+  {
+    "id": "input-select-hover-text",
+    "cssVar": "--pd-input-select-hover-text",
+    "value": "#818181"
+  },
+  {
+    "id": "dropdown-border",
+    "cssVar": "--pd-dropdown-border",
+    "value": "transparent"
+  },
+  {
+    "id": "label-bg",
+    "cssVar": "--pd-label-bg",
+    "value": "#36363d"
+  },
+  {
+    "id": "label-text",
+    "cssVar": "--pd-label-text",
+    "value": "#cccccc"
+  },
+  {
+    "id": "label-primary-bg",
+    "cssVar": "--pd-label-primary-bg",
+    "value": "#450096"
+  },
+  {
+    "id": "label-primary-text",
+    "cssVar": "--pd-label-primary-text",
+    "value": "#c7b8ff"
+  },
+  {
+    "id": "label-secondary-bg",
+    "cssVar": "--pd-label-secondary-bg",
+    "value": "#1b3f5f"
+  },
+  {
+    "id": "label-secondary-text",
+    "cssVar": "--pd-label-secondary-text",
+    "value": "#c4def3"
+  },
+  {
+    "id": "label-tertiary-bg",
+    "cssVar": "--pd-label-tertiary-bg",
+    "value": "#193b20"
+  },
+  {
+    "id": "label-tertiary-text",
+    "cssVar": "--pd-label-tertiary-text",
+    "value": "#bbdfbb"
+  },
+  {
+    "id": "label-quaternary-bg",
+    "cssVar": "--pd-label-quaternary-bg",
+    "value": "#92400e"
+  },
+  {
+    "id": "label-quaternary-text",
+    "cssVar": "--pd-label-quaternary-text",
+    "value": "#fbbf24"
+  },
+  {
+    "id": "status-running",
+    "cssVar": "--pd-status-running",
+    "value": "#87bb62"
+  },
+  {
+    "id": "status-terminated",
+    "cssVar": "--pd-status-terminated",
+    "value": "#f0561d"
+  },
+  {
+    "id": "status-waiting",
+    "cssVar": "--pd-status-waiting",
+    "value": "#d97706"
+  },
+  {
+    "id": "status-starting",
+    "cssVar": "--pd-status-starting",
+    "value": "#87bb62"
+  },
+  {
+    "id": "status-stopped",
+    "cssVar": "--pd-status-stopped",
+    "value": "#818181"
+  },
+  {
+    "id": "status-exited",
+    "cssVar": "--pd-status-exited",
+    "value": "#818181"
+  },
+  {
+    "id": "status-not-running",
+    "cssVar": "--pd-status-not-running",
+    "value": "#aaabac"
+  },
+  {
+    "id": "status-paused",
+    "cssVar": "--pd-status-paused",
+    "value": "#d97706"
+  },
+  {
+    "id": "status-degraded",
+    "cssVar": "--pd-status-degraded",
+    "value": "#b45309"
+  },
+  {
+    "id": "status-created",
+    "cssVar": "--pd-status-created",
+    "value": "#afdc8f"
+  },
+  {
+    "id": "status-dead",
+    "cssVar": "--pd-status-dead",
+    "value": "#f0561d"
+  },
+  {
+    "id": "status-unknown",
+    "cssVar": "--pd-status-unknown",
+    "value": "#f6f6f6"
+  },
+  {
+    "id": "status-connected",
+    "cssVar": "--pd-status-connected",
+    "value": "#63993d"
+  },
+  {
+    "id": "status-disconnected",
+    "cssVar": "--pd-status-disconnected",
+    "value": "#c8c8c8"
+  },
+  {
+    "id": "status-updated",
+    "cssVar": "--pd-status-updated",
+    "value": "#2f88c8"
+  },
+  {
+    "id": "status-ready",
+    "cssVar": "--pd-status-ready",
+    "value": "#818181"
+  },
+  {
+    "id": "status-running-bg",
+    "cssVar": "--pd-status-running-bg",
+    "value": "color(srgb 0.09803921568627451 0.23137254901960785 0.12549019607843137 / 0.2)"
+  },
+  {
+    "id": "status-stopped-bg",
+    "cssVar": "--pd-status-stopped-bg",
+    "value": "color(srgb 0.21176470588235294 0.21176470588235294 0.23921568627450981 / 0.2)"
+  },
+  {
+    "id": "status-terminated-bg",
+    "cssVar": "--pd-status-terminated-bg",
+    "value": "color(srgb 0.5176470588235295 0.17254901960784313 0.09411764705882353 / 0.2)"
+  },
+  {
+    "id": "status-starting-bg",
+    "cssVar": "--pd-status-starting-bg",
+    "value": "color(srgb 0.09803921568627451 0.23137254901960785 0.12549019607843137 / 0.2)"
+  },
+  {
+    "id": "status-unknown-bg",
+    "cssVar": "--pd-status-unknown-bg",
+    "value": "color(srgb 0.21176470588235294 0.21176470588235294 0.23921568627450981 / 0.2)"
+  },
+  {
+    "id": "status-contrast",
+    "cssVar": "--pd-status-contrast",
+    "value": "#fff"
+  },
+  {
+    "id": "statusbar-bg",
+    "cssVar": "--pd-statusbar-bg",
+    "value": "#000"
+  },
+  {
+    "id": "statusbar-hover-bg",
+    "cssVar": "--pd-statusbar-hover-bg",
+    "value": "#8e51ff"
+  },
+  {
+    "id": "statusbar-text",
+    "cssVar": "--pd-statusbar-text",
+    "value": "#fff"
+  },
+  {
+    "id": "onboarding-active-dot-bg",
+    "cssVar": "--pd-onboarding-active-dot-bg",
+    "value": "#9f78ff"
+  },
+  {
+    "id": "onboarding-active-dot-border",
+    "cssVar": "--pd-onboarding-active-dot-border",
+    "value": "#9f78ff"
+  },
+  {
+    "id": "onboarding-inactive-dot-bg",
+    "cssVar": "--pd-onboarding-inactive-dot-bg",
+    "value": "transparent"
+  },
+  {
+    "id": "onboarding-inactive-dot-border",
+    "cssVar": "--pd-onboarding-inactive-dot-border",
+    "value": "#aaabac"
+  },
+  {
+    "id": "state-success",
+    "cssVar": "--pd-state-success",
+    "value": "#87bb62"
+  },
+  {
+    "id": "state-warning",
+    "cssVar": "--pd-state-warning",
+    "value": "#f59e0b"
+  },
+  {
+    "id": "state-error",
+    "cssVar": "--pd-state-error",
+    "value": "#f0561d"
+  },
+  {
+    "id": "state-info",
+    "cssVar": "--pd-state-info",
+    "value": "#9f78ff"
+  },
+  {
+    "id": "severity-low",
+    "cssVar": "--pd-severity-low",
+    "value": "#c8c8c8"
+  },
+  {
+    "id": "severity-medium",
+    "cssVar": "--pd-severity-medium",
+    "value": "#9a9a9a"
+  },
+  {
+    "id": "files-hidden",
+    "cssVar": "--pd-files-hidden",
+    "value": "#f86847"
+  },
+  {
+    "id": "files-directory",
+    "cssVar": "--pd-files-directory",
+    "value": "#2f88c8"
+  },
+  {
+    "id": "files-symlink",
+    "cssVar": "--pd-files-symlink",
+    "value": "#90c3e9"
+  },
+  {
+    "id": "files-executable",
+    "cssVar": "--pd-files-executable",
+    "value": "#3c8d47"
+  },
+  {
+    "id": "terminal-foreground",
+    "cssVar": "--pd-terminal-foreground",
+    "value": "#fff"
+  },
+  {
+    "id": "terminal-background",
+    "cssVar": "--pd-terminal-background",
+    "value": "#000"
+  },
+  {
+    "id": "terminal-cursor",
+    "cssVar": "--pd-terminal-cursor",
+    "value": "#fff"
+  },
+  {
+    "id": "terminal-selectionBackground",
+    "cssVar": "--pd-terminal-selectionBackground",
+    "value": "#fff"
+  },
+  {
+    "id": "terminal-selectionForeground",
+    "cssVar": "--pd-terminal-selectionForeground",
+    "value": "#000"
+  },
+  {
+    "id": "terminal-ansiBlack",
+    "cssVar": "--pd-terminal-ansiBlack",
+    "value": "#000"
+  },
+  {
+    "id": "terminal-ansiRed",
+    "cssVar": "--pd-terminal-ansiRed",
+    "value": "#f86847"
+  },
+  {
+    "id": "terminal-ansiGreen",
+    "cssVar": "--pd-terminal-ansiGreen",
+    "value": "#3c8d47"
+  },
+  {
+    "id": "terminal-ansiYellow",
+    "cssVar": "--pd-terminal-ansiYellow",
+    "value": "#f59e0b"
+  },
+  {
+    "id": "terminal-ansiBlue",
+    "cssVar": "--pd-terminal-ansiBlue",
+    "value": "#2f88c8"
+  },
+  {
+    "id": "terminal-ansiMagenta",
+    "cssVar": "--pd-terminal-ansiMagenta",
+    "value": "#8b5cf6"
+  },
+  {
+    "id": "terminal-ansiCyan",
+    "cssVar": "--pd-terminal-ansiCyan",
+    "value": "#2f88c8"
+  },
+  {
+    "id": "terminal-ansiWhite",
+    "cssVar": "--pd-terminal-ansiWhite",
+    "value": "#fff"
+  },
+  {
+    "id": "terminal-ansiBrightBlack",
+    "cssVar": "--pd-terminal-ansiBrightBlack",
+    "value": "#c8c8c8"
+  },
+  {
+    "id": "terminal-ansiBrightRed",
+    "cssVar": "--pd-terminal-ansiBrightRed",
+    "value": "#e5421d"
+  },
+  {
+    "id": "terminal-ansiBrightGreen",
+    "cssVar": "--pd-terminal-ansiBrightGreen",
+    "value": "#2b7037"
+  },
+  {
+    "id": "terminal-ansiBrightYellow",
+    "cssVar": "--pd-terminal-ansiBrightYellow",
+    "value": "#d97706"
+  },
+  {
+    "id": "terminal-ansiBrightBlue",
+    "cssVar": "--pd-terminal-ansiBrightBlue",
+    "value": "#206ca9"
+  },
+  {
+    "id": "terminal-ansiBrightMagenta",
+    "cssVar": "--pd-terminal-ansiBrightMagenta",
+    "value": "#6d48bf"
+  },
+  {
+    "id": "terminal-ansiBrightCyan",
+    "cssVar": "--pd-terminal-ansiBrightCyan",
+    "value": "#206ca9"
+  },
+  {
+    "id": "terminal-ansiBrightWhite",
+    "cssVar": "--pd-terminal-ansiBrightWhite",
+    "value": "#fff"
+  },
+  {
+    "id": "progressBar-bg",
+    "cssVar": "--pd-progressBar-bg",
+    "value": "oklch(44.4% 0.011 73.639)"
+  },
+  {
+    "id": "progressBar-in-progress-bg",
+    "cssVar": "--pd-progressBar-in-progress-bg",
+    "value": "oklch(97% 0.001 106.424)"
+  },
+  {
+    "id": "progressBar-in-progress-border",
+    "cssVar": "--pd-progressBar-in-progress-border",
+    "value": "oklch(26.8% 0.007 34.298)"
+  },
+  {
+    "id": "progressBar-hc-line-bg",
+    "cssVar": "--pd-progressBar-hc-line-bg",
+    "value": "transparent"
+  },
+  {
+    "id": "progressBar-text",
+    "cssVar": "--pd-progressBar-text",
+    "value": "#9f78ff"
+  },
+  {
+    "id": "badge-builtin-extension-bg",
+    "cssVar": "--pd-badge-builtin-extension-bg",
+    "value": "#c4def3"
+  },
+  {
+    "id": "badge-text",
+    "cssVar": "--pd-badge-text",
+    "value": "#18181b"
+  },
+  {
+    "id": "badge-dd-extension-bg",
+    "cssVar": "--pd-badge-dd-extension-bg",
+    "value": "#206ca9"
+  },
+  {
+    "id": "badge-devmode-extension-bg",
+    "cssVar": "--pd-badge-devmode-extension-bg",
+    "value": "#8772c7"
+  },
+  {
+    "id": "badge-dd-extension-text",
+    "cssVar": "--pd-badge-dd-extension-text",
+    "value": "#fff"
+  },
+  {
+    "id": "badge-sky",
+    "cssVar": "--pd-badge-sky",
+    "value": "#2f88c8"
+  },
+  {
+    "id": "badge-purple",
+    "cssVar": "--pd-badge-purple",
+    "value": "#ad8bfa"
+  },
+  {
+    "id": "badge-fuchsia",
+    "cssVar": "--pd-badge-fuchsia",
+    "value": "#c200ff"
+  },
+  {
+    "id": "badge-fuschia",
+    "cssVar": "--pd-badge-fuschia",
+    "value": "#c200ff"
+  },
+  {
+    "id": "badge-gray",
+    "cssVar": "--pd-badge-gray",
+    "value": "#b4b4b4"
+  },
+  {
+    "id": "provider-podman",
+    "cssVar": "--pd-provider-podman",
+    "value": "#6d48bf"
+  },
+  {
+    "id": "provider-docker",
+    "cssVar": "--pd-provider-docker",
+    "value": "#51a2da"
+  },
+  {
+    "id": "provider-kubernetes",
+    "cssVar": "--pd-provider-kubernetes",
+    "value": "#206ca9"
+  },
+  {
+    "id": "provider-unknown",
+    "cssVar": "--pd-provider-unknown",
+    "value": "#818181"
+  },
+  {
+    "id": "toast-success-bg",
+    "cssVar": "--pd-toast-success-bg",
+    "value": "#2b7037"
+  },
+  {
+    "id": "toast-success-color",
+    "cssVar": "--pd-toast-success-color",
+    "value": "#fff"
+  },
+  {
+    "id": "toast-success-bar-bg",
+    "cssVar": "--pd-toast-success-bar-bg",
+    "value": "#1d4825"
+  },
+  {
+    "id": "toast-error-bg",
+    "cssVar": "--pd-toast-error-bg",
+    "value": "#e5421d"
+  },
+  {
+    "id": "toast-error-color",
+    "cssVar": "--pd-toast-error-color",
+    "value": "#fff"
+  },
+  {
+    "id": "toast-error-bar-bg",
+    "cssVar": "--pd-toast-error-bar-bg",
+    "value": "#9f2f15"
+  },
+  {
+    "id": "toast-warning-bg",
+    "cssVar": "--pd-toast-warning-bg",
+    "value": "#fbbf24"
+  },
+  {
+    "id": "toast-warning-color",
+    "cssVar": "--pd-toast-warning-color",
+    "value": "#0f0f11"
+  },
+  {
+    "id": "toast-warning-bar-bg",
+    "cssVar": "--pd-toast-warning-bar-bg",
+    "value": "#b45309"
+  },
+  {
+    "id": "toast-info-bg",
+    "cssVar": "--pd-toast-info-bg",
+    "value": "#9f78ff"
+  },
+  {
+    "id": "toast-info-color",
+    "cssVar": "--pd-toast-info-color",
+    "value": "#fff"
+  },
+  {
+    "id": "toast-info-bar-bg",
+    "cssVar": "--pd-toast-info-bar-bg",
+    "value": "#7000ed"
+  }
+]
