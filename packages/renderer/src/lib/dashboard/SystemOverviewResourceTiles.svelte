@@ -61,7 +61,7 @@ function navigateToPage(page: NavigationPage): void {
 <div class="grid grid-cols-5 gap-3">
     {#each tiles as tile (tile.label)}
       <button
-        class="flex flex-col gap-2 p-3 rounded-lg bg-[var(--pd-content-card-carousel-card-bg)] hover:bg-[var(--pd-content-card-carousel-card-hover-bg)] transition-colors cursor-pointer text-left"
+        class="flex flex-col gap-2 p-3 rounded-lg bg-[var(--pd-content-card-carousel-card-bg)] border border-transparent hover:border-[var(--pd-button-primary-bg)] hover:bg-[var(--pd-content-card-carousel-card-hover-bg)] transition-all cursor-pointer text-left"
         onclick={(): void => navigateToPage(tile.page)}
         aria-label="Navigate to {tile.label}">
         <div class="flex items-center gap-2 text-[var(--pd-content-text)]">
