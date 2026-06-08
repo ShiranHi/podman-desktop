@@ -150,6 +150,13 @@ import type { ExtensionBanner, RecommendedRegistry } from '@podman-desktop/core-
 import type { PinOption } from '@podman-desktop/core-api/status-bar';
 import { contextBridge, ipcRenderer } from 'electron';
 
+import {
+  clearPrototypeApiReturns,
+  getPrototypeApiReturn,
+  getPrototypeExperimentalConfigurationValue,
+  setPrototypeApiReturn,
+} from './prototype-api-overrides';
+
 export type OpenSaveDialogResultCallback = (result: string | string[] | undefined) => void;
 
 const originalConsole = console;
@@ -199,6 +206,12 @@ export function initExposure(): void {
   }
 
   contextBridge.exposeInMainWorld('events', apiSender);
+  contextBridge.exposeInMainWorld('setPrototypeApiReturn', (name: string, value: unknown | null): void => {
+    setPrototypeApiReturn(name, value);
+  });
+  contextBridge.exposeInMainWorld('clearPrototypeApiReturns', (): void => {
+    clearPrototypeApiReturns();
+  });
   ipcRenderer.on('api-sender', (_, channel, data) => {
     apiSender.send(channel, data);
   });
@@ -260,6 +273,10 @@ export function initExposure(): void {
   });
 
   contextBridge.exposeInMainWorld('getDashboardSystemOverviewStatus', async (): Promise<SystemOverviewStatusInfo> => {
+    const override = getPrototypeApiReturn<SystemOverviewStatusInfo>('getDashboardSystemOverviewStatus');
+    if (override) {
+      return override;
+    }
     return ipcInvoke('dashboard:getSystemOverviewStatus');
   });
 
@@ -1369,6 +1386,10 @@ export function initExposure(): void {
   );
 
   contextBridge.exposeInMainWorld('getStatusBarEntries', async (): Promise<StatusBarEntryDescriptor[]> => {
+    const override = getPrototypeApiReturn<StatusBarEntryDescriptor[]>('getStatusBarEntries');
+    if (override) {
+      return override;
+    }
     return ipcInvoke('status-bar:getStatusBarEntries');
   });
 
@@ -1400,6 +1421,10 @@ export function initExposure(): void {
   });
 
   contextBridge.exposeInMainWorld('getProviderInfos', async (): Promise<ProviderInfo[]> => {
+    const override = getPrototypeApiReturn<ProviderInfo[]>('getProviderInfos');
+    if (override) {
+      return override;
+    }
     return ipcInvoke('provider-registry:getProviderInfos');
   });
 
@@ -1633,6 +1658,10 @@ export function initExposure(): void {
       key: string,
       scope?: containerDesktopAPI.ConfigurationScope | containerDesktopAPI.ConfigurationScope[],
     ): Promise<boolean> => {
+      const override = getPrototypeExperimentalConfigurationValue(key);
+      if (override !== undefined) {
+        return override;
+      }
       return ipcInvoke('experimental-configuration-manager:isExperimentalConfigurationEnabled', key, scope);
     },
   );

@@ -26,6 +26,7 @@ import CreateContainerFromExistingImage from './lib/container/CreateContainerFro
 import ContextKey from './lib/context/ContextKey.svelte';
 import CronJobDetails from './lib/cronjob/CronJobDetails.svelte';
 import CronJobList from './lib/cronjob/CronJobList.svelte';
+import DashboardHealthPrototype from './lib/dashboard/DashboardHealthPrototype.svelte';
 import DashboardPage from './lib/dashboard/DashboardPage.svelte';
 import DeploymentDetails from './lib/deployments/DeploymentDetails.svelte';
 import DeploymentsList from './lib/deployments/DeploymentsList.svelte';
@@ -166,6 +167,7 @@ tablePersistence.storage = new PodmanDesktopStoragePersist();
   <main class="flex flex-col w-screen h-screen overflow-hidden">
     <IconsStyle />
     <Appearance />
+    <DashboardHealthPrototype />
     <TitleBar />
     <ContextKey />
 
