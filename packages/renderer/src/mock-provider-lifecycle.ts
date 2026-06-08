@@ -65,9 +65,17 @@ function computeSystemOverviewStatus(provider: RuntimeProviderState): SystemOver
   const hasStoppedConnections = connections.some(
     connection => connection.status === 'stopped' || connection.status === 'unknown',
   );
+  const hasWarnings = provider.warnings.length > 0;
 
-  if (hasStartedContainer && !hasStoppedConnections) {
+  if (hasStartedContainer && !hasStoppedConnections && !hasWarnings) {
     return { status: 'healthy', text: 'All systems operational' };
+  }
+
+  if (hasWarnings && !hasStoppedConnections) {
+    return {
+      status: 'stable',
+      text: provider.warnings.length === 1 ? '1 warning detected' : `${provider.warnings.length} warnings detected`,
+    };
   }
 
   if (hasStartedContainer && hasStoppedConnections) {
