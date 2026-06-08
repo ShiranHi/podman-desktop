@@ -19,7 +19,6 @@
 import type { ProviderInfo } from '@podman-desktop/core-api';
 
 import { getRuntimeProviderState } from '/@/mock-provider-lifecycle';
-import podmanIcon from '/@mock/podman-icon';
 
 const MOCK_PROVIDER_BASE = {
   id: 'podman',
@@ -30,7 +29,7 @@ const MOCK_PROVIDER_BASE = {
   vmConnections: [] as never[],
   lifecycleMethods: [],
   detectionChecks: [],
-  images: { icon: podmanIcon },
+  images: {},
   version: '5.4.0',
   links: [],
   installationSupport: false,
