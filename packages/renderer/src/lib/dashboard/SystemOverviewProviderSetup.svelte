@@ -55,7 +55,7 @@ async function handleClick(): Promise<void> {
     </div>
   {/snippet}
   {#snippet actions()}
-    <div class="pt-2 border-t border-[var(--pd-content-divider)]">
+    <div class="pt-2">
       <Button type={statusConfig.buttonType} onclick={handleClick} inProgress={startInProgress}>
         {statusConfig.buttonText}
       </Button>
