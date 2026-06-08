@@ -143,7 +143,19 @@ $effect(() => {
 
   if (changed) {
     // Sort by originalOrder AND clear any custom ordering to respect registry order for new items
-    dashboardSections = nextSections.toSorted((a, b) => a.originalOrder - b.originalOrder);
+    const sorted = nextSections.toSorted((a, b) => a.originalOrder - b.originalOrder);
+
+    // Check if System Overview exists and is in the wrong position
+    const systemOverviewIndex = sorted.findIndex(s => s.id === 'System Overview');
+    const exploreFeaturesIndex = sorted.findIndex(s => s.id === 'Explore Features');
+
+    // If System Overview appears after Explore Features, force correct order
+    if (systemOverviewIndex !== -1 && exploreFeaturesIndex !== -1 && systemOverviewIndex > exploreFeaturesIndex) {
+      console.log('Fixing System Overview position to be before Explore Features');
+      dashboardOrdering.clear();
+    }
+
+    dashboardSections = sorted;
     dashboardOrdering.clear();
     // Save the new configuration to persist the correct order
     saveDashboardConfiguration().catch((error: unknown) => {
