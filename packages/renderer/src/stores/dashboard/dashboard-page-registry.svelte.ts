@@ -43,8 +43,8 @@ function getDashboardPageRegistry(): DashboardPageRegistryEntry[] {
   const providers = !enhancedDashboard.enabled ? [createProviders()] : [];
   return [
     createReleaseNotesBox(),
-    ...systemOverview,
     createExtensionBanners(),
+    ...systemOverview,
     createExploreFeatures(),
     createLearningCenter(),
     ...providers,
