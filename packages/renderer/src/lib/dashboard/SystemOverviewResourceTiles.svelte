@@ -3,7 +3,7 @@ import { faBox, faDesktop, faDharmachakra, faFileImage, faLayerGroup } from '@fo
 import { Icon } from '@podman-desktop/ui-svelte/icons';
 
 import { containersInfos } from '/@/stores/containers';
-import { imagesList } from '/@/stores/images';
+import { imagesInfos } from '/@/stores/images';
 import { kubernetesContextsState } from '/@/stores/kubernetes-contexts-state';
 import { podsInfos } from '/@/stores/pods';
 import { providerInfos } from '/@/stores/providers';
@@ -20,7 +20,7 @@ let podStats = $derived.by(() => {
   return { running, total };
 });
 
-let imageCount = $derived($imagesList.length);
+let imageCount = $derived($imagesInfos.length);
 
 let machineStats = $derived.by(() => {
   const machines = $providerInfos.flatMap(p => p.containerConnections.filter(c => c.type === 'podman'));
