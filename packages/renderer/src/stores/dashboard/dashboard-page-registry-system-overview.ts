@@ -21,10 +21,10 @@ import SystemOverview from '/@/lib/dashboard/SystemOverview.svelte';
 import type { DashboardPageRegistryEntry } from './dashboard-page-registry.svelte';
 
 export function createSystemOverview(): DashboardPageRegistryEntry {
-  // order should be after Explore Features (3) and before Learning Center (4)
+  // order should be after Extension Banners (2) and before Explore Features (3)
   return {
     id: 'System Overview',
-    originalOrder: 3.5,
+    originalOrder: 2.5,
     component: SystemOverview,
   };
 }
