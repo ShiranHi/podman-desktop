@@ -16,8 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import { faCheckCircle, faXmarkCircle } from '@fortawesome/free-regular-svg-icons';
-import { faInfoCircle, type IconDefinition } from '@fortawesome/free-solid-svg-icons';
+import { faCheckCircle, faCircleInfo, faCircleXmark, type IconDefinition } from '@fortawesome/free-solid-svg-icons';
 import type { ProviderConnectionStatus } from '@podman-desktop/api';
 import type { ProviderConnectionInfo, SystemOverviewStatus } from '@podman-desktop/core-api';
 import { Spinner } from '@podman-desktop/ui-svelte';
@@ -40,9 +39,9 @@ export interface SystemOverviewStoreData {
 // Priority levels: critical (3) > progressing (2) > stable (1) > healthy (0)
 export const SYSTEM_OVERVIEW_STATUS: Record<SystemOverviewStatus, Status> = {
   healthy: { status: 'healthy', icon: faCheckCircle, priority: 0 },
-  stable: { status: 'stable', icon: faInfoCircle, priority: 1 },
+  stable: { status: 'stable', icon: faCircleInfo, priority: 1 },
   progressing: { status: 'progressing', icon: Spinner, priority: 2 },
-  critical: { status: 'critical', icon: faXmarkCircle, priority: 3 },
+  critical: { status: 'critical', icon: faCircleXmark, priority: 3 },
 };
 
 export function getSystemOverviewStatus(status: ProviderConnectionStatus, error?: string): Status {
