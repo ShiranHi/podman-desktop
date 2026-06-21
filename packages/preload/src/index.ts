@@ -1606,6 +1606,10 @@ export function initExposure(): void {
   contextBridge.exposeInMainWorld(
     'getAuthenticationProvidersInfo',
     async (): Promise<readonly AuthenticationProviderInfo[]> => {
+      const override = getPrototypeApiReturn<AuthenticationProviderInfo[]>('getAuthenticationProvidersInfo');
+      if (override !== undefined) {
+        return override;
+      }
       return ipcInvoke('authentication-provider-registry:getAuthenticationProvidersInfo');
     },
   );

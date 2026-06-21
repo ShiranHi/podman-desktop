@@ -46,17 +46,11 @@ describe('defaultSection', () => {
     await setupDashboardPageRegistry();
 
     await vi.waitFor(() => {
-      expect(dashboardPageRegistry.entries).toHaveLength(5);
+      expect(dashboardPageRegistry.entries).toHaveLength(4);
     });
 
     const sectionNames = dashboardPageRegistry.entries.map(entry => entry.id);
-    expect(sectionNames).toEqual([
-      'Release Notes',
-      'System Overview',
-      'Extension Banners',
-      'Explore Features',
-      'Learning Center',
-    ]);
+    expect(sectionNames).toEqual(['System Overview', 'Getting Started', 'Extension Banners', 'Learning Center']);
 
     expect(defaultSection.names).toEqual(sectionNames);
   });

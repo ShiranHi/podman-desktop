@@ -1,11 +1,6 @@
 <script lang="ts">
 import { faChevronRight } from '@fortawesome/free-solid-svg-icons';
-import {
-  NavigationPage,
-  type ProviderConnectionInfo,
-  type ProviderInfo,
-  type SystemOverviewStatus,
-} from '@podman-desktop/core-api';
+import { NavigationPage, type ProviderConnectionInfo, type ProviderInfo } from '@podman-desktop/core-api';
 import { Icon } from '@podman-desktop/ui-svelte/icons';
 import { router } from 'tinro';
 
@@ -13,14 +8,7 @@ import SystemOverviewConnectionIcon from '/@/lib/dashboard/SystemOverviewConnect
 import { handleNavigation } from '/@/navigation';
 import { getConnectionDisplayName, getSystemOverviewStatus } from '/@/stores/dashboard/system-overview.svelte';
 
-import { getConnectionStatusConfig, STATUS_TEXT_CLASS } from './system-overview-utils.svelte';
-
-const STATUS_DOT_CLASS: Record<SystemOverviewStatus, string> = {
-  healthy: 'bg-[var(--pd-status-running)]',
-  stable: 'bg-[var(--pd-status-stopped)]',
-  progressing: 'bg-[var(--pd-status-starting)]',
-  critical: 'bg-[var(--pd-status-terminated)]',
-};
+import { getConnectionStatusConfig, getStatusDotClass, getStatusTextClass } from './system-overview-utils.svelte';
 
 interface Props {
   connection: ProviderConnectionInfo;
@@ -101,7 +89,7 @@ function navigateToConnection(): void {
   aria-label="Open {connectionName}{stoppedSubtext ? `, ${statusConfig.label}, ${stoppedSubtext}` : `, ${statusConfig.label}`}">
   <div class="relative flex-shrink-0">
     <span
-      class="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full {STATUS_DOT_CLASS[connectionStatus.status]} z-10"
+      class="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full {getStatusDotClass(connectionStatus.status, connection.status)} z-10"
       aria-hidden="true"></span>
     <div
       class="w-8 h-8 flex items-center justify-center rounded-full bg-[var(--pd-content-card-carousel-card-bg)] border border-[var(--pd-content-divider)]">
@@ -113,7 +101,7 @@ function navigateToConnection(): void {
     <div class="text-sm font-medium text-[var(--pd-content-card-text)] truncate">{connectionName}</div>
     <div class="text-xs text-[var(--pd-content-text-sub)]">
       {#if stoppedSubtext}
-        <span class="{STATUS_TEXT_CLASS[connectionStatus.status]}">{statusConfig.label}</span>
+        <span class="{getStatusTextClass(connectionStatus.status, connection.status)}">{statusConfig.label}</span>
         <span aria-hidden="true"> · </span>
         {stoppedSubtext}
       {:else}
@@ -122,7 +110,7 @@ function navigateToConnection(): void {
     </div>
   </div>
 
-  <span class="text-sm shrink-0 {STATUS_TEXT_CLASS[connectionStatus.status]}" aria-label="Connection status">
+  <span class="text-sm shrink-0 {getStatusTextClass(connectionStatus.status, connection.status)}" aria-label="Connection status">
     {statusConfig.label}
   </span>
 

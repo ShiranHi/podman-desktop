@@ -40,6 +40,47 @@ export const STATUS_BG_CLASS: Record<SystemOverviewStatus, string> = {
   critical: 'bg-[var(--pd-status-terminated-bg)]',
 } as const;
 
+export const STATUS_DOT_CLASS: Record<SystemOverviewStatus, string> = {
+  healthy: 'bg-[var(--pd-status-running)]',
+  stable: 'bg-[var(--pd-status-stopped)]',
+  progressing: 'bg-[var(--pd-status-starting)]',
+  critical: 'bg-[var(--pd-status-terminated)]',
+} as const;
+
+function isStoppingStatus(
+  overviewStatus: SystemOverviewStatus,
+  providerConnectionStatus?: ProviderConnectionStatus,
+  displayText?: string,
+): boolean {
+  if (providerConnectionStatus === 'stopping') {
+    return true;
+  }
+  return overviewStatus === 'progressing' && displayText !== undefined && /stop/i.test(displayText);
+}
+
+/** Stopping uses stopped (gray) styling; starting keeps progressing (green). */
+export function getStatusTextClass(
+  overviewStatus: SystemOverviewStatus,
+  providerConnectionStatus?: ProviderConnectionStatus,
+  displayText?: string,
+): string {
+  if (isStoppingStatus(overviewStatus, providerConnectionStatus, displayText)) {
+    return STATUS_TEXT_CLASS.stable;
+  }
+  return STATUS_TEXT_CLASS[overviewStatus];
+}
+
+export function getStatusDotClass(
+  overviewStatus: SystemOverviewStatus,
+  providerConnectionStatus?: ProviderConnectionStatus,
+  displayText?: string,
+): string {
+  if (isStoppingStatus(overviewStatus, providerConnectionStatus, displayText)) {
+    return STATUS_DOT_CLASS.stable;
+  }
+  return STATUS_DOT_CLASS[overviewStatus];
+}
+
 export const WARNING_TEXT_CLASS = 'text-[var(--pd-state-warning)]';
 export const WARNING_BG_CLASS = 'bg-[var(--pd-state-warning-bg,var(--pd-status-starting-bg))]';
 

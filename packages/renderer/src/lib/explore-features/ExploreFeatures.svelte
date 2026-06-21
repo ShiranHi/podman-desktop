@@ -3,32 +3,32 @@ import type { ExploreFeature } from '@podman-desktop/core-api';
 import { Carousel, Expandable } from '@podman-desktop/ui-svelte';
 import { onMount } from 'svelte';
 
-import { ContextKeyExpr } from '/@/lib/context/contextKey';
+import { isLocalContainerEngineHealthy } from '/@/lib/dashboard/dashboard-discovery-utils.svelte';
 import { ExpandableState } from '/@/lib/ui/expandable-state.svelte';
 import { context } from '/@/stores/context';
+import { enhancedDashboardEnabled } from '/@/stores/dashboard/dashboard-page-registry.svelte';
+import { systemOverviewInfos } from '/@/stores/dashboard/system-overview.svelte';
 import { exploreFeaturesInfo } from '/@/stores/explore-features';
 
+import { filterExploreFeatures } from './explore-features-utils';
 import ExploreFeatureCard from './ExploreFeatureCard.svelte';
 
+let isDiscoveryVisible = $derived(
+  !enhancedDashboardEnabled.enabled || isLocalContainerEngineHealthy($systemOverviewInfos.status.status),
+);
+
 let features: ExploreFeature[] = $derived(
-  $exploreFeaturesInfo.filter(feature => {
-    if (feature.when) {
-      const whenDeserialized = ContextKeyExpr.deserialize(feature.when);
-      return whenDeserialized?.evaluate($context) && (feature.show ?? true);
-    }
-    return feature.show ?? true;
-  }),
+  filterExploreFeatures($exploreFeaturesInfo, $context, enhancedDashboardEnabled.enabled),
 );
 
 const expandableState = new ExpandableState('exploreFeatures.expanded');
 
 onMount(() => {
-  // event for the exploreFeaturesInfo store to check for an update
   window.dispatchEvent(new CustomEvent('update-explore-features', {}));
 });
 
 function featureClosed(featureId: string): void {
-  features = features.filter(feature => feature.id !== featureId);
+  exploreFeaturesInfo.update(current => current.filter(feature => feature.id !== featureId));
 }
 </script>
 
@@ -36,7 +36,7 @@ function featureClosed(featureId: string): void {
   <ExploreFeatureCard feature={feature} closeFeature={featureClosed} />
 {/snippet}
 
-{#if features.length > 0}
+{#if isDiscoveryVisible && features.length > 0}
   <div class="flex flex-1 flex-col bg-[var(--pd-content-card-bg)] p-5 rounded-lg">
     <Expandable bind:initialized={expandableState.initialized} bind:expanded={expandableState.expanded} onclick={expandableState.toggle.bind(expandableState)}>
       <!-- eslint-disable-next-line sonarjs/no-unused-vars -->

@@ -7,13 +7,15 @@ import SystemOverviewContent from '/@/lib/dashboard/SystemOverviewContent.svelte
 import { ExpandableState } from '/@/lib/ui/expandable-state.svelte';
 import { systemOverviewInfos } from '/@/stores/dashboard/system-overview.svelte';
 
-import { getSystemOverviewDisplayText, STATUS_TEXT_CLASS } from './system-overview-utils.svelte';
+import { getStatusTextClass, getSystemOverviewDisplayText } from './system-overview-utils.svelte';
 
 const expandableState = new ExpandableState(SYSTEM_OVERVIEW_EXPANDED);
 
 let statusDisplayText = $derived(
   getSystemOverviewDisplayText($systemOverviewInfos.status.status, $systemOverviewInfos.text),
 );
+
+let statusTextClass = $derived(getStatusTextClass($systemOverviewInfos.status.status, undefined, statusDisplayText));
 
 let tooltipText = $derived.by(() => {
   const status = $systemOverviewInfos.status.status;
@@ -54,11 +56,11 @@ let tooltipText = $derived.by(() => {
             aria-label="System status: {$systemOverviewInfos.text}">
             {#key $systemOverviewInfos.status.status}
               <Icon
-                class="shrink-0 {STATUS_TEXT_CLASS[$systemOverviewInfos.status.status]}"
+                class="shrink-0 {statusTextClass}"
                 icon={$systemOverviewInfos.status.icon}
                 size={$systemOverviewInfos.status.status === 'progressing' ? '1.25em' : 'sm'} />
             {/key}
-            <span class="text-lg font-semibold shrink-0 {STATUS_TEXT_CLASS[$systemOverviewInfos.status.status]}">
+            <span class="text-lg font-semibold shrink-0 {statusTextClass}">
               {statusDisplayText}
             </span>
           </span>

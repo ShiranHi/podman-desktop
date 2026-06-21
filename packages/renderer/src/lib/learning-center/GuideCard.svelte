@@ -6,11 +6,14 @@ interface Props {
   guide: Guide;
   width?: number;
   height?: number;
+  isNew?: boolean;
+  onViewed?: () => void | Promise<void>;
 }
 
-let { guide, width = 300, height = 300 }: Props = $props();
+let { guide, width = 300, height = 300, isNew = false, onViewed }: Props = $props();
 
 async function openGuide(guide: Guide): Promise<void> {
+  await onViewed?.();
   await window.telemetryTrack('openLearningCenterGuide', {
     guideId: guide.id,
   });
@@ -19,7 +22,12 @@ async function openGuide(guide: Guide): Promise<void> {
 </script>
 
 <div
-  class="flex flex-col flex-1 bg-[var(--pd-content-card-carousel-card-bg)] pb-4 rounded-lg hover:bg-[var(--pd-content-card-carousel-card-hover-bg)] min-w-[{width}px] min-h-[{height}px]">
+  class="flex flex-col flex-1 relative bg-[var(--pd-content-card-carousel-card-bg)] pb-4 rounded-lg hover:bg-[var(--pd-content-card-carousel-card-hover-bg)] min-w-[{width}px] min-h-[{height}px]">
+  {#if isNew}
+    <div
+      aria-label="New guide"
+      class="absolute top-3 right-3 w-[6px] h-[6px] bg-[var(--pd-notification-dot)] rounded-full"></div>
+  {/if}
   <div class="pt-4 flex flex-col">
     <div class="px-4">
       <img src={`data:image/png;base64,${guide.icon}`} class="h-[48px]" alt={guide.id} />

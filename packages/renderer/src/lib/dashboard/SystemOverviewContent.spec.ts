@@ -90,9 +90,9 @@ beforeEach(() => {
   providerInfos.set([]);
 });
 
-test('should render Resource Overview and Connections headings', async () => {
+test('should render Resources and Connections headings', async () => {
   render(SystemOverviewContent);
-  await vi.waitFor(() => expect(screen.getByText('Resource Overview')).toBeInTheDocument());
+  await vi.waitFor(() => expect(screen.getByText('Resources')).toBeInTheDocument());
   expect(screen.getByText('Connections')).toBeInTheDocument();
 });
 
@@ -105,7 +105,7 @@ describe('resource overview navigation', () => {
 
   test('should navigate to Pods when Pods tile is clicked', async () => {
     render(SystemOverviewContent);
-    await fireEvent.click(screen.getByRole('button', { name: /View Pods:/i }));
+    await fireEvent.click(screen.getByRole('button', { name: /View Pods/i }));
     expect(router.goto).toHaveBeenCalledWith('/pods');
   });
 
@@ -115,10 +115,10 @@ describe('resource overview navigation', () => {
     expect(router.goto).toHaveBeenCalledWith('/images');
   });
 
-  test('should navigate to Kubernetes Pods when Kubernetes Pods tile is clicked', async () => {
+  test('should navigate to Resources when Manage Resources is clicked', async () => {
     render(SystemOverviewContent);
-    await fireEvent.click(screen.getByRole('button', { name: /View Kubernetes Pods/i }));
-    expect(router.goto).toHaveBeenCalledWith('/kubernetes/pods');
+    await fireEvent.click(screen.getByRole('button', { name: /Manage Resources/i }));
+    expect(router.goto).toHaveBeenCalledWith('/preferences/resources');
   });
 });
 
@@ -150,7 +150,7 @@ describe('provider rendering', () => {
 });
 
 describe('standalone connections section', () => {
-  test('should render Other Connections heading when standalone connections exist', async () => {
+  test('should render standalone connection cards when standalone connections exist', async () => {
     const provider: ProviderInfo = {
       ...baseProvider,
       kubernetesConnections: [kubernetesConnection],
@@ -158,7 +158,7 @@ describe('standalone connections section', () => {
     providerInfos.set([provider]);
     render(SystemOverviewContent);
 
-    await vi.waitFor(() => expect(screen.getByText('Other Connections')).toBeInTheDocument());
+    await vi.waitFor(() => expect(screen.getByText('Connections')).toBeInTheDocument());
   });
 
   test('should nest kubernetes under the sole container connection before containers load', async () => {

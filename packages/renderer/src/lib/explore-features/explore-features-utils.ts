@@ -16,14 +16,26 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import SystemOverview from '/@/lib/dashboard/SystemOverview.svelte';
+import type { ExploreFeature } from '@podman-desktop/core-api';
 
-import type { DashboardPageRegistryEntry } from './dashboard-page-registry.svelte';
+import type { ContextUI } from '/@/lib/context/context';
+import { ContextKeyExpr } from '/@/lib/context/contextKey';
 
-export function createSystemOverview(): DashboardPageRegistryEntry {
-  return {
-    id: 'System Overview',
-    originalOrder: 0,
-    component: SystemOverview,
-  };
+const runningEngineWhen = ContextKeyExpr.deserialize('runningContainerConnections > 0');
+
+export function filterExploreFeatures(
+  features: ExploreFeature[],
+  context: ContextUI,
+  enhanced: boolean,
+): ExploreFeature[] {
+  return features.filter(feature => {
+    if (enhanced && !runningEngineWhen?.evaluate(context)) {
+      return false;
+    }
+    if (feature.when) {
+      const whenDeserialized = ContextKeyExpr.deserialize(feature.when);
+      return whenDeserialized?.evaluate(context) && (feature.show ?? true);
+    }
+    return feature.show ?? true;
+  });
 }

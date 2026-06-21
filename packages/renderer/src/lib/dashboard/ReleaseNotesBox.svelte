@@ -8,6 +8,12 @@ import Markdown from '/@/lib/markdown/Markdown.svelte';
 import { onDidChangeConfiguration } from '/@/stores/configurationProperties';
 import { updateAvailable } from '/@/stores/update-store';
 
+interface Props {
+  onDismissed?: () => void;
+}
+
+let { onDismissed }: Props = $props();
+
 let showBanner = $state(false);
 let notesAvailable = $state(false);
 let notesURL: string | undefined = $state();
@@ -46,6 +52,7 @@ async function getInfoFromNotes(): Promise<void> {
 async function onClose(): Promise<void> {
   await window.updateConfigurationValue(`releaseNotesBanner.show`, currentVersion);
   showBanner = false;
+  onDismissed?.();
 }
 
 onMount(async () => {

@@ -15,9 +15,9 @@ import { getConnectionDisplayName, getSystemOverviewStatus } from '/@/stores/das
 
 import {
   getConnectionStatusConfig,
+  getStatusTextClass,
   hasStartLifecycle,
   startConnection,
-  STATUS_TEXT_CLASS,
 } from './system-overview-utils.svelte';
 
 export type ChildConnection = {
@@ -100,7 +100,7 @@ async function handleActionButtonClick(): Promise<void> {
 <SystemOverviewProviderCardBase {provider} {connection} name={displayName} version={provider.version} {vmType}>
   {#snippet subtitle()}
     <div class="flex items-center gap-1.5 mt-0.5">
-      <span class="text-sm {STATUS_TEXT_CLASS[connectionStatus.status]}" aria-label="Connection status"
+      <span class="text-sm {getStatusTextClass(connectionStatus.status, connection.status)}" aria-label="Connection status"
         >{statusConfig.label}</span>
       {#if connectionStatus.status === 'stable'}
         <div class="text-sm text-[var(--pd-content-text-sub)]">

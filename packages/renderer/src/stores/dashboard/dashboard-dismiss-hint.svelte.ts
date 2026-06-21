@@ -1,5 +1,5 @@
 /**********************************************************************
- * Copyright (C) 2025 Red Hat, Inc.
+ * Copyright (C) 2026 Red Hat, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,18 +14,19 @@
  * limitations under the License.
  *
  * SPDX-License-Identifier: Apache-2.0
- ***********************************************************************/
+ *********************************************************************/
 
-import LearningCenter from '/@/lib/learning-center/LearningCenter.svelte';
+export const dashboardDismissHint = $state({
+  showConfigureSectionsTooltip: false,
+  sectionName: '',
+});
 
-import type { DashboardPageRegistryEntry } from './dashboard-page-registry.svelte';
+export function showDashboardRestoreHint(sectionName: string): void {
+  dashboardDismissHint.showConfigureSectionsTooltip = true;
+  dashboardDismissHint.sectionName = sectionName;
+}
 
-export const LEARNING_CENTER_SECTION_ID = 'Learning Center';
-
-export function createLearningCenter(): DashboardPageRegistryEntry {
-  return {
-    id: LEARNING_CENTER_SECTION_ID,
-    originalOrder: 4,
-    component: LearningCenter,
-  };
+export function clearDashboardRestoreHint(): void {
+  dashboardDismissHint.showConfigureSectionsTooltip = false;
+  dashboardDismissHint.sectionName = '';
 }

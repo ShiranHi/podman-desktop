@@ -1,12 +1,8 @@
 <script lang="ts">
-import {
-  NavigationPage,
-  type ProviderConnectionInfo,
-  type ProviderInfo,
-  type SystemOverviewStatus,
-} from '@podman-desktop/core-api';
+import { NavigationPage, type ProviderConnectionInfo, type ProviderInfo } from '@podman-desktop/core-api';
 import { Button } from '@podman-desktop/ui-svelte';
 
+import { getStatusDotClass } from '/@/lib/dashboard/system-overview-utils.svelte';
 import SystemOverviewConnectionIcon from '/@/lib/dashboard/SystemOverviewConnectionIcon.svelte';
 import { handleNavigation } from '/@/navigation';
 import {
@@ -14,13 +10,6 @@ import {
   getSystemOverviewStatus,
   SYSTEM_OVERVIEW_STATUS,
 } from '/@/stores/dashboard/system-overview.svelte';
-
-const STATUS_DOT_CLASS: Record<SystemOverviewStatus, string> = {
-  healthy: 'bg-[var(--pd-status-running)]',
-  stable: 'bg-[var(--pd-content-divider)]',
-  progressing: 'bg-[var(--pd-status-starting)]',
-  critical: 'bg-[var(--pd-status-terminated)]',
-};
 
 interface Props {
   connection?: ProviderConnectionInfo;
@@ -74,7 +63,7 @@ function navigateToConnection(): void {
 </script>
 
 <div class="relative flex-shrink-0 inline-flex">
-  <span class="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full {STATUS_DOT_CLASS[connectionStatus.status]} z-10"></span>
+  <span class="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full {getStatusDotClass(connectionStatus.status, connection?.status)} z-10"></span>
 
   {#if expanded}
     <Button type="secondary" onclick={navigateToConnection} title="Navigate to {connectionName}" aria-label="Navigate to {connectionName}" padding="px-2 py-[3px]">

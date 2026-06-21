@@ -7,6 +7,7 @@ import {
 import { onMount } from 'svelte';
 import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 
+import { getConnectionSortPriority } from '/@/lib/dashboard/system-overview-utils.svelte';
 import SystemOverviewProviderCardCompact from '/@/lib/dashboard/SystemOverviewProviderCardCompact.svelte';
 import SystemOverviewProviderCardDetailed from '/@/lib/dashboard/SystemOverviewProviderCardDetailed.svelte';
 import SystemOverviewProviderSetup from '/@/lib/dashboard/SystemOverviewProviderSetup.svelte';
@@ -130,25 +131,51 @@ let providersNeedingSetup = $derived(
         !p.vmConnections.length),
   ),
 );
+
+type ConnectionWithProvider = { connection: ProviderConnectionInfo; provider: ProviderInfo };
+
+function sortByRemediationPriority<T extends ConnectionWithProvider>(items: T[]): T[] {
+  return [...items].sort((a, b) => {
+    const aPriority = getConnectionSortPriority(
+      a.connection.status,
+      a.connection.error,
+      a.provider.warnings.length > 0,
+    );
+    const bPriority = getConnectionSortPriority(
+      b.connection.status,
+      b.connection.error,
+      b.provider.warnings.length > 0,
+    );
+    if (aPriority !== bPriority) {
+      return aPriority - bPriority;
+    }
+    return `${a.provider.id}:${a.connection.name}`.localeCompare(`${b.provider.id}:${b.connection.name}`);
+  });
+}
+
+let sortedContainerConnectionsWithChildren = $derived(sortByRemediationPriority(containerConnectionsWithChildren));
+
+let sortedStandaloneConnections = $derived(sortByRemediationPriority(standaloneConnections));
 </script>
 
-<div class="pt-2 flex flex-col gap-4" aria-label="System Overview">
+<div class="flex flex-col gap-4 pt-2" aria-label="System Overview">
   <SystemOverviewResourceTiles />
 
-  <div class="flex flex-col gap-2">
+  <div class="flex flex-col gap-2 pt-4">
+    <div class="text-lg font-semibold text-[var(--pd-content-card-header-text)]">Connections</div>
     {#each providersNeedingSetup as provider (provider.id)}
       <SystemOverviewProviderSetup {provider} />
     {/each}
 
     <!-- Container providers as detailed cards (started, error, or progressing) -->
-    {#each containerConnectionsWithChildren as { connection, provider, childConnections } (provider.id + ':' + connection.name)}
+    {#each sortedContainerConnectionsWithChildren as { connection, provider, childConnections } (provider.id + ':' + connection.name)}
       <SystemOverviewProviderCardDetailed {connection} {provider} {childConnections} />
     {/each}
 
     <!-- Standalone K8s/VM connections as stacked minimal cards -->
-    {#if standaloneConnections.length > 0}
+    {#if sortedStandaloneConnections.length > 0}
       <div class="flex flex-wrap items-center gap-2">
-        {#each standaloneConnections as { connection, provider } (provider.id + ':' + connection.name)}
+        {#each sortedStandaloneConnections as { connection, provider } (provider.id + ':' + connection.name)}
           <SystemOverviewProviderCardCompact {connection} {provider} />
         {/each}
       </div>

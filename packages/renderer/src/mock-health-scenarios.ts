@@ -20,23 +20,35 @@ import type { StatusBarEntryDescriptor, SystemOverviewStatusInfo } from '@podman
 
 export type HealthScenario =
   | 'healthy'
-  | 'warning'
-  | 'stopped-machine'
-  | 'stopped-k8s'
   | 'starting'
+  | 'configuring'
+  | 'stopping'
   | 'critical'
-  | 'multiple-issues'
-  | 'not-configured';
+  | 'stopped-machine'
+  | 'not-configured'
+  | 'multiple-issues';
+
+/** Health previews shown in the dashboard prototype switcher (doc-aligned transitional states). */
+export const DASHBOARD_PROTOTYPE_HEALTH_SCENARIOS: HealthScenario[] = [
+  'healthy',
+  'starting',
+  'configuring',
+  'stopping',
+  'critical',
+  'stopped-machine',
+  'not-configured',
+  'multiple-issues',
+];
 
 export const HEALTH_SCENARIO_LABELS: Record<HealthScenario, string> = {
-  healthy: 'Healthy — all systems operational',
-  warning: 'Warning — high memory usage',
-  'stopped-machine': 'Info — machine stopped',
-  'stopped-k8s': 'Info — Kubernetes cluster stopped',
-  starting: 'Info — machine starting',
-  critical: 'Critical — connection error',
-  'multiple-issues': 'Critical — multiple errors',
-  'not-configured': 'Info — no machine configured',
+  healthy: 'Healthy',
+  starting: 'Starting',
+  configuring: 'Configuring',
+  stopping: 'Stopping',
+  critical: 'Error',
+  'stopped-machine': 'Stopped',
+  'not-configured': 'Not configured',
+  'multiple-issues': 'Multiple errors',
 };
 
 const SCENARIO_QUERY_KEY = 'scenario';
@@ -81,7 +93,15 @@ export interface HealthScenarioData {
   statusBarEntries: StatusBarEntryDescriptor[];
   composeExtensionEnabled: boolean;
   provider: {
-    status: 'started' | 'configured' | 'installed' | 'not-installed' | 'starting' | 'stopping' | 'error';
+    status:
+      | 'started'
+      | 'configured'
+      | 'installed'
+      | 'not-installed'
+      | 'starting'
+      | 'stopping'
+      | 'configuring'
+      | 'error';
     containerConnections: MockConnectionTemplate[];
     kubernetesConnections: MockConnectionTemplate[];
     warnings: Array<{ name: string; details?: string }>;
@@ -129,21 +149,6 @@ export function createMockK8sConnection(
 
 export function buildHealthScenarioData(scenario: HealthScenario): HealthScenarioData {
   switch (scenario) {
-    case 'warning':
-      return {
-        systemOverviewStatus: { status: 'healthy', text: 'All systems operational' },
-        statusBarEntries: [],
-        composeExtensionEnabled: true,
-        provider: {
-          status: 'started',
-          containerConnections: [createMockContainerConnection('started')],
-          kubernetesConnections: [createMockK8sConnection('started')],
-          warnings: [
-            { name: 'High memory', details: 'Memory usage is above 85%. Consider increasing machine limits.' },
-          ],
-          canStart: true,
-        },
-      };
     case 'stopped-machine':
       return {
         systemOverviewStatus: { status: 'stable', text: 'Some systems are stopped' },
@@ -157,15 +162,28 @@ export function buildHealthScenarioData(scenario: HealthScenario): HealthScenari
           canStart: true,
         },
       };
-    case 'stopped-k8s':
+    case 'configuring':
       return {
-        systemOverviewStatus: { status: 'stable', text: 'Some systems are stopped' },
+        systemOverviewStatus: { status: 'progressing', text: 'Initializing...' },
+        statusBarEntries: [],
+        composeExtensionEnabled: false,
+        provider: {
+          status: 'configuring',
+          containerConnections: [],
+          kubernetesConnections: [],
+          warnings: [],
+          canStart: false,
+        },
+      };
+    case 'stopping':
+      return {
+        systemOverviewStatus: { status: 'progressing', text: 'Stopping...' },
         statusBarEntries: [],
         composeExtensionEnabled: true,
         provider: {
-          status: 'started',
-          containerConnections: [createMockContainerConnection('started')],
-          kubernetesConnections: [createMockK8sConnection('stopped')],
+          status: 'stopping',
+          containerConnections: [createMockContainerConnection('stopping')],
+          kubernetesConnections: [],
           warnings: [],
           canStart: true,
         },

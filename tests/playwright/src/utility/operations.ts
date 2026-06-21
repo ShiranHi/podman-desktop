@@ -619,13 +619,19 @@ export async function setStatusBarProvidersFeature(
 
 export async function setEnhancedDashboardFeature(
   page: Page,
-  navigationBar: NavigationBar,
+  _navigationBar: NavigationBar,
   enable: boolean,
 ): Promise<void> {
-  await navigationBar.openSettings();
-  const settingsBar = new SettingsBar(page);
-  const experimentalPage = await settingsBar.openTabPage(ExperimentalPage);
-  await experimentalPage.setExperimentalCheckbox(experimentalPage.enhancedDashboardCheckbox, enable);
+  if (enable) {
+    const prototypeSelector = page.getByLabel('Prototype screen selector');
+    await prototypeSelector.click();
+    await page.getByRole('option', { name: 'Enhanced dashboard', exact: true }).click();
+    return;
+  }
+
+  const prototypeSelector = page.getByLabel('Prototype screen selector');
+  await prototypeSelector.click();
+  await page.getByRole('option', { name: 'Current dashboard', exact: true }).click();
 }
 
 export async function readFileInVolumeFromCLI(volumeName: string, fileName: string): Promise<string> {

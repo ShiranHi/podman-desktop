@@ -1,5 +1,5 @@
 /**********************************************************************
- * Copyright (C) 2025 Red Hat, Inc.
+ * Copyright (C) 2026 Red Hat, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,12 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import LearningCenter from '/@/lib/learning-center/LearningCenter.svelte';
+import { expect, test } from 'vitest';
 
-import type { DashboardPageRegistryEntry } from './dashboard-page-registry.svelte';
+import { getDashboardConfigureSectionsTooltip } from './dashboard-restore-utils';
 
-export const LEARNING_CENTER_SECTION_ID = 'Learning Center';
+test('getDashboardConfigureSectionsTooltip includes restore instructions', () => {
+  const tooltip = getDashboardConfigureSectionsTooltip('Getting Started');
 
-export function createLearningCenter(): DashboardPageRegistryEntry {
-  return {
-    id: LEARNING_CENTER_SECTION_ID,
-    originalOrder: 4,
-    component: LearningCenter,
-  };
-}
+  expect(tooltip).toBe('Getting Started was hidden. Use the pencil icon to show it again.');
+});

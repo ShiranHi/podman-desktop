@@ -137,6 +137,7 @@ test('should register a configuration', () => {
   expect(Object.keys(configurationNode?.properties ?? {}).length).toBe(2);
   expect(configurationNode?.properties?.[ENHANCED_DASHBOARD_CONFIGURATION_KEY]).toBeDefined();
   expect(configurationNode?.properties?.[ENHANCED_DASHBOARD_CONFIGURATION_KEY]?.type).toBe('object');
+  expect(configurationNode?.properties?.[ENHANCED_DASHBOARD_CONFIGURATION_KEY]?.hidden).toBe(true);
   expect(configurationNode?.properties?.[ENHANCED_DASHBOARD_CONFIGURATION_KEY]?.description).toBe(
     'Enhanced dashboard with more features and improved user experience',
   );

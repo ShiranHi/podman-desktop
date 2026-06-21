@@ -34,6 +34,11 @@ export class LearningCenterInit {
           default: true,
           hidden: true,
         },
+        ['learningCenter.viewedGuideIds']: {
+          type: 'array',
+          default: [],
+          hidden: true,
+        },
       },
     };
 

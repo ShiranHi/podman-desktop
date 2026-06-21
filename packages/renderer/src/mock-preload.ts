@@ -458,6 +458,27 @@ const MOCK_EXPLORE_FEATURES = [
   },
 ];
 
+const prototypeApiReturns = new Map<string, unknown>();
+
+(window as any).setPrototypeApiReturn = (name: string, value: unknown | null): void => {
+  if (value === null) {
+    prototypeApiReturns.delete(name);
+    return;
+  }
+  prototypeApiReturns.set(name, value);
+};
+
+(window as any).clearPrototypeApiReturns = (): void => {
+  prototypeApiReturns.clear();
+};
+
+function getPrototypeApiReturn<T>(name: string): T | undefined {
+  if (!prototypeApiReturns.has(name)) {
+    return undefined;
+  }
+  return prototypeApiReturns.get(name) as T;
+}
+
 const MOCK_RELEASE_NOTES = {
   notes: {
     title: 'Podman Desktop 1.28.0',
@@ -1523,9 +1544,6 @@ function notifyVolumeListChanged(): void {
   if (key === 'exploreFeatures.expanded') return true;
   if (key === 'releaseNotesBanner.show') return '1.27.0';
   if (key in MOCK_RESOURCE_CONFIG_VALUES) {
-    if (activeHealthScenario === 'warning' && key === 'podman.machine.memoryUsage') {
-      return 88;
-    }
     return MOCK_RESOURCE_CONFIG_VALUES[key];
   }
   return undefined;
@@ -1752,7 +1770,13 @@ function findMockPod(podId: string) {
 (window as any).getImageRegistryProviderNames = async () => [];
 (window as any).getCommandPaletteCommands = async () => [];
 (window as any).getCommandPaletteSearchOptions = async () => [];
-(window as any).getAuthenticationProvidersInfo = async () => [];
+(window as any).getAuthenticationProvidersInfo = async () => {
+  const override = getPrototypeApiReturn<unknown[]>('getAuthenticationProvidersInfo');
+  if (override !== undefined) {
+    return override;
+  }
+  return [];
+};
 (window as any).getImageCheckerProviders = async () => [];
 (window as any).getImageFilesProviders = async () => [];
 (window as any).getKubeGeneratorsInfos = async () => [];

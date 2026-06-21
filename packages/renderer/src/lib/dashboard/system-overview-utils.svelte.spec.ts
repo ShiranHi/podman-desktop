@@ -25,6 +25,8 @@ import {
   getConnectionSortPriority,
   getConnectionStatusConfig,
   getContainerConnectionEngineId,
+  getStatusDotClass,
+  getStatusTextClass,
   getSystemOverviewDisplayText,
   hasStartLifecycle,
   resolveKubernetesOwnerEngineId,
@@ -324,5 +326,22 @@ describe('getSystemOverviewDisplayText', () => {
     expect(getSystemOverviewDisplayText('progressing', 'Starting')).toBe('Starting');
     expect(getSystemOverviewDisplayText('progressing', 'Stopping')).toBe('Stopping');
     expect(getSystemOverviewDisplayText('healthy', 'All systems operational')).toBe('All systems operational');
+  });
+});
+
+describe('getStatusTextClass', () => {
+  test('should use starting color for starting and stopped color for stopping', () => {
+    expect(getStatusTextClass('progressing', undefined, 'Starting')).toBe(STATUS_TEXT_CLASS.progressing);
+    expect(getStatusTextClass('progressing', undefined, 'Stopping')).toBe(STATUS_TEXT_CLASS.stable);
+    expect(getStatusTextClass('progressing', 'starting')).toBe(STATUS_TEXT_CLASS.progressing);
+    expect(getStatusTextClass('progressing', 'stopping')).toBe(STATUS_TEXT_CLASS.stable);
+  });
+});
+
+describe('getStatusDotClass', () => {
+  test('should use starting dot for starting and stopped dot for stopping', () => {
+    expect(getStatusDotClass('progressing', undefined, 'Starting')).toBe('bg-[var(--pd-status-starting)]');
+    expect(getStatusDotClass('progressing', undefined, 'Stopping')).toBe('bg-[var(--pd-status-stopped)]');
+    expect(getStatusDotClass('progressing', 'stopping')).toBe('bg-[var(--pd-status-stopped)]');
   });
 });

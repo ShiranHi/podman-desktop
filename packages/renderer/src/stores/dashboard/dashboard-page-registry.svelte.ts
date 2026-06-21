@@ -23,12 +23,14 @@ import { createSystemOverview } from '/@/stores/dashboard/dashboard-page-registr
 
 import { createExploreFeatures } from './dashboard-page-registry-explore-features';
 import { createExtensionBanners } from './dashboard-page-registry-extension-banners.svelte';
+import { createGettingStarted } from './dashboard-page-registry-getting-started';
 import { createLearningCenter } from './dashboard-page-registry-learning-center.svelte';
 import { createProviders } from './dashboard-page-registry-providers.svelte';
 import { createReleaseNotesBox } from './dashboard-page-registry-release-notes.svelte';
 
 export interface DashboardPageRegistryEntry {
   id: string;
+  label?: string;
   hidden?: boolean;
   originalOrder: number;
   component?: Component;
@@ -36,24 +38,26 @@ export interface DashboardPageRegistryEntry {
 
 export const dashboardPageRegistry = $state<{ entries: DashboardPageRegistryEntry[] }>({ entries: [] });
 
-const enhancedDashboard = $state<{ enabled: boolean }>({ enabled: false });
+/** Shared reactive flag — other dashboard sections read this to stay in legacy vs enhanced mode. */
+export const enhancedDashboardEnabled = $state<{ enabled: boolean }>({ enabled: false });
 
 function getDashboardPageRegistry(): DashboardPageRegistryEntry[] {
-  const systemOverview = enhancedDashboard.enabled ? [createSystemOverview()] : [];
-  const providers = !enhancedDashboard.enabled ? [createProviders()] : [];
+  if (enhancedDashboardEnabled.enabled) {
+    return [createSystemOverview(), createGettingStarted(), createExtensionBanners(), createLearningCenter()];
+  }
+
   return [
     createReleaseNotesBox(),
     createExtensionBanners(),
-    ...systemOverview,
     createExploreFeatures(),
     createLearningCenter(),
-    ...providers,
+    createProviders(),
   ];
 }
 
 window.events?.receive('enhanced-dashboard-enabled', (value: unknown) => {
   if (typeof value === 'boolean') {
-    enhancedDashboard.enabled = value;
+    enhancedDashboardEnabled.enabled = value;
     setupDashboardPageRegistry().catch((error: unknown) => {
       console.error(`Failed to setup dashboard page registry: ${error}`);
     });
@@ -61,7 +65,7 @@ window.events?.receive('enhanced-dashboard-enabled', (value: unknown) => {
 });
 
 export async function setupDashboardPageRegistry(): Promise<void> {
-  enhancedDashboard.enabled = await window.isExperimentalConfigurationEnabled('dashboard.enhancedDashboard');
+  enhancedDashboardEnabled.enabled = await window.isExperimentalConfigurationEnabled('dashboard.enhancedDashboard');
   dashboardPageRegistry.entries = getDashboardPageRegistry();
   defaultSection.names = dashboardPageRegistry.entries.map(entry => entry.id);
 }
