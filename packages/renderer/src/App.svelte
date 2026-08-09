@@ -64,7 +64,6 @@ import PortForwardingList from './lib/kubernetes-port-forward/PortForwardingList
 import ContainerWorkspaceEntry from './lib/layout/ContainerWorkspaceEntry.svelte';
 import GlobalTabBar from './lib/layout/GlobalTabBar.svelte';
 import ImageWorkspaceEntry from './lib/layout/ImageWorkspaceEntry.svelte';
-import LayoutToolbar from './lib/layout/LayoutToolbar.svelte';
 import PodWorkspaceEntry from './lib/layout/PodWorkspaceEntry.svelte';
 import WorkspaceLayout from './lib/layout/WorkspaceLayout.svelte';
 import ManifestDetails from './lib/manifest/ManifestDetails.svelte';
@@ -211,19 +210,16 @@ initSessionAutosave();
         <SendFeedback />
         <ToastHandler />
         <ToastTaskNotifications />
-        {#if !meta.url.startsWith('/preferences')}
-          <!-- Tabs & Flexible Layout prototype: the "Layout" menu is mounted once, here, so
-               it's consistent, persistent chrome on every page (Dashboard, Containers, Pods,
-               Images, ...) - not a separate destination you have to navigate to. -->
-          <LayoutToolbar />
-          {#if !meta.url.startsWith('/workspace')}
-            <!-- The flat "everything I have open" tab strip only makes sense OUTSIDE the
-                 workspace itself: it's how you jump back into any tab from any other page.
-                 Once inside /workspace, the panel(s) below already show their own tab bar(s)
-                 - a single one normally, or one per split - so repeating the same tabs here
-                 would just be a second, redundant row. -->
-            <GlobalTabBar />
-          {/if}
+        {#if !meta.url.startsWith('/preferences') && !meta.url.startsWith('/workspace')}
+          <!-- Tabs & Flexible Layout prototype: the flat "everything I have open" tab strip is
+               mounted once, here, so it's consistent, persistent chrome on every page (Dashboard,
+               Containers, Pods, Images, ...) - not a separate destination you have to navigate
+               to. Its trailing settings button (see GlobalTabBar.svelte) replaces what used to be
+               a separate full-width "Layout" menu row. Hidden inside /workspace itself: the
+               panel(s) below already show their own tab bar(s) - a single one normally, or one
+               per split - each with that same settings button, so repeating this here would just
+               be a second, redundant row. -->
+          <GlobalTabBar />
         {/if}
         <Route path="/" breadcrumb="Dashboard Page" navigationHint="root">
           <DashboardPage />

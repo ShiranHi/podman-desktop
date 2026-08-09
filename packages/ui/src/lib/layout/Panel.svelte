@@ -50,6 +50,8 @@ interface Props {
   onToggleMaximize: () => void;
   /** See TabBar's `onAddTab` - resolved here against this panel's own active tab. */
   onAddTab?: (panelId: string, activeTab: TabDescriptor | undefined) => void;
+  /** See TabBar's `trailing`. */
+  trailing?: Snippet;
   tabContent: Snippet<[TabDescriptor]>;
   emptyState?: Snippet;
 }
@@ -74,6 +76,7 @@ let {
   onMoveToNewPanel,
   onToggleMaximize,
   onAddTab,
+  trailing,
   tabContent,
   emptyState,
 }: Props = $props();
@@ -104,7 +107,8 @@ const activeTab = $derived(tabs.find(t => t.id === activeTabId));
         {onSplitRight}
         {onSplitDown}
         {onMoveToNewPanel}
-        onAddTab={onAddTab ? (): void => onAddTab(panelId, activeTab) : undefined} />
+        onAddTab={onAddTab ? (): void => onAddTab(panelId, activeTab) : undefined}
+        {trailing} />
     </div>
     {#if canMaximize}
       <button

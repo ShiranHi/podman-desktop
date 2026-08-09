@@ -46,6 +46,8 @@ import {
   splitRightAnyPanel,
 } from '/@/stores/layout/layout-store.svelte';
 
+import LayoutToolbar from './LayoutToolbar.svelte';
+
 let tabs = $derived(getAllTabsOrdered());
 let activeTabId = $derived(activeTabIdOfFocusedPanel());
 
@@ -55,19 +57,24 @@ function onSelect(tabId: string): void {
 }
 </script>
 
-{#if tabs.length > 0}
-  <TabBar
-    panelId="global-tab-bar"
-    {tabs}
-    {activeTabId}
-    {onSelect}
-    onClose={closeTabById}
-    onCloseOthers={closeAllTabsExcept}
-    onCloseAllInPanel={closeAllTabsEverywhere}
-    onPinToggle={(tabId): void => pinToggle('global-tab-bar', tabId)}
-    onReorder={reorderTabGlobal}
-    onMoveFromOtherPanel={(_sourcePanelId, tabId, beforeTabId): void => reorderTabGlobal(tabId, beforeTabId)}
-    onSplitRight={splitRightAnyPanel}
-    onSplitDown={splitDownAnyPanel}
-    onMoveToNewPanel={moveToNewPanelAnyPanel} />
-{/if}
+<!-- Always rendered - even with zero tabs open - so the Layout settings button in `trailing`
+     stays reachable as the entry point for starting a layout in the first place (new layout,
+     a built-in preset, importing one, or the agent demo). -->
+<TabBar
+  panelId="global-tab-bar"
+  {tabs}
+  {activeTabId}
+  {onSelect}
+  onClose={closeTabById}
+  onCloseOthers={closeAllTabsExcept}
+  onCloseAllInPanel={closeAllTabsEverywhere}
+  onPinToggle={(tabId): void => pinToggle('global-tab-bar', tabId)}
+  onReorder={reorderTabGlobal}
+  onMoveFromOtherPanel={(_sourcePanelId, tabId, beforeTabId): void => reorderTabGlobal(tabId, beforeTabId)}
+  onSplitRight={splitRightAnyPanel}
+  onSplitDown={splitDownAnyPanel}
+  onMoveToNewPanel={moveToNewPanelAnyPanel}>
+  {#snippet trailing()}
+    <LayoutToolbar />
+  {/snippet}
+</TabBar>

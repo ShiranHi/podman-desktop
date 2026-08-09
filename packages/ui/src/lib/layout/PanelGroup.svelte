@@ -53,6 +53,9 @@ interface Props {
   onResizeSplit: (splitId: string, sizes: number[]) => void;
   /** See Panel's `onAddTab`. */
   onAddTab?: (panelId: string, activeTab: TabDescriptor | undefined) => void;
+  /** See Panel's `trailing`. Threaded down to every leaf panel's tab bar (there's normally
+   * just one, until the user splits). */
+  trailing?: Snippet;
   tabContent: Snippet<[TabDescriptor]>;
   emptyState?: Snippet;
 }
@@ -135,6 +138,7 @@ function equalize(_index: number): void {
     onMoveToNewPanel={(tabId): void => props.onMoveToNewPanel(leaf.id, tabId)}
     onToggleMaximize={(): void => props.onToggleMaximize(leaf.id)}
     onAddTab={props.onAddTab}
+    trailing={props.trailing}
     tabContent={props.tabContent}
     emptyState={props.emptyState} />
 {:else}
@@ -167,6 +171,7 @@ function equalize(_index: number): void {
           onToggleMaximize={props.onToggleMaximize}
           onResizeSplit={props.onResizeSplit}
           onAddTab={props.onAddTab}
+          trailing={props.trailing}
           tabContent={props.tabContent}
           emptyState={props.emptyState} />
       </div>

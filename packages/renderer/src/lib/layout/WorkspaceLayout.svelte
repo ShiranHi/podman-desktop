@@ -51,6 +51,7 @@ import { parseImageKey, parsePodKey } from '/@/stores/layout/layout-types';
 import AgentLayoutBanner from './AgentLayoutBanner.svelte';
 import ContainerTabContent from './ContainerTabContent.svelte';
 import ImageTabContent from './ImageTabContent.svelte';
+import LayoutToolbar from './LayoutToolbar.svelte';
 import NewTabPalette from './NewTabPalette.svelte';
 import PodTabContent from './PodTabContent.svelte';
 
@@ -94,9 +95,10 @@ function openNewTabPalette(panelId: string, activeTab: TabDescriptor | undefined
 <svelte:window onkeydown={onWindowKeydown} />
 
 <div class="flex flex-col h-full min-h-0 w-full">
-  <!-- The Layout menu and the flat "all open tabs" bar are mounted once, globally, in
-       App.svelte, so they stay visible on every page - not just here. This route only owns the
-       actual panel/split content. -->
+  <!-- The flat "all open tabs" bar is mounted once, globally, in App.svelte (hidden here to
+       avoid a redundant second tab strip), so it stays visible on every other page. The Layout
+       settings button lives in each panel's own tab bar instead (via `trailing` below), since
+       there's no other persistent chrome inside /workspace to anchor it to. -->
   <AgentLayoutBanner />
   <div class="grow min-h-0">
     <PanelGroup
@@ -118,6 +120,9 @@ function openNewTabPalette(panelId: string, activeTab: TabDescriptor | undefined
       onToggleMaximize={toggleMaximize}
       onResizeSplit={resizeSplit}
       onAddTab={openNewTabPalette}>
+      {#snippet trailing()}
+        <LayoutToolbar />
+      {/snippet}
       {#snippet tabContent(tabDescriptor)}
         {@const tab = tabDescriptor as WorkspaceTab}
         {#if tab.resourceType === 'container'}

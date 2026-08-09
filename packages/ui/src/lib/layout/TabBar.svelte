@@ -22,6 +22,7 @@
 // moving a tab in from another panel. Resource-agnostic - operates purely on
 // TabDescriptor[].
 import { faChevronDown, faPlus, faThumbtack, faXmark } from '@fortawesome/free-solid-svg-icons';
+import type { Snippet } from 'svelte';
 
 import Icon from '../icons/Icon.svelte';
 import ContextMenu from './ContextMenu.svelte';
@@ -52,6 +53,10 @@ interface Props {
    * views of the active resource, any pod/container/image, or a free-text ask-the-agent
    * entry) - instead of cluttering every tab's content with a static row of sub-views. */
   onAddTab?: () => void;
+  /** Rendered pinned to the far right of the bar, regardless of tab count - e.g. a settings
+   * button - so the bar itself doubles as the app's persistent toolbar instead of needing a
+   * separate full-width row above it. */
+  trailing?: Snippet;
 }
 
 let {
@@ -69,6 +74,7 @@ let {
   onSplitDown,
   onMoveToNewPanel,
   onAddTab,
+  trailing,
 }: Props = $props();
 
 let scrollEl: HTMLDivElement | undefined = $state();
@@ -308,6 +314,12 @@ function contextMenuActions(tabId: string): ContextMenuAction[] {
           {/each}
         </div>
       {/if}
+    </div>
+  {/if}
+
+  {#if trailing}
+    <div class="flex items-stretch border-l border-[var(--pd-content-divider)]">
+      {@render trailing()}
     </div>
   {/if}
 </div>
