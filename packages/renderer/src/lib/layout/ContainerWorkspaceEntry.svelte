@@ -50,7 +50,7 @@ $effect(() => {
   if (!findAnyTabForResource('container', container.id)) {
     openTab(
       { resourceType: 'container', resourceId: container.id, subView: 'summary', title: `${container.name} · Summary` },
-      'replace',
+      'newTab',
     );
   }
   router.goto('/workspace');

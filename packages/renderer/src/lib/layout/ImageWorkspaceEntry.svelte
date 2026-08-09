@@ -49,7 +49,7 @@ $effect(() => {
   if (!image) return;
   const resourceId = imageKey(image.id, image.engineId, image.base64RepoTag);
   if (!findAnyTabForResource('image', resourceId)) {
-    openTab({ resourceType: 'image', resourceId, subView: 'summary', title: `${image.name} · Summary` }, 'replace');
+    openTab({ resourceType: 'image', resourceId, subView: 'summary', title: `${image.name} · Summary` }, 'newTab');
   }
   router.goto('/workspace');
 });

@@ -195,11 +195,12 @@ function contextMenuActions(tabId: string): ContextMenuAction[] {
 }
 </script>
 
-<div class="flex items-stretch border-b border-[var(--pd-content-divider)] bg-[var(--pd-content-card-bg)] min-w-0">
+<div
+  class="flex items-stretch border-b border-[var(--pd-content-divider)] bg-[var(--pd-content-card-bg)] text-sm min-w-0">
   <div
     bind:this={scrollEl}
     onwheel={onWheel}
-    class="flex flex-row overflow-x-auto min-w-0 grow scrollbar-hide"
+    class="flex flex-row items-stretch overflow-x-auto min-w-0 grow scrollbar-hide"
     role="tablist"
     tabindex="-1"
     ondragover={(e: DragEvent): void => e.preventDefault()}
@@ -219,7 +220,7 @@ function contextMenuActions(tabId: string): ContextMenuAction[] {
         onkeydown={(e: KeyboardEvent): void => {
           if (e.key === 'Enter' || e.key === ' ') onSelect(tab.id);
         }}
-        class="group flex items-center gap-2 px-3 py-1.5 border-r border-[var(--pd-content-divider)] whitespace-nowrap cursor-pointer select-none max-w-[220px]"
+        class="group flex items-center gap-2 px-3 py-1 border-r border-[var(--pd-content-divider)] whitespace-nowrap cursor-pointer select-none max-w-[220px]"
         class:bg-[var(--pd-content-bg)]={tab.id === activeTabId}
         class:border-l-2={dragOverTabId === tab.id}
         class:border-l-[var(--pd-tab-highlight)]={dragOverTabId === tab.id}
@@ -254,21 +255,23 @@ function contextMenuActions(tabId: string): ContextMenuAction[] {
         {/if}
       </div>
     {/each}
-  </div>
 
-  {#if onAddTab && tabs.length > 0}
-    <!-- Nothing to offer "another view" of with zero tabs open - the empty state already
-         covers that case, so skip the button rather than leave it floating alone in an
-         otherwise-empty bar. -->
-    <button
-      type="button"
-      aria-label="Open a new tab"
-      title="Open a new tab"
-      class="flex items-center px-2.5 border-l border-[var(--pd-content-divider)] hover:bg-[var(--pd-action-button-details-bg)]"
-      onclick={onAddTab}>
-      <Icon class="w-3 text-xs" icon={faPlus} />
-    </button>
-  {/if}
+    {#if onAddTab && tabs.length > 0}
+      <!-- Lives inside the scrollable row, right next to the last tab - not pinned to the
+           far edge of the bar - and scrolls along with the tabs, like Cursor/VS Code.
+           Nothing to offer "another view" of with zero tabs open - the empty state already
+           covers that case, so skip the button rather than leave it floating alone in an
+           otherwise-empty bar. -->
+      <button
+        type="button"
+        aria-label="Open a new tab"
+        title="Open a new tab"
+        class="flex items-center px-2.5 shrink-0 hover:bg-[var(--pd-action-button-details-bg)]"
+        onclick={onAddTab}>
+        <Icon class="w-3 text-xs" icon={faPlus} />
+      </button>
+    {/if}
+  </div>
 
   {#if overflowing}
     <div class="relative flex items-center border-l border-[var(--pd-content-divider)] px-1">

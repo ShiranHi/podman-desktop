@@ -31,16 +31,13 @@ function openComposeDetails(containerGroup: ContainerGroupInfoUI): void {
   router.goto(`/compose/details/${encodeURI(containerGroup.name)}/${encodeURI(containerGroup.engineId)}/logs`);
 }
 
-// A plain click on a pod group opens straight into the workspace tab (replacing whatever
-// was showing), same destination Cmd/Ctrl+click uses for a new tab - no intermediate
-// detail route/flash.
-function onClick(event: MouseEvent): void {
+// A plain click on a pod group opens straight into the workspace as a new tab alongside
+// whatever's already open - no intermediate detail route/flash, and existing tabs are
+// never removed.
+function onClick(_event: MouseEvent): void {
   if (!object.engineId) return;
   if (object.type === ContainerGroupInfoTypeUI.POD) {
-    openPodInWorkspace(
-      { name: object.name, engineId: object.engineId },
-      event.metaKey || event.ctrlKey ? 'newTab' : 'replace',
-    );
+    openPodInWorkspace({ name: object.name, engineId: object.engineId }, 'newTab');
   } else {
     openComposeDetails(object);
   }

@@ -24,14 +24,14 @@ function openManifestDetails(image: ImageInfoUI): void {
   });
 }
 
-// A plain click opens straight into the workspace tab (replacing whatever was showing),
-// same destination Cmd/Ctrl+click uses for a new tab - no intermediate detail route/flash.
-function onClick(event: MouseEvent): void {
+// A plain click opens straight into the workspace as a new tab alongside whatever's
+// already open - no intermediate detail route/flash, and existing tabs are never removed.
+function onClick(_event: MouseEvent): void {
   if (object.isManifest) {
     openManifestDetails(object);
     return;
   }
-  openImageInWorkspace(object, event.metaKey || event.ctrlKey ? 'newTab' : 'replace');
+  openImageInWorkspace(object, 'newTab');
 }
 
 function onContextMenu(event: MouseEvent): void {

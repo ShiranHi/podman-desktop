@@ -40,7 +40,7 @@ $effect(() => {
   if (!pod) return;
   const resourceId = podKey(pod.name, pod.engineId);
   if (!findAnyTabForResource('pod', resourceId)) {
-    openTab({ resourceType: 'pod', resourceId, subView: 'summary', title: `${pod.name} · Summary` }, 'replace');
+    openTab({ resourceType: 'pod', resourceId, subView: 'summary', title: `${pod.name} · Summary` }, 'newTab');
   }
   router.goto('/workspace');
 });
