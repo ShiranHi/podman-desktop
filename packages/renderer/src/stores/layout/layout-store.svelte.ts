@@ -507,6 +507,37 @@ export function activeTabIdOfFocusedPanel(): string | undefined {
   return findLeaf(layoutState.tree, layoutState.focusedPanelId)?.activeTabId;
 }
 
+export interface HiddenWhileMaximized {
+  otherPanelCount: number;
+  otherTabs: WorkspaceTab[];
+}
+
+/** While a panel is maximized (see toggleMaximize), every other panel disappears from view
+ * entirely (WorkspaceLayout only renders the maximized leaf) - with nothing on screen hinting
+ * they still exist, it's easy to forget a whole side-by-side comparison is sitting behind the
+ * maximized panel. Returns undefined when nothing is maximized, or when maximizing didn't
+ * actually hide anything (e.g. it's the only panel left). */
+export function getHiddenWhileMaximized(): HiddenWhileMaximized | undefined {
+  const maximizedId = layoutState.maximizedPanelId;
+  if (!maximizedId) return undefined;
+
+  const otherLeaves: LeafPanelNode[] = [];
+  function collectOtherLeaves(node: PanelNode): void {
+    if (node.kind === 'leaf') {
+      if (node.id !== maximizedId) otherLeaves.push(node);
+    } else {
+      for (const child of node.children) collectOtherLeaves(child);
+    }
+  }
+  collectOtherLeaves(layoutState.tree);
+  if (otherLeaves.length === 0) return undefined;
+
+  const otherTabs = otherLeaves.flatMap(leaf =>
+    leaf.tabIds.map(id => layoutState.tabs[id]).filter((t): t is WorkspaceTab => !!t),
+  );
+  return { otherPanelCount: otherLeaves.length, otherTabs };
+}
+
 /** If the workspace is currently a plain two-way split (side by side or stacked, not nested
  * further) with exactly one tab showing in each half, returns those two tabs in tree order.
  * Used to auto-surface a comparison insight for split views the user made themselves by

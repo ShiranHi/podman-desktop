@@ -53,6 +53,7 @@ import AgentLayoutBanner from './AgentLayoutBanner.svelte';
 import ContainerTabContent from './ContainerTabContent.svelte';
 import ImageTabContent from './ImageTabContent.svelte';
 import LayoutToolbar from './LayoutToolbar.svelte';
+import MaximizedPanelBanner from './MaximizedPanelBanner.svelte';
 import NewTabPalette from './NewTabPalette.svelte';
 import PodTabContent from './PodTabContent.svelte';
 import SplitInsightBanner from './SplitInsightBanner.svelte';
@@ -110,7 +111,13 @@ function openNewTabPalette(panelId: string, activeTab: TabDescriptor | undefined
        settings button lives in each panel's own tab bar instead (via `trailing` below), since
        there's no other persistent chrome inside /workspace to anchor it to. -->
   <AgentLayoutBanner />
-  <SplitInsightBanner />
+  {#if layoutState.maximizedPanelId}
+    <!-- A side-by-side comparison banner doesn't make sense once only one side is actually
+         visible on screen - the maximized-panel banner below takes its place instead. -->
+    <MaximizedPanelBanner />
+  {:else}
+    <SplitInsightBanner />
+  {/if}
   <div class="grow min-h-0">
     <PanelGroup
       node={displayedNode}
