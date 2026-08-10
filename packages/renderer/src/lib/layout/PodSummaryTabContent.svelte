@@ -39,10 +39,11 @@ import ResourceSummaryHeader from './summary/ResourceSummaryHeader.svelte';
 import SummaryCard from './summary/SummaryCard.svelte';
 
 interface Props {
+  tabId: string;
   pod: PodInfoUI;
 }
 
-let { pod }: Props = $props();
+let { tabId, pod }: Props = $props();
 
 const creationTime = $derived(new Date(pod.created));
 
@@ -127,7 +128,7 @@ function imageLabel(image: string | undefined): string {
     </SummaryCard>
   {/if}
 
-  <InspectCard resourceType="pod" resourceId={podKey(pod.name, pod.engineId)} resourceTitle={pod.name}>
+  <InspectCard resourceType="pod" resourceId={podKey(pod.name, pod.engineId)} resourceTitle={pod.name} {tabId}>
     <PodDetailsInspect pod={pod} />
   </InspectCard>
 </div>

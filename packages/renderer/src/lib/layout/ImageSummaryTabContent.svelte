@@ -36,10 +36,11 @@ import ResourceSummaryHeader from './summary/ResourceSummaryHeader.svelte';
 import SummaryCard from './summary/SummaryCard.svelte';
 
 interface Props {
+  tabId: string;
   image: ImageInfoUI;
 }
 
-let { image }: Props = $props();
+let { tabId, image }: Props = $props();
 
 const imageUtils = new ImageUtils();
 
@@ -178,7 +179,8 @@ onMount(loadManifest);
   <InspectCard
     resourceType="image"
     resourceId={imageKey(image.id, image.engineId, image.base64RepoTag)}
-    resourceTitle="{image.name}:{image.tag}">
+    resourceTitle="{image.name}:{image.tag}"
+    {tabId}>
     <ImageDetailsInspect image={image} />
   </InspectCard>
 </div>

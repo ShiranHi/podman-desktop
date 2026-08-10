@@ -34,10 +34,11 @@ import ResourceSummaryHeader from './summary/ResourceSummaryHeader.svelte';
 import SummaryCard from './summary/SummaryCard.svelte';
 
 interface Props {
+  tabId: string;
   container: ContainerInfoUI;
 }
 
-let { container }: Props = $props();
+let { tabId, container }: Props = $props();
 
 const startedTime = $derived(new Date(container.startedAt));
 const createdTime = $derived(container.groupInfo.created ? new Date(container.groupInfo.created) : undefined);
@@ -141,7 +142,7 @@ function openPort(port: number): void {
     </SummaryCard>
   {/if}
 
-  <InspectCard resourceType="container" resourceId={container.id} resourceTitle={container.name}>
+  <InspectCard resourceType="container" resourceId={container.id} resourceTitle={container.name} {tabId}>
     <ContainerDetailsInspect container={container} />
   </InspectCard>
 </div>

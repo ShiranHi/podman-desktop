@@ -91,7 +91,7 @@ $effect(() => {
           kind="image"
           imageName={image.name}
           imageDigest={image.id} />
-        <ImageSummaryTabContent image={image} />
+        <ImageSummaryTabContent {tabId} image={image} />
       {/if}
     </div>
   </div>

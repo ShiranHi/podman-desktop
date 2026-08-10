@@ -58,7 +58,7 @@ $effect(() => {
   <div class="flex flex-col h-full min-h-0">
     <div class="grow min-h-0 overflow-auto">
       {#if subView === 'summary'}
-        <ContainerSummaryTabContent container={container} />
+        <ContainerSummaryTabContent {tabId} container={container} />
       {:else if subView === 'inspect'}
         <ContainerDetailsInspect container={container} />
       {:else if subView === 'kube'}

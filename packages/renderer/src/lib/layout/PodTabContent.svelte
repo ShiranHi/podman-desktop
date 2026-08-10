@@ -63,7 +63,7 @@ $effect(() => {
           resourceId={podKey(pod.name, pod.engineId)}
           kind="pod"
           running={pod.status.toUpperCase() === 'RUNNING'} />
-        <PodSummaryTabContent pod={pod} />
+        <PodSummaryTabContent {tabId} pod={pod} />
       {/if}
     </div>
   </div>

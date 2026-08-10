@@ -26,7 +26,7 @@
 // as the dedicated Inspect tab in place, or "Open in new tab" jumps to that full tab directly.
 import type { Snippet } from 'svelte';
 
-import { openTab } from '/@/stores/layout/layout-store.svelte';
+import { findLeafContainingTab, layoutState, openTab } from '/@/stores/layout/layout-store.svelte';
 import type { WorkspaceResourceType } from '/@/stores/layout/layout-types';
 
 import SummaryCard from './SummaryCard.svelte';
@@ -37,18 +37,29 @@ interface Props {
   /** Bare resource name (no " · Summary" suffix) so the opened tab's title matches every
    * other tab's "<name> · <SubView>" convention. */
   resourceTitle: string;
+  /** Id of the Summary tab this card is rendered inside - used so the new Inspect tab opens
+   * next to it, in whichever panel that actually is. Without this, `openTab`'s default target
+   * (the last globally-focused panel) can silently drop the new tab into a *different* panel
+   * than the one the user is looking at in a split view - which reads as "the button did
+   * nothing" since nothing visibly changes in front of them. */
+  tabId: string;
   /** The resource-specific `*DetailsInspect` component (Container/Pod/Image) - only mounted
    * once expanded, so its onMount inspect fetch doesn't fire for every Summary tab a user
    * happens to open. */
   children: Snippet;
 }
 
-let { resourceType, resourceId, resourceTitle, children }: Props = $props();
+let { resourceType, resourceId, resourceTitle, tabId, children }: Props = $props();
 
 let expanded = $state(false);
 
 function openFullInspect(): void {
-  openTab({ resourceType, resourceId, subView: 'inspect', title: `${resourceTitle} · Inspect` }, 'newTab');
+  const targetPanelId = findLeafContainingTab(layoutState.tree, tabId)?.id;
+  openTab(
+    { resourceType, resourceId, subView: 'inspect', title: `${resourceTitle} · Inspect` },
+    'newTab',
+    targetPanelId,
+  );
 }
 </script>
 
