@@ -21,10 +21,12 @@
 // the vision doc: an agent opens pods/images side by side "to compare"). There's no real
 // telemetry or vulnerability scanner wired up here, so real pod/image Summary data alone is
 // just static metadata (name, ID, ports...) - two of those side by side don't actually look
-// like a "comparison". These numbers are deterministically derived from the resource's own
-// id, so the same resource always shows the same numbers (stable across re-renders and
-// reloads) while two different resources visibly differ - enough to demo what a real
-// compare view would feel like once real metrics/scanning exist.
+// like a "comparison". These numbers come from mock-resource-metrics.ts, deterministically
+// derived from the resource's own id, so the same resource always shows the same numbers
+// (stable across re-renders and reloads) while two different resources visibly differ -
+// enough to demo what a real compare view would feel like once real metrics/scanning exist.
+import { formatVulnBreakdown, getImageMockMetrics, getPodMockMetrics } from '/@/stores/layout/mock-resource-metrics';
+
 interface Props {
   resourceId: string;
   kind: 'pod' | 'image';
@@ -36,16 +38,6 @@ interface Props {
 }
 
 let { resourceId, kind, imageName, imageDigest }: Props = $props();
-
-function hash(input: string): number {
-  let h = 0;
-  for (let i = 0; i < input.length; i++) {
-    h = (h * 31 + input.charCodeAt(i)) >>> 0;
-  }
-  return h;
-}
-
-const seed = $derived(hash(`${kind}:${resourceId}`));
 
 type Status = 'good' | 'warn' | 'bad';
 
@@ -62,31 +54,11 @@ const STATUS_TEXT_CLASS: Record<Status, string> = {
   bad: 'text-[var(--pd-state-error)]',
 };
 
-/** Drops zero counts instead of printing "1 critical, 0 high, 0 medium". */
-function formatVulnBreakdown(critical: number, high: number, medium: number): string {
-  const parts = [
-    critical > 0 ? `${critical} critical` : undefined,
-    high > 0 ? `${high} high` : undefined,
-    medium > 0 ? `${medium} medium` : undefined,
-  ].filter((part): part is string => !!part);
-  return parts.length > 0 ? parts.join(', ') : 'None found';
-}
-
-const vulnCounts = $derived.by((): { critical: number; high: number; medium: number } | undefined => {
-  if (kind !== 'image') return undefined;
-  const h = seed;
-  return { critical: (h >>> 2) % 3, high: (h >>> 5) % 6, medium: (h >>> 9) % 14 };
-});
+const imageMetrics = $derived(kind === 'image' ? getImageMockMetrics(resourceId) : undefined);
 
 const stats = $derived.by((): Stat[] => {
-  // Unsigned shifts (>>>) throughout: h can exceed 0x7FFFFFFF, and a signed >> would sign-extend
-  // that into a negative number, producing nonsense like "-184 MB" of memory.
-  const h = seed;
   if (kind === 'pod') {
-    const cpuPercent = (h % 55) + 3;
-    const memoryMb = ((h >>> 3) % 420) + 48;
-    const restarts = (h >>> 7) % 4;
-    const rxMb = (((h >>> 11) % 480) + 5) / 10;
+    const { cpuPercent, memoryMb, restarts, rxMb } = getPodMockMetrics(resourceId);
     return [
       {
         label: 'CPU usage',
@@ -102,14 +74,18 @@ const stats = $derived.by((): Stat[] => {
       },
     ];
   }
-  const { critical, high, medium } = vulnCounts ?? { critical: 0, high: 0, medium: 0 };
-  const pulls = ((h >>> 13) % 9000) + 120;
-  const layers = ((h >>> 17) % 11) + 3;
-  const daysSinceScan = (h % 6) + 1;
+  const { critical, high, medium, pulls, layers, daysSinceScan } = imageMetrics ?? {
+    critical: 0,
+    high: 0,
+    medium: 0,
+    pulls: 0,
+    layers: 0,
+    daysSinceScan: 0,
+  };
   return [
     {
       label: 'Vulnerabilities',
-      value: formatVulnBreakdown(critical, high, medium),
+      value: formatVulnBreakdown({ critical, high, medium }),
       status: critical > 0 ? 'bad' : high > 0 ? 'warn' : 'good',
     },
     { label: 'Layers', value: `${layers}`, status: layers > 9 ? 'bad' : layers > 6 ? 'warn' : 'good' },
@@ -122,7 +98,7 @@ const stats = $derived.by((): Stat[] => {
   ];
 });
 
-const hasVulnerabilities = $derived(!!vulnCounts && (vulnCounts.critical > 0 || vulnCounts.high > 0));
+const hasVulnerabilities = $derived(!!imageMetrics && (imageMetrics.critical > 0 || imageMetrics.high > 0));
 
 /** Quay.io actually runs real (Clair-based) vulnerability scans on the images it hosts, so
  * when the image is quay-hosted we can link to a genuine report instead of a fake one -
