@@ -27,8 +27,10 @@ import PodDetailsLogs from '/@/lib/pod/PodDetailsLogs.svelte';
 import PodmanPodDetailsSummary from '/@/lib/pod/PodmanPodDetailsSummary.svelte';
 import { markTabStale } from '/@/stores/layout/layout-store.svelte';
 import type { PodSubView } from '/@/stores/layout/layout-types';
+import { podKey } from '/@/stores/layout/layout-types';
 import { podsInfos } from '/@/stores/pods';
 
+import MockResourceStats from './MockResourceStats.svelte';
 import StaleTabPlaceholder from './StaleTabPlaceholder.svelte';
 
 interface Props {
@@ -57,6 +59,7 @@ $effect(() => {
       {:else if subView === 'logs'}
         <PodDetailsLogs pod={pod} />
       {:else}
+        <MockResourceStats resourceId={podKey(pod.name, pod.engineId)} kind="pod" />
         <PodmanPodDetailsSummary pod={pod} />
       {/if}
     </div>

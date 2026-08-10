@@ -115,29 +115,44 @@ export function runAgentPrompt(prompt: string): void {
       agentBannerState.message = `No pods are available for the agent to act on "${trimmed}".`;
       return;
     }
-    const pod = pods[0];
+
     resetLayout();
+    const pick = pods.slice(0, 2);
     openTab(
       {
         resourceType: 'pod',
-        resourceId: podKey(pod.name, pod.engineId),
+        resourceId: podKey(pick[0].name, pick[0].engineId),
         subView: 'summary',
-        title: `${pod.name} · Summary`,
+        title: `${pick[0].name} · Summary`,
         agentCreated: true,
       },
       'newTab',
     );
-    openTab(
-      {
-        resourceType: 'pod',
-        resourceId: podKey(pod.name, pod.engineId),
-        subView: 'logs',
-        title: `${pod.name} · Logs`,
-        agentCreated: true,
-      },
-      'splitRight',
-    );
-    agentBannerState.message = `Based on "${trimmed}", an agent opened "${pod.name}"'s summary and logs side by side.`;
+    if (pick[1]) {
+      openTab(
+        {
+          resourceType: 'pod',
+          resourceId: podKey(pick[1].name, pick[1].engineId),
+          subView: 'summary',
+          title: `${pick[1].name} · Summary`,
+          agentCreated: true,
+        },
+        'splitRight',
+      );
+      agentBannerState.message = `Based on "${trimmed}", an agent opened "${pick[0].name}" and "${pick[1].name}" side by side to compare.`;
+    } else {
+      openTab(
+        {
+          resourceType: 'pod',
+          resourceId: podKey(pick[0].name, pick[0].engineId),
+          subView: 'logs',
+          title: `${pick[0].name} · Logs`,
+          agentCreated: true,
+        },
+        'splitRight',
+      );
+      agentBannerState.message = `Based on "${trimmed}", an agent opened "${pick[0].name}"'s summary and logs side by side.`;
+    }
     agentBannerState.visible = true;
     return;
   }
