@@ -21,7 +21,7 @@
 // Multi-tab strip: reorder by drag, close, pin, overflow, and drop targets for
 // moving a tab in from another panel. Resource-agnostic - operates purely on
 // TabDescriptor[].
-import { faChevronDown, faPlus, faThumbtack, faXmark } from '@fortawesome/free-solid-svg-icons';
+import { faChevronDown, faPlus, faTableColumns, faThumbtack, faXmark } from '@fortawesome/free-solid-svg-icons';
 import type { Snippet } from 'svelte';
 
 import Icon from '../icons/Icon.svelte';
@@ -251,6 +251,17 @@ function contextMenuActions(tabId: string): ContextMenuAction[] {
         {#if tab.stale}
           <span class="text-[10px] uppercase tracking-wide text-[var(--pd-status-degraded)]">missing</span>
         {/if}
+        <button
+          type="button"
+          aria-label="Split {tab.title} to the right"
+          title="Split right"
+          class="opacity-0 group-hover:opacity-100 hover:bg-[var(--pd-action-button-details-bg)] rounded-sm p-0.5"
+          onclick={(e: MouseEvent): void => {
+            e.stopPropagation();
+            onSplitRight(tab.id);
+          }}>
+          <Icon class="w-3 text-xs" icon={faTableColumns} />
+        </button>
         {#if !tab.pinned}
           <button
             type="button"
