@@ -286,10 +286,17 @@ export function openTab(input: OpenTabInput, mode: OpenMode = 'replace', targetP
   let destinationLeaf: LeafPanelNode;
   switch (mode) {
     case 'splitRight':
-      destinationLeaf = splitLeaf(baseLeaf.id, 'row', 'after');
-      break;
     case 'splitDown':
-      destinationLeaf = splitLeaf(baseLeaf.id, 'column', 'after');
+      // Splitting a leaf that has no tabs of its own would just create a permanently empty
+      // sibling panel (nothing will ever move into the original leaf) - there's nothing to be
+      // "beside", so fill the empty leaf directly instead, same as 'newTab'. This matters now
+      // that list pages open every resource with splitRight by default (see
+      // resource-open-actions.ts): the very first tab in a fresh/emptied workspace must not
+      // leave a dead "No tabs open" panel next to it.
+      destinationLeaf =
+        baseLeaf.tabIds.length === 0
+          ? baseLeaf
+          : splitLeaf(baseLeaf.id, mode === 'splitRight' ? 'row' : 'column', 'after');
       break;
     case 'replace': {
       // mirrors today's "clicking a list item replaces the current view" default,

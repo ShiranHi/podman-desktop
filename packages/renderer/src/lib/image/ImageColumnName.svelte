@@ -24,14 +24,17 @@ function openManifestDetails(image: ImageInfoUI): void {
   });
 }
 
-// A plain click opens straight into the workspace as a new tab alongside whatever's
-// already open - no intermediate detail route/flash, and existing tabs are never removed.
+// A plain click opens straight into the workspace in its own new section (split), rather
+// than just appending another tab to whatever panel happens to be focused - with several
+// tabs already open, an appended tab can get lost in the strip, while a new section is
+// impossible to miss. Existing tabs are never removed, and re-clicking an already-open
+// resource just focuses its existing tab/section instead of opening a duplicate.
 function onClick(_event: MouseEvent): void {
   if (object.isManifest) {
     openManifestDetails(object);
     return;
   }
-  openImageInWorkspace(object, 'newTab');
+  openImageInWorkspace(object, 'splitRight');
 }
 
 function onContextMenu(event: MouseEvent): void {
