@@ -25,9 +25,11 @@ import { Link, Tooltip } from '@podman-desktop/ui-svelte';
 import { ContainerIcon, Icon } from '@podman-desktop/ui-svelte/icons';
 import { router } from 'tinro';
 
+import ContainerDetailsInspect from '/@/lib/container/ContainerDetailsInspect.svelte';
 import type { ContainerInfoUI } from '/@/lib/container/ContainerInfoUI';
 import { ContainerGroupInfoTypeUI } from '/@/lib/container/ContainerInfoUI';
 
+import InspectCard from './summary/InspectCard.svelte';
 import ResourceSummaryHeader from './summary/ResourceSummaryHeader.svelte';
 import SummaryCard from './summary/SummaryCard.svelte';
 
@@ -138,4 +140,8 @@ function openPort(port: number): void {
       </div>
     </SummaryCard>
   {/if}
+
+  <InspectCard resourceType="container" resourceId={container.id} resourceTitle={container.name}>
+    <ContainerDetailsInspect container={container} />
+  </InspectCard>
 </div>

@@ -26,9 +26,12 @@ import type { ManifestInspectInfo } from '@podman-desktop/api';
 import { onMount } from 'svelte';
 
 import { ImageUtils } from '/@/lib/image/image-utils';
+import ImageDetailsInspect from '/@/lib/image/ImageDetailsInspect.svelte';
 import type { ImageInfoUI } from '/@/lib/image/ImageInfoUI';
 import { containersInfos } from '/@/stores/containers';
+import { imageKey } from '/@/stores/layout/layout-types';
 
+import InspectCard from './summary/InspectCard.svelte';
 import ResourceSummaryHeader from './summary/ResourceSummaryHeader.svelte';
 import SummaryCard from './summary/SummaryCard.svelte';
 
@@ -148,4 +151,11 @@ onMount(async () => {
       </div>
     </SummaryCard>
   {/if}
+
+  <InspectCard
+    resourceType="image"
+    resourceId={imageKey(image.id, image.engineId, image.base64RepoTag)}
+    resourceTitle="{image.name}:{image.tag}">
+    <ImageDetailsInspect image={image} />
+  </InspectCard>
 </div>

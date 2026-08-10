@@ -28,10 +28,13 @@ import { NavigationPage } from '@podman-desktop/core-api';
 import { Link, StatusIcon } from '@podman-desktop/ui-svelte';
 
 import PodIcon from '/@/lib/images/PodIcon.svelte';
+import PodDetailsInspect from '/@/lib/pod/PodDetailsInspect.svelte';
 import type { PodInfoContainerUI, PodInfoUI } from '/@/lib/pod/PodInfoUI';
 import { handleNavigation } from '/@/navigation';
 import { containersInfos } from '/@/stores/containers';
+import { podKey } from '/@/stores/layout/layout-types';
 
+import InspectCard from './summary/InspectCard.svelte';
 import ResourceSummaryHeader from './summary/ResourceSummaryHeader.svelte';
 import SummaryCard from './summary/SummaryCard.svelte';
 
@@ -123,4 +126,8 @@ function imageLabel(image: string | undefined): string {
       </div>
     </SummaryCard>
   {/if}
+
+  <InspectCard resourceType="pod" resourceId={podKey(pod.name, pod.engineId)} resourceTitle={pod.name}>
+    <PodDetailsInspect pod={pod} />
+  </InspectCard>
 </div>
