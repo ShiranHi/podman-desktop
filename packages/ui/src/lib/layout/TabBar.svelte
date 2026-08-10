@@ -58,6 +58,11 @@ interface Props {
    * button - so the bar itself doubles as the app's persistent toolbar instead of needing a
    * separate full-width row above it. */
   trailing?: Snippet;
+  /** Rendered in place of the tab list only while `tabs` is empty - a first-run hint like "Open
+   * a resource to start a tab here", so an empty bar isn't just an unlabeled strip with no clue
+   * what it's for. Callers are expected to only pass this once (e.g. gated on a "has the user
+   * ever opened a tab" flag) so it doesn't reappear every time the bar happens to be empty again. */
+  emptyHint?: Snippet;
 }
 
 let {
@@ -76,6 +81,7 @@ let {
   onMoveToNewPanel,
   onAddTab,
   trailing,
+  emptyHint,
 }: Props = $props();
 
 let scrollEl: HTMLDivElement | undefined = $state();
@@ -244,9 +250,9 @@ function contextMenuActions(tabId: string): ContextMenuAction[] {
           <Icon class="w-3 text-xs opacity-70" icon={faThumbtack} />
         {/if}
         {#if tab.agentCreated}
-          <span
-            class="w-1.5 h-1.5 rounded-full bg-[var(--pd-status-running)] shrink-0"
-            title="Opened by an agent"></span>
+          <Tooltip tip="Opened by an agent" top>
+            <span class="block w-1.5 h-1.5 rounded-full bg-[var(--pd-status-running)] shrink-0"></span>
+          </Tooltip>
         {/if}
         <span class="overflow-hidden text-ellipsis">{tab.title}</span>
         {#if tab.stale}
@@ -258,7 +264,7 @@ function contextMenuActions(tabId: string): ContextMenuAction[] {
               type="button"
               aria-label="Split {tab.title} to the right"
               disabled={tabs.length <= 1}
-              class="opacity-0 group-hover:opacity-100 disabled:group-hover:opacity-40 hover:bg-[var(--pd-action-button-details-bg)] disabled:hover:bg-transparent rounded-sm p-0.5 disabled:cursor-not-allowed"
+              class="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 disabled:group-hover:opacity-40 disabled:group-focus-within:opacity-40 hover:bg-[var(--pd-action-button-details-bg)] disabled:hover:bg-transparent rounded-sm p-0.5 disabled:cursor-not-allowed"
               onclick={(e: MouseEvent): void => {
                 e.stopPropagation();
                 onSplitRight(tab.id);
@@ -271,7 +277,7 @@ function contextMenuActions(tabId: string): ContextMenuAction[] {
               <button
                 type="button"
                 aria-label="Close tab {tab.title}"
-                class="opacity-0 group-hover:opacity-100 hover:bg-[var(--pd-action-button-details-bg)] rounded-sm p-0.5"
+                class="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 hover:bg-[var(--pd-action-button-details-bg)] rounded-sm p-0.5"
                 class:opacity-100={tab.id === activeTabId}
                 onclick={(e: MouseEvent): void => {
                   e.stopPropagation();
@@ -284,6 +290,12 @@ function contextMenuActions(tabId: string): ContextMenuAction[] {
         </div>
       </div>
     {/each}
+
+    {#if tabs.length === 0 && emptyHint}
+      <div class="flex items-center px-3 text-xs text-[var(--pd-content-text)] opacity-60 whitespace-nowrap">
+        {@render emptyHint()}
+      </div>
+    {/if}
 
     {#if onAddTab && tabs.length > 0}
       <!-- Lives inside the scrollable row, right next to the last tab - not pinned to the

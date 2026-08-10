@@ -31,6 +31,7 @@ import {
   closeAllInPanel,
   closeOthers,
   closeTab,
+  cycleActiveTab,
   findLeaf,
   focusPanel,
   getTabsForPanel,
@@ -79,6 +80,14 @@ function onWindowKeydown(event: KeyboardEvent): void {
   if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'w') {
     event.preventDefault();
     closeActiveTab();
+    return;
+  }
+  // Ctrl+Tab / Ctrl+Shift+Tab cycle through tabs in the focused panel - deliberately plain
+  // Ctrl even on macOS (not Cmd+Tab), matching Cursor/VS Code's own cross-platform keybinding,
+  // since Cmd+Tab is reserved by macOS itself for app-switching and would never reach the app.
+  if (event.ctrlKey && event.key === 'Tab') {
+    event.preventDefault();
+    cycleActiveTab(event.shiftKey ? -1 : 1);
   }
 }
 

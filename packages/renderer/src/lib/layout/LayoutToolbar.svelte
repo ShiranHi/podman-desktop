@@ -50,6 +50,12 @@ let saveName = $state('');
 let activePreset: PresetId | undefined = $state();
 let showManageModal = $state(false);
 
+// Closing the "Save Layout As" dialog was previously the only feedback a successful save gave -
+// the saved name only ever showed up later, inside "Manage Layouts…", if you went looking for
+// it. A brief self-dismissing toast confirms the save actually happened, right where it happened.
+let saveToastMessage: string | undefined = $state();
+let saveToastTimeout: ReturnType<typeof setTimeout> | undefined;
+
 function toggleMenu(event: MouseEvent): void {
   const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
   clientX = rect.left;
@@ -112,9 +118,16 @@ function openSaveDialog(): void {
 }
 
 function confirmSave(): void {
-  if (!saveName.trim()) return;
-  saveNamedLayout(saveName.trim());
+  const name = saveName.trim();
+  if (!name) return;
+  saveNamedLayout(name);
   showSaveDialog = false;
+
+  saveToastMessage = `Saved as "${name}"`;
+  clearTimeout(saveToastTimeout);
+  saveToastTimeout = setTimeout(() => {
+    saveToastMessage = undefined;
+  }, 3000);
 }
 
 function pickPreset(id: PresetId): void {
@@ -210,4 +223,13 @@ function openManageModal(): void {
     onClose={(): void => {
       showManageModal = false;
     }} />
+{/if}
+
+{#if saveToastMessage}
+  <div
+    role="status"
+    class="fixed bottom-4 right-4 z-50 flex items-center gap-2 px-3 py-2 rounded-md shadow-lg bg-[var(--pd-dropdown-bg)] ring-2 ring-[var(--pd-dropdown-ring)] text-sm text-[var(--pd-dropdown-item-text)]">
+    <i class="fas fa-circle-check text-[var(--pd-status-running)]" aria-hidden="true"></i>
+    {saveToastMessage}
+  </div>
 {/if}

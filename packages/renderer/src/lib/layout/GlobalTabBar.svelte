@@ -38,6 +38,7 @@ import {
   closeAllTabsExcept,
   closeTabById,
   getAllTabsOrdered,
+  hasEverOpenedTab,
   moveToNewPanelAnyPanel,
   pinToggle,
   reorderTabGlobal,
@@ -50,12 +51,21 @@ import LayoutToolbar from './LayoutToolbar.svelte';
 
 let tabs = $derived(getAllTabsOrdered());
 let activeTabId = $derived(activeTabIdOfFocusedPanel());
+// Only ever true for the very first time this bar is empty in a fresh profile - once any tab
+// has been opened, hasEverOpenedTab() flips permanently (see layout-store.svelte.ts) so this
+// hint doesn't come back every time the user later closes everything.
+let showFirstRunHint = $derived(tabs.length === 0 && !hasEverOpenedTab());
 
 function onSelect(tabId: string): void {
   selectTabAnyPanel(tabId);
   router.goto('/workspace');
 }
 </script>
+
+{#snippet firstRunHint()}
+  <i class="fas fa-table-cells opacity-70" aria-hidden="true"></i>
+  <span class="ml-2">Open a container, pod, or image to start a tab here</span>
+{/snippet}
 
 <!-- Always rendered - even with zero tabs open - so the Layout settings button in `trailing`
      stays reachable as the entry point for starting a layout in the first place (new layout,
@@ -73,7 +83,8 @@ function onSelect(tabId: string): void {
   onMoveFromOtherPanel={(_sourcePanelId, tabId, beforeTabId): void => reorderTabGlobal(tabId, beforeTabId)}
   onSplitRight={splitRightAnyPanel}
   onSplitDown={splitDownAnyPanel}
-  onMoveToNewPanel={moveToNewPanelAnyPanel}>
+  onMoveToNewPanel={moveToNewPanelAnyPanel}
+  emptyHint={showFirstRunHint ? firstRunHint : undefined}>
   {#snippet trailing()}
     <LayoutToolbar />
   {/snippet}

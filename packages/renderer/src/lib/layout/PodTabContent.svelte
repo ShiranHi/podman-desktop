@@ -59,7 +59,10 @@ $effect(() => {
       {:else if subView === 'logs'}
         <PodDetailsLogs pod={pod} />
       {:else}
-        <MockResourceStats resourceId={podKey(pod.name, pod.engineId)} kind="pod" />
+        <MockResourceStats
+          resourceId={podKey(pod.name, pod.engineId)}
+          kind="pod"
+          running={pod.status.toUpperCase() === 'RUNNING'} />
         <PodSummaryTabContent pod={pod} />
       {/if}
     </div>

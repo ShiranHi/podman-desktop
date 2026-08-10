@@ -30,7 +30,8 @@ import { containersInfos } from '/@/stores/containers';
 import { imagesInfos } from '/@/stores/images';
 import { podsInfos } from '/@/stores/pods';
 
-import { openTab, resetLayout } from './layout-store.svelte';
+import { applySerializedLayout, serializeCurrentLayout, type SerializedLayout } from './layout-persistence.svelte';
+import { openTab } from './layout-store.svelte';
 import { imageKey, podKey } from './layout-types';
 import {
   formatVulnBreakdown,
@@ -41,8 +42,24 @@ import {
 
 export const agentBannerState: { visible: boolean; message: string } = $state({ visible: false, message: '' });
 
+/** Snapshot of the workspace taken right before the most recent agent action added its own
+ * tabs, so the banner's "Undo" can put back exactly what was there before - including nothing,
+ * if the workspace was empty - instead of wiping the whole workspace (which would also discard
+ * any unrelated tabs the user already had open before asking the agent for anything). */
+let preActionSnapshot: SerializedLayout | undefined;
+
 export function dismissAgentBanner(): void {
   agentBannerState.visible = false;
+}
+
+/** Reverts only the most recent agent action, restoring the exact tree/tabs/focus that existed
+ * right before it ran. */
+export function undoLastAgentAction(): void {
+  if (preActionSnapshot) {
+    applySerializedLayout(preActionSnapshot);
+    preActionSnapshot = undefined;
+  }
+  dismissAgentBanner();
 }
 
 interface CompareDimension {
@@ -191,12 +208,15 @@ function debugContainersLayout(promptLabel?: string): void {
   const pick = (running.length >= 2 ? running : containers).slice(0, 2);
 
   if (pick.length === 0) {
+    // Nothing was opened this time, so clear any snapshot left over from an earlier, successful
+    // agent action - otherwise "Undo" on *this* no-op banner would revert that unrelated action.
+    preActionSnapshot = undefined;
     agentBannerState.visible = true;
     agentBannerState.message = 'No containers are available for the agent to inspect right now.';
     return;
   }
 
-  resetLayout();
+  preActionSnapshot = serializeCurrentLayout();
   openTab(
     {
       resourceType: 'container',
@@ -256,12 +276,13 @@ export function runAgentPrompt(prompt: string): void {
   if (lower.includes('pod')) {
     const pods = get(podsInfos);
     if (pods.length === 0) {
+      preActionSnapshot = undefined;
       agentBannerState.visible = true;
       agentBannerState.message = `No pods are available for the agent to act on "${trimmed}".`;
       return;
     }
 
-    resetLayout();
+    preActionSnapshot = serializeCurrentLayout();
     const pick = pods.slice(0, 2);
     openTab(
       {
@@ -319,12 +340,13 @@ export function runAgentPrompt(prompt: string): void {
     const pick = images.slice(0, 2);
 
     if (pick.length === 0) {
+      preActionSnapshot = undefined;
       agentBannerState.visible = true;
       agentBannerState.message = `No images are available for the agent to act on "${trimmed}".`;
       return;
     }
 
-    resetLayout();
+    preActionSnapshot = serializeCurrentLayout();
     openTab(
       {
         resourceType: 'image',

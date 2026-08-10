@@ -39,6 +39,33 @@ router.subscribe(route => {
   currentRouteUrl = route.url;
 });
 
+// Whether this profile has ever opened a tab, persisted across restarts so the empty global tab
+// bar's first-run hint (see GlobalTabBar.svelte) is shown exactly until someone opens their
+// first tab, then never again - not re-shown every time the workspace happens to be empty again.
+const EVER_OPENED_TAB_KEY = 'podman-desktop.workspace.ever-opened-tab.v1';
+function readEverOpenedTabFlag(): boolean {
+  try {
+    return localStorage.getItem(EVER_OPENED_TAB_KEY) === '1';
+  } catch {
+    return true; // fail open: don't nag if storage isn't available for some reason
+  }
+}
+let everOpenedTab = $state(readEverOpenedTabFlag());
+
+export function hasEverOpenedTab(): boolean {
+  return everOpenedTab;
+}
+
+function markTabEverOpened(): void {
+  if (everOpenedTab) return;
+  everOpenedTab = true;
+  try {
+    localStorage.setItem(EVER_OPENED_TAB_KEY, '1');
+  } catch {
+    // Non-fatal: worst case the first-run hint reappears next launch.
+  }
+}
+
 export interface OpenTabInput {
   resourceType: WorkspaceResourceType;
   resourceId: string;
@@ -238,6 +265,7 @@ export function openTab(input: OpenTabInput, mode: OpenMode = 'replace', targetP
     return existing.id;
   }
 
+  markTabEverOpened();
   const id = genId('tab');
   const tab: WorkspaceTab = {
     id,
@@ -412,6 +440,17 @@ export function closeActiveTab(): void {
   const tab = layoutState.tabs[leaf.activeTabId];
   if (tab?.pinned) return;
   closeTabInternal(leaf.id, leaf.activeTabId);
+}
+
+/** Switches to the next/previous tab in the currently focused panel (Ctrl/Cmd+Tab and
+ * Ctrl/Cmd+Shift+Tab), matching Cursor/VS Code's tab-cycling keybinding - previously the only
+ * way to switch tabs at all was to click one directly. */
+export function cycleActiveTab(direction: 1 | -1): void {
+  const leaf = findLeaf(layoutState.tree, layoutState.focusedPanelId);
+  if (!leaf || leaf.tabIds.length < 2) return;
+  const currentIndex = leaf.activeTabId ? leaf.tabIds.indexOf(leaf.activeTabId) : -1;
+  const nextIndex = (currentIndex + direction + leaf.tabIds.length) % leaf.tabIds.length;
+  leaf.activeTabId = leaf.tabIds[nextIndex];
 }
 
 export function markTabStale(tabId: string, stale: boolean): void {

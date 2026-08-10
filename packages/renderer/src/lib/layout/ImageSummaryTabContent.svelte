@@ -58,15 +58,23 @@ const usedByContainers = $derived($containersInfos.filter(c => c.ImageID === ima
 const labelEntries = $derived(Object.entries(image.labels ?? {}));
 
 let manifestDetails: ManifestInspectInfo | undefined = $state();
+// Distinguishes "not a manifest list, nothing to show" (manifestError stays undefined, card is
+// skipped entirely below) from "is a manifest list but the fetch itself failed" - previously a
+// failed inspectManifest() call was only console.error'd, so the Manifest details card just
+// silently never appeared with no way to tell the difference from the first, common case.
+let manifestError: string | undefined = $state();
 
-onMount(async () => {
+async function loadManifest(): Promise<void> {
   if (!image.isManifest) return;
+  manifestError = undefined;
   try {
     manifestDetails = await window.inspectManifest(image.engineId, image.id);
   } catch (err) {
-    console.error('Failed to inspect manifest', err);
+    manifestError = err instanceof Error ? err.message : String(err);
   }
-});
+}
+
+onMount(loadManifest);
 </script>
 
 <div class="flex flex-col gap-4 px-5 py-4">
@@ -133,7 +141,22 @@ onMount(async () => {
     </SummaryCard>
   {/if}
 
-  {#if manifestDetails && manifestDetails.manifests.length > 0}
+  {#if manifestError}
+    <SummaryCard title="Manifest details" icon="fas fa-layer-group">
+      <div class="flex items-center justify-between gap-3 px-4 pb-3 text-sm">
+        <span class="flex items-center gap-2 text-[var(--pd-state-error)]">
+          <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+          Couldn't load manifest details: {manifestError}
+        </span>
+        <button
+          type="button"
+          class="shrink-0 text-[var(--pd-link)] hover:underline"
+          onclick={loadManifest}>
+          Retry
+        </button>
+      </div>
+    </SummaryCard>
+  {:else if manifestDetails && manifestDetails.manifests.length > 0}
     <SummaryCard title="Manifest details" icon="fas fa-layer-group">
       <div class="divide-y divide-[var(--pd-content-divider)]">
         {#each manifestDetails.manifests as manifest (manifest.digest)}

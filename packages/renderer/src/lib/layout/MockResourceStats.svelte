@@ -30,6 +30,13 @@ import { formatVulnBreakdown, getImageMockMetrics, getPodMockMetrics } from '/@/
 interface Props {
   resourceId: string;
   kind: 'pod' | 'image';
+  /** Whether the pod is actually running right now - ignored for images, which have no
+   * running/stopped concept of their own. CPU/memory/network are meant to read as *live*
+   * activity, so showing non-zero numbers for a stopped pod directly contradicts the same tab's
+   * own status pill and Containers card (e.g. "0 running / 2 stopped" right above "Network I/O:
+   * Critical"). Restarts/vulnerabilities/etc. are lifetime counts, not live activity, so those
+   * stay visible regardless of run state - only the pod branch below is gated on this. */
+  running?: boolean;
   /** Repository name (e.g. "quay.io/org/repo") and digest ("sha256:...") of the image, used
    * only to link the vulnerabilities alert below to a *real* scan report on Quay.io when the
    * image actually is quay-hosted - Podman Desktop has no scanner of its own to link to. */
@@ -37,9 +44,11 @@ interface Props {
   imageDigest?: string;
 }
 
-let { resourceId, kind, imageName, imageDigest }: Props = $props();
+let { resourceId, kind, running = true, imageName, imageDigest }: Props = $props();
 
-type Status = 'good' | 'warn' | 'bad';
+// 'na' is for a metric that doesn't apply right now (a stopped pod has no live CPU/memory/network
+// to report) - visually distinct (muted, not green) from 'good', which means "checked and fine".
+type Status = 'good' | 'warn' | 'bad' | 'na';
 
 interface Stat {
   label: string;
@@ -47,11 +56,12 @@ interface Stat {
   status: Status;
 }
 
-const STATUS_LABEL: Record<Status, string> = { good: 'Good', warn: 'Warning', bad: 'Critical' };
+const STATUS_LABEL: Record<Status, string> = { good: 'Good', warn: 'Warning', bad: 'Critical', na: '' };
 const STATUS_TEXT_CLASS: Record<Status, string> = {
   good: 'text-[var(--pd-status-running)]',
   warn: 'text-[var(--pd-status-degraded)]',
   bad: 'text-[var(--pd-state-error)]',
+  na: 'text-[var(--pd-content-text)] opacity-60',
 };
 
 const imageMetrics = $derived(kind === 'image' ? getImageMockMetrics(resourceId) : undefined);
@@ -60,18 +70,28 @@ const stats = $derived.by((): Stat[] => {
   if (kind === 'pod') {
     const { cpuPercent, memoryMb, restarts, rxMb } = getPodMockMetrics(resourceId);
     return [
-      {
-        label: 'CPU usage',
-        value: `${cpuPercent}%`,
-        status: cpuPercent > 75 ? 'bad' : cpuPercent > 45 ? 'warn' : 'good',
-      },
-      { label: 'Memory', value: `${memoryMb} MB`, status: memoryMb > 400 ? 'bad' : memoryMb > 300 ? 'warn' : 'good' },
+      running
+        ? {
+            label: 'CPU usage',
+            value: `${cpuPercent}%`,
+            status: cpuPercent > 75 ? 'bad' : cpuPercent > 45 ? 'warn' : 'good',
+          }
+        : { label: 'CPU usage', value: 'Not running', status: 'na' },
+      running
+        ? {
+            label: 'Memory',
+            value: `${memoryMb} MB`,
+            status: memoryMb > 400 ? 'bad' : memoryMb > 300 ? 'warn' : 'good',
+          }
+        : { label: 'Memory', value: 'Not running', status: 'na' },
       { label: 'Restarts', value: `${restarts}`, status: restarts > 1 ? 'bad' : restarts === 1 ? 'warn' : 'good' },
-      {
-        label: 'Network I/O',
-        value: `${rxMb.toFixed(1)} MB/s`,
-        status: rxMb > 25 ? 'bad' : rxMb > 10 ? 'warn' : 'good',
-      },
+      running
+        ? {
+            label: 'Network I/O',
+            value: `${rxMb.toFixed(1)} MB/s`,
+            status: rxMb > 25 ? 'bad' : rxMb > 10 ? 'warn' : 'good',
+          }
+        : { label: 'Network I/O', value: 'Not running', status: 'na' },
     ];
   }
   const { critical, high, medium, pulls, layers, daysSinceScan } = imageMetrics ?? {
@@ -119,8 +139,12 @@ const quayScanUrl = $derived.by((): string | undefined => {
     {#each stats as stat (stat.label)}
       <div class="flex flex-col gap-0.5">
         <span class="text-xs text-[var(--pd-content-text)] opacity-60">{stat.label}</span>
-        <span class="text-base font-semibold text-[var(--pd-content-header)]">{stat.value}</span>
-        <span class="text-[11px] font-medium {STATUS_TEXT_CLASS[stat.status]}">{STATUS_LABEL[stat.status]}</span>
+        <span class="text-base font-semibold {stat.status === 'na' ? 'opacity-60' : 'text-[var(--pd-content-header)]'}">
+          {stat.value}
+        </span>
+        {#if STATUS_LABEL[stat.status]}
+          <span class="text-[11px] font-medium {STATUS_TEXT_CLASS[stat.status]}">{STATUS_LABEL[stat.status]}</span>
+        {/if}
       </div>
     {/each}
   </div>

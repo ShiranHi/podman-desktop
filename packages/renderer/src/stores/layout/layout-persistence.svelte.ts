@@ -44,7 +44,7 @@ export interface NamedLayout {
   layout: SerializedLayout;
 }
 
-function serializeCurrentLayout(): SerializedLayout {
+export function serializeCurrentLayout(): SerializedLayout {
   return {
     tree: JSON.parse(JSON.stringify(layoutState.tree)) as PanelNode,
     tabs: JSON.parse(JSON.stringify(layoutState.tabs)) as Record<string, WorkspaceTab>,

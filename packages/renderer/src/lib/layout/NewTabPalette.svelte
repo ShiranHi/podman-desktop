@@ -49,6 +49,10 @@ interface PaletteEntry {
   title: string;
   subtitle: string;
   iconClass: string;
+  /** Every entry defaults to the palette's neutral icon color - only the agent entry overrides
+   * this, so the one row that runs an autonomous action (instead of just opening the one tab you
+   * clicked) reads as visually distinct at a glance, not identical to every resource row below it. */
+  iconColorClass?: string;
   group: string;
   onSelect: () => void;
 }
@@ -175,8 +179,14 @@ const agentEntry = $derived.by(
   (): PaletteEntry => ({
     id: 'agent',
     title: trimmedQuery ? `Ask agent: "${trimmedQuery}"` : 'Ask agent to prepare a layout for me',
-    subtitle: 'AI agent',
+    // Every other row's subtitle just names the resource kind ("Pod", "Container", "Image") -
+    // this one instead says what picking it *does*, since it's the only row that acts on its
+    // own (opens its own tab(s), possibly more than one) instead of just opening what you asked for.
+    subtitle: 'Opens tabs automatically',
     iconClass: 'fas fa-wand-magic-sparkles',
+    // Same color already used for the "opened by an agent" dot on agent-created tabs
+    // (TabBar.svelte), so the two agent-touched affordances read as the same visual language.
+    iconColorClass: 'text-[var(--pd-status-running)]',
     group: 'Agent',
     onSelect: (): void => {
       runAgentPrompt(trimmedQuery);
@@ -266,7 +276,9 @@ tick()
                 selectedIndex = idx;
               }}
               onclick={entry.onSelect}>
-              <i class="{entry.iconClass} w-4 text-center text-[var(--pd-modal-dropdown-text)] shrink-0" aria-hidden="true"></i>
+              <i
+                class="{entry.iconClass} w-4 text-center shrink-0 {entry.iconColorClass ?? 'text-[var(--pd-modal-dropdown-text)]'}"
+                aria-hidden="true"></i>
               <span class="grow overflow-hidden text-ellipsis whitespace-nowrap text-[var(--pd-modal-dropdown-text)]">
                 {entry.title}
               </span>
