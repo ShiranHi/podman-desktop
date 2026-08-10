@@ -25,6 +25,7 @@ import { faChevronDown, faPlus, faTableColumns, faThumbtack, faXmark } from '@fo
 import type { Snippet } from 'svelte';
 
 import Icon from '../icons/Icon.svelte';
+import Tooltip from '../tooltip/Tooltip.svelte';
 import ContextMenu from './ContextMenu.svelte';
 import type { ContextMenuAction, TabDescriptor } from './types';
 
@@ -251,30 +252,36 @@ function contextMenuActions(tabId: string): ContextMenuAction[] {
         {#if tab.stale}
           <span class="text-[10px] uppercase tracking-wide text-[var(--pd-status-degraded)]">missing</span>
         {/if}
-        <button
-          type="button"
-          aria-label="Split {tab.title} to the right"
-          title="Split right"
-          class="opacity-0 group-hover:opacity-100 hover:bg-[var(--pd-action-button-details-bg)] rounded-sm p-0.5"
-          onclick={(e: MouseEvent): void => {
-            e.stopPropagation();
-            onSplitRight(tab.id);
-          }}>
-          <Icon class="w-3 text-xs" icon={faTableColumns} />
-        </button>
-        {#if !tab.pinned}
-          <button
-            type="button"
-            aria-label="Close tab {tab.title}"
-            class="ml-1 opacity-0 group-hover:opacity-100 hover:bg-[var(--pd-action-button-details-bg)] rounded-sm p-0.5"
-            class:opacity-100={tab.id === activeTabId}
-            onclick={(e: MouseEvent): void => {
-              e.stopPropagation();
-              onClose(tab.id);
-            }}>
-            <Icon class="w-3 text-xs" icon={faXmark} />
-          </button>
-        {/if}
+        <div class="flex items-center gap-0.5">
+          <Tooltip tip={tabs.length > 1 ? 'Split right' : 'Only tab in this panel'} top>
+            <button
+              type="button"
+              aria-label="Split {tab.title} to the right"
+              disabled={tabs.length <= 1}
+              class="opacity-0 group-hover:opacity-100 disabled:group-hover:opacity-40 hover:bg-[var(--pd-action-button-details-bg)] disabled:hover:bg-transparent rounded-sm p-0.5 disabled:cursor-not-allowed"
+              onclick={(e: MouseEvent): void => {
+                e.stopPropagation();
+                onSplitRight(tab.id);
+              }}>
+              <Icon class="w-3 text-xs" icon={faTableColumns} />
+            </button>
+          </Tooltip>
+          {#if !tab.pinned}
+            <Tooltip tip="Close tab" top>
+              <button
+                type="button"
+                aria-label="Close tab {tab.title}"
+                class="opacity-0 group-hover:opacity-100 hover:bg-[var(--pd-action-button-details-bg)] rounded-sm p-0.5"
+                class:opacity-100={tab.id === activeTabId}
+                onclick={(e: MouseEvent): void => {
+                  e.stopPropagation();
+                  onClose(tab.id);
+                }}>
+                <Icon class="w-3 text-xs" icon={faXmark} />
+              </button>
+            </Tooltip>
+          {/if}
+        </div>
       </div>
     {/each}
 
@@ -284,14 +291,15 @@ function contextMenuActions(tabId: string): ContextMenuAction[] {
            Nothing to offer "another view" of with zero tabs open - the empty state already
            covers that case, so skip the button rather than leave it floating alone in an
            otherwise-empty bar. -->
-      <button
-        type="button"
-        aria-label="Open a new tab"
-        title="Open a new tab"
-        class="flex items-center px-2.5 shrink-0 hover:bg-[var(--pd-action-button-details-bg)]"
-        onclick={onAddTab}>
-        <Icon class="w-3 text-xs" icon={faPlus} />
-      </button>
+      <Tooltip tip="Open a new tab" top containerClass="flex items-stretch" class="flex items-stretch">
+        <button
+          type="button"
+          aria-label="Open a new tab"
+          class="flex items-center px-2.5 shrink-0 hover:bg-[var(--pd-action-button-details-bg)]"
+          onclick={onAddTab}>
+          <Icon class="w-3 text-xs" icon={faPlus} />
+        </button>
+      </Tooltip>
     {/if}
   </div>
 
