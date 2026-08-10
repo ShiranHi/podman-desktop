@@ -165,14 +165,19 @@ function openManageModal(): void {
       tabindex="-1"
       style={menuStyle}
       class="fixed z-50 w-64 max-h-[80vh] overflow-y-auto rounded-md shadow-lg bg-[var(--pd-dropdown-bg)] ring-2 ring-[var(--pd-dropdown-ring)] hover:ring-[var(--pd-dropdown-hover-ring)] divide-y divide-[var(--pd-dropdown-divider)] focus:outline-hidden">
-      <DropdownMenu.Item title="Close All Tabs" icon={faXmark} enabled={hasAnyTabs()} onClick={closeAllTabsAction} />
-      <DropdownMenu.Item
-        title="Save Layout As…"
-        icon={faFloppyDisk}
-        enabled={hasAnyTabs()}
-        tooltip={hasAnyTabs() ? undefined : 'Nothing to save - open a tab first'}
-        onClick={openSaveDialog} />
-      <DropdownMenu.Item title="Manage Layouts…" icon={faFolderOpen} onClick={openManageModal} />
+      <div>
+        <div class="px-3 pt-2 pb-1 text-xs font-semibold uppercase tracking-wide text-[var(--pd-dropdown-item-text)] opacity-60">
+          Layouts
+        </div>
+        <DropdownMenu.Item title="Close All Tabs" icon={faXmark} enabled={hasAnyTabs()} onClick={closeAllTabsAction} />
+        <DropdownMenu.Item
+          title="Save Layout As…"
+          icon={faFloppyDisk}
+          enabled={hasAnyTabs()}
+          tooltip={hasAnyTabs() ? undefined : 'Nothing to save - open a tab first'}
+          onClick={openSaveDialog} />
+        <DropdownMenu.Item title="Manage Layouts…" icon={faFolderOpen} onClick={openManageModal} />
+      </div>
 
       <div>
         <div class="px-3 pt-2 pb-1 text-xs font-semibold uppercase tracking-wide text-[var(--pd-dropdown-item-text)] opacity-60">
