@@ -30,6 +30,7 @@ import { ImageUtils } from '/@/lib/image/image-utils';
 import { containersInfos } from '/@/stores/containers';
 import { imagesInfos } from '/@/stores/images';
 import { runAgentPrompt } from '/@/stores/layout/layout-agent-demo.svelte';
+import { findProactiveInsight } from '/@/stores/layout/layout-proactive-insight';
 import { openTab } from '/@/stores/layout/layout-store.svelte';
 import type { WorkspaceTab } from '/@/stores/layout/layout-types';
 import { imageKey, podKey, subViewLabel, subViewsForResourceType } from '/@/stores/layout/layout-types';
@@ -145,55 +146,103 @@ const containerEntries = $derived(
     ),
 );
 
-const imageEntries = $derived(
+const imageUIList = $derived(
   $imagesInfos
     .flatMap(i => imageUtils.getImagesInfoUI(i, $containersInfos, undefined, [], $imagesInfos))
-    .filter((i): i is NonNullable<typeof i> => !!i)
-    .map(
-      (image): PaletteEntry => ({
-        id: `image-${image.id}-${image.base64RepoTag}`,
-        title: `${image.name}:${image.tag}`,
-        subtitle: 'Image',
-        iconClass: 'fas fa-box',
-        group: 'Images',
-        onSelect: (): void => {
-          openTab(
-            {
-              resourceType: 'image',
-              resourceId: imageKey(image.id, image.engineId, image.base64RepoTag),
-              subView: 'summary',
-              title: `${image.name}:${image.tag} · Summary`,
-            },
-            'newTab',
-            panelId,
-          );
-          onClose();
-        },
-      }),
-    ),
+    .filter((i): i is NonNullable<typeof i> => !!i),
+);
+
+const imageEntries = $derived(
+  imageUIList.map(
+    (image): PaletteEntry => ({
+      id: `image-${image.id}-${image.base64RepoTag}`,
+      title: `${image.name}:${image.tag}`,
+      subtitle: 'Image',
+      iconClass: 'fas fa-box',
+      group: 'Images',
+      onSelect: (): void => {
+        openTab(
+          {
+            resourceType: 'image',
+            resourceId: imageKey(image.id, image.engineId, image.base64RepoTag),
+            subView: 'summary',
+            title: `${image.name}:${image.tag} · Summary`,
+          },
+          'newTab',
+          panelId,
+        );
+        onClose();
+      },
+    }),
+  ),
 );
 
 const trimmedQuery = $derived(query.trim());
 
-const agentEntry = $derived.by(
-  (): PaletteEntry => ({
+// A static "Ask agent to prepare a layout for me" with nothing to react to gives users nothing
+// to act on until they think of something to type. When the query's empty, lead instead with
+// whatever the agent actually found worth flagging (a vulnerable image, a flaky pod, a rebuilt
+// image) - falling back to the generic prompt only once there's genuinely nothing to report.
+const proactiveInsight = $derived(findProactiveInsight(imageUIList, $podsInfos));
+
+const agentEntry = $derived.by((): PaletteEntry => {
+  if (trimmedQuery) {
+    return {
+      id: 'agent',
+      title: `Ask agent: "${trimmedQuery}"`,
+      // Every other row's subtitle just names the resource kind ("Pod", "Container", "Image") -
+      // this one instead says what picking it *does*, since it acts on its own (opens its own
+      // tab(s), possibly more than one) instead of just opening what you asked for.
+      subtitle: 'Opens tabs automatically',
+      iconClass: 'fas fa-wand-magic-sparkles',
+      // Same color already used for the "opened by an agent" dot on agent-created tabs
+      // (TabBar.svelte), so the two agent-touched affordances read as the same visual language.
+      iconColorClass: 'text-[var(--pd-status-running)]',
+      group: 'Agent',
+      onSelect: (): void => {
+        runAgentPrompt(trimmedQuery);
+        onClose();
+      },
+    };
+  }
+
+  if (proactiveInsight) {
+    return {
+      id: 'agent-insight',
+      title: proactiveInsight.title,
+      subtitle: proactiveInsight.subtitle,
+      iconClass: proactiveInsight.iconClass,
+      iconColorClass: proactiveInsight.iconColorClass,
+      group: 'Agent',
+      onSelect: (): void => {
+        openTab(
+          {
+            resourceType: proactiveInsight.resourceType,
+            resourceId: proactiveInsight.resourceId,
+            subView: 'summary',
+            title: proactiveInsight.tabTitle,
+          },
+          'newTab',
+          panelId,
+        );
+        onClose();
+      },
+    };
+  }
+
+  return {
     id: 'agent',
-    title: trimmedQuery ? `Ask agent: "${trimmedQuery}"` : 'Ask agent to prepare a layout for me',
-    // Every other row's subtitle just names the resource kind ("Pod", "Container", "Image") -
-    // this one instead says what picking it *does*, since it's the only row that acts on its
-    // own (opens its own tab(s), possibly more than one) instead of just opening what you asked for.
+    title: 'Ask agent to prepare a layout for me',
     subtitle: 'Opens tabs automatically',
     iconClass: 'fas fa-wand-magic-sparkles',
-    // Same color already used for the "opened by an agent" dot on agent-created tabs
-    // (TabBar.svelte), so the two agent-touched affordances read as the same visual language.
     iconColorClass: 'text-[var(--pd-status-running)]',
     group: 'Agent',
     onSelect: (): void => {
       runAgentPrompt(trimmedQuery);
       onClose();
     },
-  }),
-);
+  };
+});
 
 const filteredResourceEntries = $derived.by((): PaletteEntry[] => {
   const q = trimmedQuery.toLowerCase();

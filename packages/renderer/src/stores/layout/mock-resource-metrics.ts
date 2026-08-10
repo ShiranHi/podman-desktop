@@ -74,6 +74,25 @@ export function getImageMockMetrics(resourceId: string): ImageMockMetrics {
   };
 }
 
+export interface ImageUpdateInfo {
+  updateAvailable: boolean;
+  /** Only meaningful when `updateAvailable` is true - how long ago the newer build landed. */
+  daysAgo: number;
+}
+
+/** Separate hash namespace (`update:`, not `image:`) from getImageMockMetrics - otherwise reusing
+ * the same hash for two unrelated booleans/counts would make them suspiciously correlated (e.g.
+ * every image with 0 critical vulns would also always show "no update available"). Roughly 1 in 3
+ * images report an update, so the "+" palette's proactive insight (see layout-proactive-insight.ts)
+ * has something to surface without every single image claiming to be outdated. */
+export function getImageUpdateInfo(resourceId: string): ImageUpdateInfo {
+  const h = hash(`update:${resourceId}`);
+  return {
+    updateAvailable: h % 3 === 0,
+    daysAgo: ((h >>> 4) % 14) + 1,
+  };
+}
+
 /** Drops zero counts instead of printing "1 critical, 0 high, 0 medium". */
 export function formatVulnBreakdown({ critical, high, medium }: ImageVulnCounts, noneLabel = 'None found'): string {
   const parts = [
