@@ -24,7 +24,6 @@
 // pod/container/image, or hand a free-text request to the (mocked) agent -
 // section 4.6/4.9 of the vision doc.
 import { Modal } from '@podman-desktop/ui-svelte';
-import { tick } from 'svelte';
 
 import { ContainerUtils } from '/@/lib/container/container-utils';
 import { ImageUtils } from '/@/lib/image/image-utils';
@@ -35,6 +34,8 @@ import { openTab } from '/@/stores/layout/layout-store.svelte';
 import type { WorkspaceTab } from '/@/stores/layout/layout-types';
 import { imageKey, podKey, subViewLabel, subViewsForResourceType } from '/@/stores/layout/layout-types';
 import { podsInfos } from '/@/stores/pods';
+
+import { autofocus } from './autofocus';
 
 interface Props {
   panelId: string;
@@ -62,7 +63,6 @@ const imageUtils = new ImageUtils();
 
 let query = $state('');
 let selectedIndex = $state(0);
-let inputEl: HTMLInputElement | undefined = $state();
 
 const subViewEntries = $derived.by((): PaletteEntry[] => {
   if (!activeTab) return [];
@@ -234,10 +234,6 @@ function onKeydown(event: KeyboardEvent): void {
     allEntries[selectedIndex]?.onSelect();
   }
 }
-
-tick()
-  .then(() => inputEl?.focus())
-  .catch((error: unknown) => console.error('Unable to focus new-tab palette input', error));
 </script>
 
 <Modal name="Open a new tab" top onclose={onClose}>
@@ -250,7 +246,7 @@ tick()
   <div class="flex flex-col w-full max-h-[70vh] rounded-xl overflow-hidden">
     <div class="p-2 border-b border-[var(--pd-content-divider)]">
       <input
-        bind:this={inputEl}
+        use:autofocus
         bind:value={query}
         oninput={onQueryInput}
         onkeydown={onKeydown}

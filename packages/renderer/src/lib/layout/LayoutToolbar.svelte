@@ -33,6 +33,7 @@ import { saveNamedLayout } from '/@/stores/layout/layout-persistence.svelte';
 import { type PresetId, PRESETS } from '/@/stores/layout/layout-presets';
 import { closeAllTabsEverywhere, hasAnyTabs } from '/@/stores/layout/layout-store.svelte';
 
+import { autofocus } from './autofocus';
 import ManageLayoutsModal from './ManageLayoutsModal.svelte';
 import PresetPickerModal from './PresetPickerModal.svelte';
 
@@ -201,6 +202,7 @@ function openManageModal(): void {
         <label for="layoutName" class="block my-2 text-sm font-bold text-[var(--pd-modal-text)]">Layout name</label>
         <input
           id="layoutName"
+          use:autofocus
           class="w-full p-2 rounded-sm bg-[var(--pd-input-field-focused-bg)] text-[var(--pd-input-field-text)]"
           placeholder="e.g. Nightly debug session"
           bind:value={saveName}

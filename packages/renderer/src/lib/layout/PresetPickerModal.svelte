@@ -36,6 +36,8 @@ import {
 } from '/@/stores/layout/layout-presets';
 import { podsInfos } from '/@/stores/pods';
 
+import { autofocus } from './autofocus';
+
 interface Props {
   presetId: PresetId;
   onClose: () => void;
@@ -128,6 +130,7 @@ const titles: Record<PresetId, string> = {
           </label>
           <select
             id="containerA"
+            use:autofocus
             class="w-full p-2 rounded-sm bg-[var(--pd-input-field-focused-bg)] text-[var(--pd-input-field-text)]"
             bind:value={containerAId}>
             <option value="">Select a container...</option>
@@ -156,6 +159,7 @@ const titles: Record<PresetId, string> = {
           <label for="pod" class="block my-1 text-sm font-bold text-[var(--pd-modal-text)]">Pod</label>
           <select
             id="pod"
+            use:autofocus
             class="w-full p-2 rounded-sm bg-[var(--pd-input-field-focused-bg)] text-[var(--pd-input-field-text)]"
             bind:value={podResourceId}>
             <option value="">Select a pod...</option>
@@ -170,6 +174,7 @@ const titles: Record<PresetId, string> = {
           <label for="imageA" class="block my-1 text-sm font-bold text-[var(--pd-modal-text)]">First image</label>
           <select
             id="imageA"
+            use:autofocus
             class="w-full p-2 rounded-sm bg-[var(--pd-input-field-focused-bg)] text-[var(--pd-input-field-text)]"
             bind:value={imageAId}>
             <option value="">Select an image...</option>
