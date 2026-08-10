@@ -55,8 +55,12 @@ import PresetPickerModal from './PresetPickerModal.svelte';
 
 let showMenu = $state(false);
 let menuAnchor = $state<HTMLButtonElement>();
+let menuEl = $state<HTMLDivElement>();
 let clientX = $state(0);
 let clientY = $state(0);
+// Hidden (off-screen + invisible) until positionMenu() below has measured the menu's real size
+// and placed it - avoids a one-frame flash at the top-left corner.
+let menuStyle = $state('top: -9999px; left: -9999px; visibility: hidden;');
 
 let showSaveDialog = $state(false);
 let saveName = $state('');
@@ -74,8 +78,40 @@ function toggleMenu(event: MouseEvent): void {
   clientX = rect.left;
   clientY = rect.bottom;
   showMenu = !showMenu;
-  if (showMenu) refreshNamedLayouts();
+  if (showMenu) {
+    // Reset to hidden before the effect below re-measures and re-places the (freshly mounted)
+    // menu - otherwise it would flash at wherever it was left positioned last time it was open.
+    menuStyle = 'top: -9999px; left: -9999px; visibility: hidden;';
+    refreshNamedLayouts();
+  }
 }
+
+// This menu is embedded in each panel's tab bar (see the `trailing` slot wiring in
+// WorkspaceLayout/GlobalTabBar), and Panel.svelte's own root clips overflow (so a split's
+// content can't spill into its neighbor). A plain `position: absolute` dropdown - anchored to
+// its small parent wrapper, as the shared DropdownMenu.Items component does - gets clipped at
+// that panel boundary instead of floating over it (the "menu got cut" bug). Positioning this
+// one with `position: fixed` and explicit viewport coordinates (computed here, once the menu's
+// real size is known) escapes that clipping entirely, the same way the app's modals do.
+$effect(() => {
+  if (!showMenu || !menuEl) return;
+  const rect = menuEl.getBoundingClientRect();
+  const margin = 8;
+
+  let top = clientY + margin;
+  if (top + rect.height > window.innerHeight - margin) {
+    // Flip to open upward from the button instead of down, roughly undoing the button's own
+    // height (~32px) plus the same gap so it doesn't overlap the button itself.
+    top = Math.max(margin, clientY - rect.height - 40);
+  }
+
+  let left = clientX;
+  if (left + rect.width > window.innerWidth - margin) {
+    left = Math.max(margin, window.innerWidth - rect.width - margin);
+  }
+
+  menuStyle = `top: ${top}px; left: ${left}px; visibility: visible;`;
+});
 
 function handleEscape({ key }: KeyboardEvent): void {
   if (key === 'Escape') showMenu = false;
@@ -83,7 +119,7 @@ function handleEscape({ key }: KeyboardEvent): void {
 
 function onWindowClick(e: MouseEvent): void {
   const target = e.target;
-  if (target instanceof Node && menuAnchor?.contains(target)) return;
+  if (target instanceof Node && (menuAnchor?.contains(target) || menuEl?.contains(target))) return;
   showMenu = false;
 }
 
@@ -149,7 +185,12 @@ function onImportFile(event: Event): void {
   </button>
 
   {#if showMenu}
-    <DropdownMenu.Items {clientX} {clientY}>
+    <div
+      bind:this={menuEl}
+      role="menu"
+      tabindex="-1"
+      style={menuStyle}
+      class="fixed z-50 w-64 max-h-[80vh] overflow-y-auto rounded-md shadow-lg bg-[var(--pd-dropdown-bg)] ring-2 ring-[var(--pd-dropdown-ring)] hover:ring-[var(--pd-dropdown-hover-ring)] divide-y divide-[var(--pd-dropdown-divider)] focus:outline-hidden">
       <DropdownMenu.Item title="New Layout" icon={faCirclePlus} onClick={newLayout} />
       <DropdownMenu.Item title="Save Layout As…" icon={faFloppyDisk} onClick={openSaveDialog} />
 
@@ -215,7 +256,7 @@ function onImportFile(event: Event): void {
           simulateAgentDebugLayout();
           goToWorkspace();
         }} />
-    </DropdownMenu.Items>
+    </div>
   {/if}
 </div>
 
