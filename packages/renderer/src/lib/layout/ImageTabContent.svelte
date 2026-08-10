@@ -26,7 +26,6 @@ import type { ViewInfoUI } from '@podman-desktop/core-api';
 import { ImageUtils } from '/@/lib/image/image-utils';
 import ImageDetailsHistory from '/@/lib/image/ImageDetailsHistory.svelte';
 import ImageDetailsInspect from '/@/lib/image/ImageDetailsInspect.svelte';
-import ImageDetailsSummary from '/@/lib/image/ImageDetailsSummary.svelte';
 import {
   IMAGE_DETAILS_VIEW_BADGES,
   IMAGE_DETAILS_VIEW_ICONS,
@@ -41,6 +40,7 @@ import type { ImageSubView } from '/@/stores/layout/layout-types';
 import { imageKey } from '/@/stores/layout/layout-types';
 import { viewsContributions } from '/@/stores/views';
 
+import ImageSummaryTabContent from './ImageSummaryTabContent.svelte';
 import MockResourceStats from './MockResourceStats.svelte';
 import StaleTabPlaceholder from './StaleTabPlaceholder.svelte';
 
@@ -91,7 +91,7 @@ $effect(() => {
           kind="image"
           imageName={image.name}
           imageDigest={image.id} />
-        <ImageDetailsSummary image={image} />
+        <ImageSummaryTabContent image={image} />
       {/if}
     </div>
   </div>

@@ -24,13 +24,13 @@
 import PodDetailsInspect from '/@/lib/pod/PodDetailsInspect.svelte';
 import PodDetailsKube from '/@/lib/pod/PodDetailsKube.svelte';
 import PodDetailsLogs from '/@/lib/pod/PodDetailsLogs.svelte';
-import PodmanPodDetailsSummary from '/@/lib/pod/PodmanPodDetailsSummary.svelte';
 import { markTabStale } from '/@/stores/layout/layout-store.svelte';
 import type { PodSubView } from '/@/stores/layout/layout-types';
 import { podKey } from '/@/stores/layout/layout-types';
 import { podsInfos } from '/@/stores/pods';
 
 import MockResourceStats from './MockResourceStats.svelte';
+import PodSummaryTabContent from './PodSummaryTabContent.svelte';
 import StaleTabPlaceholder from './StaleTabPlaceholder.svelte';
 
 interface Props {
@@ -60,7 +60,7 @@ $effect(() => {
         <PodDetailsLogs pod={pod} />
       {:else}
         <MockResourceStats resourceId={podKey(pod.name, pod.engineId)} kind="pod" />
-        <PodmanPodDetailsSummary pod={pod} />
+        <PodSummaryTabContent pod={pod} />
       {/if}
     </div>
   </div>

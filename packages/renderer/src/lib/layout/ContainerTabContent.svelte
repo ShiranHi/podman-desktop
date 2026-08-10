@@ -25,13 +25,13 @@ import { ContainerUtils } from '/@/lib/container/container-utils';
 import ContainerDetailsInspect from '/@/lib/container/ContainerDetailsInspect.svelte';
 import ContainerDetailsKube from '/@/lib/container/ContainerDetailsKube.svelte';
 import ContainerDetailsLogs from '/@/lib/container/ContainerDetailsLogs.svelte';
-import ContainerDetailsSummary from '/@/lib/container/ContainerDetailsSummary.svelte';
 import ContainerDetailsTerminal from '/@/lib/container/ContainerDetailsTerminal.svelte';
 import ContainerDetailsTtyTerminal from '/@/lib/container/ContainerDetailsTtyTerminal.svelte';
 import { containersInfos } from '/@/stores/containers';
 import { markTabStale } from '/@/stores/layout/layout-store.svelte';
 import type { ContainerSubView } from '/@/stores/layout/layout-types';
 
+import ContainerSummaryTabContent from './ContainerSummaryTabContent.svelte';
 import StaleTabPlaceholder from './StaleTabPlaceholder.svelte';
 
 interface Props {
@@ -58,7 +58,7 @@ $effect(() => {
   <div class="flex flex-col h-full min-h-0">
     <div class="grow min-h-0 overflow-auto">
       {#if subView === 'summary'}
-        <ContainerDetailsSummary container={container} />
+        <ContainerSummaryTabContent container={container} />
       {:else if subView === 'inspect'}
         <ContainerDetailsInspect container={container} />
       {:else if subView === 'kube'}
