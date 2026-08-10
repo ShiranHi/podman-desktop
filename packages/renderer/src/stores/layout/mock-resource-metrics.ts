@@ -62,6 +62,20 @@ export function getPodMockMetrics(resourceId: string): PodMockMetrics {
   };
 }
 
+/** Same shape as a pod's - a container is the actual unit CPU/memory/restarts/network are
+ * measured against, so it gets the identical "Live stats" treatment (see MockResourceStats.svelte)
+ * instead of the Summary tab being the one resource type with no live numbers at all. Separate
+ * `container:` hash namespace so a container never coincidentally mirrors its own pod's numbers. */
+export function getContainerMockMetrics(resourceId: string): PodMockMetrics {
+  const h = hash(`container:${resourceId}`);
+  return {
+    cpuPercent: (h % 55) + 3,
+    memoryMb: ((h >>> 3) % 420) + 48,
+    restarts: (h >>> 7) % 4,
+    rxMb: (((h >>> 11) % 480) + 5) / 10,
+  };
+}
+
 export function getImageMockMetrics(resourceId: string): ImageMockMetrics {
   const h = hash(`image:${resourceId}`);
   return {

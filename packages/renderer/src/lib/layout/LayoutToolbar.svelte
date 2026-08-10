@@ -153,9 +153,18 @@ function openManageModal(): void {
     title="Layout options"
     aria-haspopup="menu"
     aria-expanded={showMenu}
-    class="flex items-center px-2.5 hover:bg-[var(--pd-action-button-details-bg)] text-[var(--pd-tab-text)]"
+    class="flex items-center gap-1.5 px-2.5 hover:bg-[var(--pd-action-button-details-bg)] text-[var(--pd-tab-text)]"
+    class:bg-[var(--pd-action-button-details-bg)]={!hasAnyTabs()}
     onclick={toggleMenu}>
     <Icon class="w-4 text-sm" icon={faGear} />
+    {#if !hasAnyTabs()}
+      <!-- With zero tabs open, this button is the *only* content in the global tab bar - a bare
+           icon squeezed into a ~24px sliver right under the window's title bar reads as
+           decoration, not as "click here for Presets/Manage Layouts/Simulate Agent". A visible
+           label only in this state gives it the weight it needs without permanently widening the
+           button once real tabs (and their own text) are back. -->
+      <span class="text-xs font-medium whitespace-nowrap">Layout options</span>
+    {/if}
   </button>
 
   {#if showMenu}

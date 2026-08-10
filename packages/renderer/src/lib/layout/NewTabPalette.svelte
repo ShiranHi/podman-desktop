@@ -317,6 +317,7 @@ function onKeydown(event: KeyboardEvent): void {
               class="w-full flex items-center gap-3 px-3 py-2 text-left {idx === selectedIndex
                 ? 'bg-[var(--pd-modal-dropdown-highlight)]'
                 : 'hover:bg-[var(--pd-dropdown-bg)]'}"
+              title={entry.subtitle ? `${entry.title} — ${entry.subtitle}` : entry.title}
               onmouseenter={(): void => {
                 selectedIndex = idx;
               }}

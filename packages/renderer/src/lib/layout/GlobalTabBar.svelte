@@ -64,7 +64,7 @@ function onSelect(tabId: string): void {
 
 {#snippet firstRunHint()}
   <i class="fas fa-table-cells opacity-70" aria-hidden="true"></i>
-  <span class="ml-2">Open a container, pod, or image to start a tab here</span>
+  <span class="ml-2">Open a container, pod, or image to start a tab here - or use Layout options to load a preset</span>
 {/snippet}
 
 <!-- Always rendered - even with zero tabs open - so the Layout settings button in `trailing`

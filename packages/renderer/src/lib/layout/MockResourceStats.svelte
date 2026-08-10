@@ -25,17 +25,22 @@
 // derived from the resource's own id, so the same resource always shows the same numbers
 // (stable across re-renders and reloads) while two different resources visibly differ -
 // enough to demo what a real compare view would feel like once real metrics/scanning exist.
-import { formatVulnBreakdown, getImageMockMetrics, getPodMockMetrics } from '/@/stores/layout/mock-resource-metrics';
+import {
+  formatVulnBreakdown,
+  getContainerMockMetrics,
+  getImageMockMetrics,
+  getPodMockMetrics,
+} from '/@/stores/layout/mock-resource-metrics';
 
 interface Props {
   resourceId: string;
-  kind: 'pod' | 'image';
-  /** Whether the pod is actually running right now - ignored for images, which have no
+  kind: 'pod' | 'image' | 'container';
+  /** Whether the pod/container is actually running right now - ignored for images, which have no
    * running/stopped concept of their own. CPU/memory/network are meant to read as *live*
-   * activity, so showing non-zero numbers for a stopped pod directly contradicts the same tab's
-   * own status pill and Containers card (e.g. "0 running / 2 stopped" right above "Network I/O:
-   * Critical"). Restarts/vulnerabilities/etc. are lifetime counts, not live activity, so those
-   * stay visible regardless of run state - only the pod branch below is gated on this. */
+   * activity, so showing non-zero numbers for a stopped pod/container directly contradicts the
+   * same tab's own status pill (e.g. "exited" right above "Network I/O: Critical"). Restarts/
+   * vulnerabilities/etc. are lifetime counts, not live activity, so those stay visible regardless
+   * of run state - only the pod/container branch below is gated on this. */
   running?: boolean;
   /** Repository name (e.g. "quay.io/org/repo") and digest ("sha256:...") of the image, used
    * only to link the vulnerabilities alert below to a *real* scan report on Quay.io when the
@@ -67,8 +72,10 @@ const STATUS_TEXT_CLASS: Record<Status, string> = {
 const imageMetrics = $derived(kind === 'image' ? getImageMockMetrics(resourceId) : undefined);
 
 const stats = $derived.by((): Stat[] => {
-  if (kind === 'pod') {
-    const { cpuPercent, memoryMb, restarts, rxMb } = getPodMockMetrics(resourceId);
+  if (kind === 'pod' || kind === 'container') {
+    const { cpuPercent, memoryMb, restarts, rxMb } = (kind === 'pod' ? getPodMockMetrics : getContainerMockMetrics)(
+      resourceId,
+    );
     return [
       running
         ? {
