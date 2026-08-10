@@ -172,6 +172,7 @@ function openManageModal(): void {
         enabled={hasAnyTabs()}
         tooltip={hasAnyTabs() ? undefined : 'Nothing to save - open a tab first'}
         onClick={openSaveDialog} />
+      <DropdownMenu.Item title="Manage Layouts…" icon={faFolderOpen} onClick={openManageModal} />
 
       <div>
         <div class="px-3 pt-2 pb-1 text-xs font-semibold uppercase tracking-wide text-[var(--pd-dropdown-item-text)] opacity-60">
@@ -185,8 +186,6 @@ function openManageModal(): void {
             onClick={(): void => pickPreset(preset.id)} />
         {/each}
       </div>
-
-      <DropdownMenu.Item title="Manage Layouts…" icon={faFolderOpen} onClick={openManageModal} />
     </div>
   {/if}
 </div>
