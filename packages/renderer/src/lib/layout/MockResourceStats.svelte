@@ -154,12 +154,11 @@ const quayScanUrl = $derived.by((): string | undefined => {
       <i class="fas fa-triangle-exclamation mt-0.5 text-[var(--pd-status-degraded)]" aria-hidden="true"></i>
       <div class="flex flex-col gap-0.5">
         <span>
-          This image has known vulnerabilities. Podman Desktop doesn't include a built-in scanner yet, so this count
-          is illustrative -
+          Vulnerabilities detected in this image.
           {#if quayScanUrl}
-            here's a real report for this image on Quay.io:
+            View the full report on Quay.io:
           {:else}
-            check your registry's own scan results for the real findings.
+            Check your registry's scan results for details.
           {/if}
         </span>
         {#if quayScanUrl}

@@ -175,7 +175,7 @@ const agentEntry = $derived.by(
   (): PaletteEntry => ({
     id: 'agent',
     title: trimmedQuery ? `Ask agent: "${trimmedQuery}"` : 'Ask agent to prepare a layout for me',
-    subtitle: 'AI agent (prototype demo)',
+    subtitle: 'AI agent',
     iconClass: 'fas fa-wand-magic-sparkles',
     group: 'Agent',
     onSelect: (): void => {
