@@ -231,7 +231,13 @@ tick()
 </script>
 
 <Modal name="Open a new tab" top onclose={onClose}>
-  <div class="flex flex-col w-[560px] max-h-[70vh]">
+  <!-- Modal's own card is capped at max-w-[32rem] (512px) and uses overflow-visible (so other
+       modals can host overflowing dropdowns/tooltips). A fixed width here wider than that cap
+       would spill outside the card, uncontained by that overflow-visible - looking like a
+       detached, broken floating scrollbar. w-full (instead of a hardcoded px width) always
+       matches whatever width the card actually resolves to, and overflow-hidden clips our own
+       scrollable list to its rounded corners. -->
+  <div class="flex flex-col w-full max-h-[70vh] rounded-xl overflow-hidden">
     <div class="p-2 border-b border-[var(--pd-content-divider)]">
       <input
         bind:this={inputEl}
