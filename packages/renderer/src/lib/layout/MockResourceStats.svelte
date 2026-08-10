@@ -28,9 +28,14 @@
 interface Props {
   resourceId: string;
   kind: 'pod' | 'image';
+  /** Repository name (e.g. "quay.io/org/repo") and digest ("sha256:...") of the image, used
+   * only to link the vulnerabilities alert below to a *real* scan report on Quay.io when the
+   * image actually is quay-hosted - Podman Desktop has no scanner of its own to link to. */
+  imageName?: string;
+  imageDigest?: string;
 }
 
-let { resourceId, kind }: Props = $props();
+let { resourceId, kind, imageName, imageDigest }: Props = $props();
 
 function hash(input: string): number {
   let h = 0;
@@ -51,11 +56,27 @@ interface Stat {
 }
 
 const STATUS_LABEL: Record<Status, string> = { good: 'Good', warn: 'Warning', bad: 'Critical' };
-const STATUS_DOT: Record<Status, string> = {
-  good: 'bg-[var(--pd-status-running)]',
-  warn: 'bg-[var(--pd-status-degraded)]',
-  bad: 'bg-[var(--pd-state-error)]',
+const STATUS_TEXT_CLASS: Record<Status, string> = {
+  good: 'text-[var(--pd-status-running)]',
+  warn: 'text-[var(--pd-status-degraded)]',
+  bad: 'text-[var(--pd-state-error)]',
 };
+
+/** Drops zero counts instead of printing "1 critical, 0 high, 0 medium". */
+function formatVulnBreakdown(critical: number, high: number, medium: number): string {
+  const parts = [
+    critical > 0 ? `${critical} critical` : undefined,
+    high > 0 ? `${high} high` : undefined,
+    medium > 0 ? `${medium} medium` : undefined,
+  ].filter((part): part is string => !!part);
+  return parts.length > 0 ? parts.join(', ') : 'None found';
+}
+
+const vulnCounts = $derived.by((): { critical: number; high: number; medium: number } | undefined => {
+  if (kind !== 'image') return undefined;
+  const h = seed;
+  return { critical: (h >>> 2) % 3, high: (h >>> 5) % 6, medium: (h >>> 9) % 14 };
+});
 
 const stats = $derived.by((): Stat[] => {
   // Unsigned shifts (>>>) throughout: h can exceed 0x7FFFFFFF, and a signed >> would sign-extend
@@ -81,17 +102,15 @@ const stats = $derived.by((): Stat[] => {
       },
     ];
   }
-  const critical = (h >>> 2) % 3;
-  const high = (h >>> 5) % 6;
-  const medium = (h >>> 9) % 14;
+  const { critical, high, medium } = vulnCounts ?? { critical: 0, high: 0, medium: 0 };
   const pulls = ((h >>> 13) % 9000) + 120;
   const layers = ((h >>> 17) % 11) + 3;
   const daysSinceScan = (h % 6) + 1;
   return [
     {
       label: 'Vulnerabilities',
-      value: critical > 0 ? `${critical} critical, ${high} high` : `${high} high, ${medium} medium`,
-      status: critical > 0 ? 'bad' : high > 2 ? 'warn' : 'good',
+      value: formatVulnBreakdown(critical, high, medium),
+      status: critical > 0 ? 'bad' : high > 0 ? 'warn' : 'good',
     },
     { label: 'Layers', value: `${layers}`, status: layers > 9 ? 'bad' : layers > 6 ? 'warn' : 'good' },
     { label: 'Pulls', value: pulls.toLocaleString(), status: pulls < 500 ? 'warn' : 'good' },
@@ -101,6 +120,17 @@ const stats = $derived.by((): Stat[] => {
       status: daysSinceScan >= 5 ? 'bad' : daysSinceScan >= 3 ? 'warn' : 'good',
     },
   ];
+});
+
+const hasVulnerabilities = $derived(!!vulnCounts && (vulnCounts.critical > 0 || vulnCounts.high > 0));
+
+/** Quay.io actually runs real (Clair-based) vulnerability scans on the images it hosts, so
+ * when the image is quay-hosted we can link to a genuine report instead of a fake one -
+ * Podman Desktop itself has no scanner or report page of its own to send users to. */
+const quayScanUrl = $derived.by((): string | undefined => {
+  if (!imageName || !imageDigest || !imageName.startsWith('quay.io/')) return undefined;
+  const repoPath = imageName.slice('quay.io/'.length);
+  return `https://quay.io/repository/${repoPath}/manifest/${imageDigest}`;
 });
 </script>
 
@@ -114,11 +144,37 @@ const stats = $derived.by((): Stat[] => {
       <div class="flex flex-col gap-0.5">
         <span class="text-xs text-[var(--pd-content-text)] opacity-60">{stat.label}</span>
         <span class="text-base font-semibold text-[var(--pd-content-header)]">{stat.value}</span>
-        <span class="flex items-center gap-1.5 text-[11px] text-[var(--pd-content-text)] opacity-70">
-          <span class="w-1.5 h-1.5 rounded-full shrink-0 {STATUS_DOT[stat.status]}" aria-hidden="true"></span>
-          {STATUS_LABEL[stat.status]}
-        </span>
+        <span class="text-[11px] font-medium {STATUS_TEXT_CLASS[stat.status]}">{STATUS_LABEL[stat.status]}</span>
       </div>
     {/each}
   </div>
+  {#if hasVulnerabilities}
+    <div
+      class="flex items-start gap-2 border-t border-[var(--pd-content-divider)] px-4 py-2.5 text-xs text-[var(--pd-content-text)]">
+      <i class="fas fa-triangle-exclamation mt-0.5 text-[var(--pd-status-degraded)]" aria-hidden="true"></i>
+      <div class="flex flex-col gap-0.5">
+        <span>
+          This image has known vulnerabilities. Podman Desktop doesn't include a built-in scanner yet, so this count
+          is illustrative -
+          {#if quayScanUrl}
+            here's a real report for this image on Quay.io:
+          {:else}
+            check your registry's own scan results for the real findings.
+          {/if}
+        </span>
+        {#if quayScanUrl}
+          <!-- Native anchor keeps browser/electron context-menu options (e.g. copy link). -->
+          <a
+            href={quayScanUrl}
+            class="w-fit cursor-pointer text-[var(--pd-link)] no-underline hover:underline"
+            onclick={async (): Promise<void> => {
+              await window.openExternal(quayScanUrl);
+            }}>
+            View scan results on Quay.io <i class="fas fa-arrow-up-right-from-square text-[10px]" aria-hidden="true"
+            ></i>
+          </a>
+        {/if}
+      </div>
+    </div>
+  {/if}
 </div>

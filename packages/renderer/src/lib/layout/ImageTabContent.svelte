@@ -86,7 +86,11 @@ $effect(() => {
       {:else if subView === 'inspect'}
         <ImageDetailsInspect image={image} />
       {:else}
-        <MockResourceStats resourceId={imageKey(image.id, image.engineId, base64RepoTag)} kind="image" />
+        <MockResourceStats
+          resourceId={imageKey(image.id, image.engineId, base64RepoTag)}
+          kind="image"
+          imageName={image.name}
+          imageDigest={image.id} />
         <ImageDetailsSummary image={image} />
       {/if}
     </div>
