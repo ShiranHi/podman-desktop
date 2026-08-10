@@ -253,7 +253,7 @@ function contextMenuActions(tabId: string): ContextMenuAction[] {
           <span class="text-[10px] uppercase tracking-wide text-[var(--pd-status-degraded)]">missing</span>
         {/if}
         <div class="flex items-center gap-0.5">
-          <Tooltip tip={tabs.length > 1 ? 'Split right' : 'Only tab in this panel'} top>
+          <Tooltip tip={tabs.length > 1 ? 'Open in a new section' : 'Can\'t split - only tab in section'} top>
             <button
               type="button"
               aria-label="Split {tab.title} to the right"
