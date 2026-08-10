@@ -42,11 +42,20 @@ function hash(input: string): number {
 
 const seed = $derived(hash(`${kind}:${resourceId}`));
 
+type Status = 'good' | 'warn' | 'bad';
+
 interface Stat {
   label: string;
   value: string;
-  tone?: 'warn' | 'bad';
+  status: Status;
 }
+
+const STATUS_LABEL: Record<Status, string> = { good: 'Good', warn: 'Warning', bad: 'Critical' };
+const STATUS_DOT: Record<Status, string> = {
+  good: 'bg-[var(--pd-status-running)]',
+  warn: 'bg-[var(--pd-status-degraded)]',
+  bad: 'bg-[var(--pd-state-error)]',
+};
 
 const stats = $derived.by((): Stat[] => {
   // Unsigned shifts (>>>) throughout: h can exceed 0x7FFFFFFF, and a signed >> would sign-extend
@@ -58,10 +67,18 @@ const stats = $derived.by((): Stat[] => {
     const restarts = (h >>> 7) % 4;
     const rxMb = (((h >>> 11) % 480) + 5) / 10;
     return [
-      { label: 'CPU usage', value: `${cpuPercent}%`, tone: cpuPercent > 45 ? 'warn' : undefined },
-      { label: 'Memory', value: `${memoryMb} MB` },
-      { label: 'Restarts', value: `${restarts}`, tone: restarts > 1 ? 'warn' : undefined },
-      { label: 'Network I/O', value: `${rxMb.toFixed(1)} MB/s` },
+      {
+        label: 'CPU usage',
+        value: `${cpuPercent}%`,
+        status: cpuPercent > 75 ? 'bad' : cpuPercent > 45 ? 'warn' : 'good',
+      },
+      { label: 'Memory', value: `${memoryMb} MB`, status: memoryMb > 400 ? 'bad' : memoryMb > 300 ? 'warn' : 'good' },
+      { label: 'Restarts', value: `${restarts}`, status: restarts > 1 ? 'bad' : restarts === 1 ? 'warn' : 'good' },
+      {
+        label: 'Network I/O',
+        value: `${rxMb.toFixed(1)} MB/s`,
+        status: rxMb > 25 ? 'bad' : rxMb > 10 ? 'warn' : 'good',
+      },
     ];
   }
   const critical = (h >>> 2) % 3;
@@ -69,15 +86,20 @@ const stats = $derived.by((): Stat[] => {
   const medium = (h >>> 9) % 14;
   const pulls = ((h >>> 13) % 9000) + 120;
   const layers = ((h >>> 17) % 11) + 3;
+  const daysSinceScan = (h % 6) + 1;
   return [
     {
       label: 'Vulnerabilities',
       value: critical > 0 ? `${critical} critical, ${high} high` : `${high} high, ${medium} medium`,
-      tone: critical > 0 ? 'bad' : high > 2 ? 'warn' : undefined,
+      status: critical > 0 ? 'bad' : high > 2 ? 'warn' : 'good',
     },
-    { label: 'Layers', value: `${layers}` },
-    { label: 'Pulls', value: pulls.toLocaleString() },
-    { label: 'Last scanned', value: `${(h % 6) + 1}d ago` },
+    { label: 'Layers', value: `${layers}`, status: layers > 9 ? 'bad' : layers > 6 ? 'warn' : 'good' },
+    { label: 'Pulls', value: pulls.toLocaleString(), status: pulls < 500 ? 'warn' : 'good' },
+    {
+      label: 'Last scanned',
+      value: `${daysSinceScan}d ago`,
+      status: daysSinceScan >= 5 ? 'bad' : daysSinceScan >= 3 ? 'warn' : 'good',
+    },
   ];
 });
 </script>
@@ -86,22 +108,15 @@ const stats = $derived.by((): Stat[] => {
   <div class="flex items-center gap-2 px-4 pt-3 text-xs font-semibold uppercase tracking-wide text-[var(--pd-content-header)] opacity-70">
     <i class="fas fa-chart-simple" aria-hidden="true"></i>
     <span>Live stats</span>
-    <span
-      class="ml-auto normal-case font-normal opacity-80"
-      title="Illustrative numbers for this prototype - not real telemetry.">
-      Mock data (prototype demo)
-    </span>
   </div>
   <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 px-4 py-3">
     {#each stats as stat (stat.label)}
-      <div class="flex flex-col">
+      <div class="flex flex-col gap-0.5">
         <span class="text-xs text-[var(--pd-content-text)] opacity-60">{stat.label}</span>
-        <span
-          class="text-base font-semibold"
-          class:text-[var(--pd-status-degraded)]={stat.tone === 'warn'}
-          class:text-[var(--pd-state-error)]={stat.tone === 'bad'}
-          class:text-[var(--pd-content-header)]={!stat.tone}>
-          {stat.value}
+        <span class="text-base font-semibold text-[var(--pd-content-header)]">{stat.value}</span>
+        <span class="flex items-center gap-1.5 text-[11px] text-[var(--pd-content-text)] opacity-70">
+          <span class="w-1.5 h-1.5 rounded-full shrink-0 {STATUS_DOT[stat.status]}" aria-hidden="true"></span>
+          {STATUS_LABEL[stat.status]}
         </span>
       </div>
     {/each}
