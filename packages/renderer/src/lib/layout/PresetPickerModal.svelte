@@ -60,6 +60,20 @@ let podResourceId = $state('');
 let imageAId = $state('');
 let imageBId = $state('');
 
+// Second dropdown always excludes whatever's already picked in the first, so users can't apply a
+// preset comparing a resource against itself. If the first dropdown is changed to match whatever
+// was already picked in the second, clear the second - otherwise it'd keep a value that's no
+// longer even offered as an option.
+const containerBOptions = $derived(containerOptions.filter(c => c?.id !== containerAId));
+const imageBOptions = $derived(imageOptions.filter(i => i?.id !== imageAId));
+
+$effect(() => {
+  if (containerBId && containerBId === containerAId) containerBId = '';
+});
+$effect(() => {
+  if (imageBId && imageBId === imageAId) imageBId = '';
+});
+
 const canApply = $derived.by(() => {
   switch (presetId) {
     case 'debug-duo':
@@ -148,7 +162,7 @@ const titles: Record<PresetId, string> = {
             class="w-full p-2 rounded-sm bg-[var(--pd-input-field-focused-bg)] text-[var(--pd-input-field-text)]"
             bind:value={containerBId}>
             <option value="">Select a container...</option>
-            {#each containerOptions as c (c?.id)}
+            {#each containerBOptions as c (c?.id)}
               {#if c}<option value={c.id}>{c.name}</option>{/if}
             {/each}
           </select>
@@ -190,7 +204,7 @@ const titles: Record<PresetId, string> = {
             class="w-full p-2 rounded-sm bg-[var(--pd-input-field-focused-bg)] text-[var(--pd-input-field-text)]"
             bind:value={imageBId}>
             <option value="">Select an image...</option>
-            {#each imageOptions as i (i?.id)}
+            {#each imageBOptions as i (i?.id)}
               {#if i}<option value={i.id}>{i.name}:{i.tag}</option>{/if}
             {/each}
           </select>
