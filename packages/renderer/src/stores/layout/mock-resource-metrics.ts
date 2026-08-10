@@ -93,6 +93,34 @@ export function getImageUpdateInfo(resourceId: string): ImageUpdateInfo {
   };
 }
 
+export interface ContainerLogInsight {
+  /** Higher = more worth checking first. Ties are broken by log order (first container wins),
+   * same as the pod/image compare dimensions. */
+  severity: number;
+  /** What actually shows up in that container's Logs tab - specific enough that clicking through
+   * to the real Logs tab should read as confirming this, not contradicting it. */
+  detail: string;
+}
+
+/** Small deterministic catalog instead of raw random text: every entry describes something a
+ * real container log plausibly shows, so the debug-duo/"Simulate Agent" comparison
+ * (buildContainerLogInsight in layout-agent-demo.svelte.ts) can name what's actually different
+ * between two containers' logs instead of just saying logs were opened for both. */
+const CONTAINER_LOG_FINDINGS: ContainerLogInsight[] = [
+  { severity: 0, detail: 'started up cleanly with no errors or warnings' },
+  { severity: 1, detail: 'logs a few deprecation warnings but no errors' },
+  { severity: 1, detail: 'logs several slow query warnings (>1s)' },
+  { severity: 2, detail: 'shows repeated "connection refused" errors reaching a dependency' },
+  { severity: 2, detail: 'shows repeated request timeouts' },
+  { severity: 3, detail: 'shows an out-of-memory warning shortly before exiting' },
+  { severity: 3, detail: 'shows repeated crashes and restarts' },
+];
+
+export function getContainerLogInsight(resourceId: string): ContainerLogInsight {
+  const h = hash(`logs:${resourceId}`);
+  return CONTAINER_LOG_FINDINGS[h % CONTAINER_LOG_FINDINGS.length];
+}
+
 /** Drops zero counts instead of printing "1 critical, 0 high, 0 medium". */
 export function formatVulnBreakdown({ critical, high, medium }: ImageVulnCounts, noneLabel = 'None found'): string {
   const parts = [

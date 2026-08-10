@@ -36,6 +36,7 @@ import type { WorkspaceTab } from './layout-types';
 import { imageKey, podKey } from './layout-types';
 import {
   formatVulnBreakdown,
+  getContainerLogInsight,
   getImageMockMetrics,
   getPodMockMetrics,
   type ImageMockMetrics,
@@ -202,6 +203,21 @@ function buildImageCompareInsight(prompt: string, aName: string, aId: string, bN
   return `${dimension.label}: "${worseName}" ${dimension.format(worseVal)} vs "${otherName}" ${dimension.format(otherVal)}.`;
 }
 
+/** Same idea as buildPodCompareInsight/buildImageCompareInsight, but for the container Logs
+ * comparison (debugContainersLayout): names what each container's own Logs tab actually shows
+ * (via getContainerLogInsight) instead of just announcing that logs were opened for both. */
+function buildContainerLogInsight(aName: string, aId: string, bName: string, bId: string): string {
+  const a = getContainerLogInsight(aId);
+  const b = getContainerLogInsight(bId);
+
+  if (a.severity === b.severity) {
+    return `"${aName}" ${a.detail}; "${bName}" ${b.detail}.`;
+  }
+
+  const [worseName, worse, otherName, other] = a.severity > b.severity ? [aName, a, bName, b] : [bName, b, aName, a];
+  return `"${worseName}" ${worse.detail}, while "${otherName}" ${other.detail} - start with "${worseName}".`;
+}
+
 // ---- passive split-view insight (no agent action involved) ----
 //
 // The banner above only appears right after an explicit agent action. But a side-by-side view
@@ -302,7 +318,8 @@ function debugContainersLayout(promptLabel?: string): void {
       },
       'splitRight',
     );
-    agentBannerState.message = `${prefix} opened logs for "${pick[0].name}" and "${pick[1].name}" side by side to help you debug.`;
+    const insight = buildContainerLogInsight(pick[0].name, pick[0].id, pick[1].name, pick[1].id);
+    agentBannerState.message = `${prefix} opened logs for "${pick[0].name}" and "${pick[1].name}" side by side. ${insight}`;
   } else {
     openTab(
       {
@@ -314,7 +331,8 @@ function debugContainersLayout(promptLabel?: string): void {
       },
       'splitDown',
     );
-    agentBannerState.message = `${prefix} opened logs and a terminal for "${pick[0].name}" to help you debug.`;
+    const { detail } = getContainerLogInsight(pick[0].id);
+    agentBannerState.message = `${prefix} opened logs and a terminal for "${pick[0].name}" - its logs ${detail}.`;
   }
   agentBannerState.visible = true;
 }
