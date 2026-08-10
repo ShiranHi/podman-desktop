@@ -133,7 +133,7 @@ onMount(loadManifest);
       <div class="flex flex-wrap gap-1.5 px-4 pb-3">
         {#each labelEntries as [key, value] (key)}
           <span
-            class="text-xs font-mono px-2 py-1 rounded-md bg-[var(--pd-content-bg)] border border-[var(--pd-content-divider)] text-[var(--pd-content-text)]">
+            class="text-xs font-mono px-2 py-1 rounded-md bg-[var(--pd-content-bg)] border border-[var(--pd-content-divider)] text-[var(--pd-content-text)] break-all min-w-0 max-w-full">
             {key}={value}
           </span>
         {/each}
