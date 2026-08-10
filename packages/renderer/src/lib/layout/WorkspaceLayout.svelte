@@ -55,6 +55,7 @@ import ImageTabContent from './ImageTabContent.svelte';
 import LayoutToolbar from './LayoutToolbar.svelte';
 import NewTabPalette from './NewTabPalette.svelte';
 import PodTabContent from './PodTabContent.svelte';
+import SplitInsightBanner from './SplitInsightBanner.svelte';
 
 const panelCount = $derived(countTabsPanels());
 
@@ -109,6 +110,7 @@ function openNewTabPalette(panelId: string, activeTab: TabDescriptor | undefined
        settings button lives in each panel's own tab bar instead (via `trailing` below), since
        there's no other persistent chrome inside /workspace to anchor it to. -->
   <AgentLayoutBanner />
+  <SplitInsightBanner />
   <div class="grow min-h-0">
     <PanelGroup
       node={displayedNode}

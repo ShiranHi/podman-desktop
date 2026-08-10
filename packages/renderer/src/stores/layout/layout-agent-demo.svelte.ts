@@ -31,7 +31,8 @@ import { imagesInfos } from '/@/stores/images';
 import { podsInfos } from '/@/stores/pods';
 
 import { applySerializedLayout, serializeCurrentLayout, type SerializedLayout } from './layout-persistence.svelte';
-import { openTab } from './layout-store.svelte';
+import { getTwoPanelSplitTabs, openTab } from './layout-store.svelte';
+import type { WorkspaceTab } from './layout-types';
 import { imageKey, podKey } from './layout-types';
 import {
   formatVulnBreakdown,
@@ -199,6 +200,67 @@ function buildImageCompareInsight(prompt: string, aName: string, aId: string, bN
       ? [aName, dimension.aVal, bName, dimension.bVal]
       : [bName, dimension.bVal, aName, dimension.aVal];
   return `${dimension.label}: "${worseName}" ${dimension.format(worseVal)} vs "${otherName}" ${dimension.format(otherVal)}.`;
+}
+
+// ---- passive split-view insight (no agent action involved) ----
+//
+// The banner above only appears right after an explicit agent action. But a side-by-side view
+// of two pods or two images is the same "comparing two things" moment whether an agent opened
+// it or the user split/dragged tabs there themselves - so surface the same kind of insight for
+// *any* plain two-way split, not just agent-created ones. See SplitInsightBanner.svelte.
+
+function tabDisplayName(tab: WorkspaceTab): string {
+  // Tab titles follow "<name> · <SubView>" (see InspectCard.svelte) - strip the suffix so the
+  // insight reads naturally, e.g. "demo-pod" instead of "demo-pod · Summary".
+  return tab.title.split(' · ')[0];
+}
+
+function splitPairKey(a: WorkspaceTab, b: WorkspaceTab): string {
+  return [a.id, b.id].toSorted().join('|');
+}
+
+let dismissedSplitInsightKey: string | undefined = $state(undefined);
+
+export interface SplitComparisonInsight {
+  key: string;
+  message: string;
+}
+
+/** Recomputes whenever the two-panel split (see getTwoPanelSplitTabs) or its tabs change - stays
+ * undefined unless both panels show exactly one tab each, of the same comparable resource type
+ * (pod or image), for two different resources, and the user hasn't already dismissed this exact
+ * pair. Not exported directly: Svelte doesn't allow exporting a `$derived` binding from a module,
+ * only a function that reads its current value (see getSplitComparisonInsight below). */
+const splitComparisonInsight: SplitComparisonInsight | undefined = $derived.by(() => {
+  const pair = getTwoPanelSplitTabs();
+  if (!pair) return undefined;
+  const [a, b] = pair;
+  if (a.resourceType !== b.resourceType || a.resourceId === b.resourceId) return undefined;
+
+  const key = splitPairKey(a, b);
+  if (key === dismissedSplitInsightKey) return undefined;
+
+  const aName = tabDisplayName(a);
+  const bName = tabDisplayName(b);
+  let comparison: string | undefined;
+  if (a.resourceType === 'pod') {
+    comparison = buildPodCompareInsight('', aName, a.resourceId, bName, b.resourceId);
+  } else if (a.resourceType === 'image') {
+    comparison = buildImageCompareInsight('', aName, a.resourceId, bName, b.resourceId);
+  }
+  if (!comparison) return undefined;
+
+  return { key, message: `Comparing "${aName}" and "${bName}": ${comparison}` };
+});
+
+/** Called from a component's own `$derived(getSplitComparisonInsight())` so it stays reactive
+ * across the module boundary. */
+export function getSplitComparisonInsight(): SplitComparisonInsight | undefined {
+  return splitComparisonInsight;
+}
+
+export function dismissSplitInsight(): void {
+  if (splitComparisonInsight) dismissedSplitInsightKey = splitComparisonInsight.key;
 }
 
 function debugContainersLayout(promptLabel?: string): void {

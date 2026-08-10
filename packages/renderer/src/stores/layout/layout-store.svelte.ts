@@ -500,6 +500,23 @@ export function activeTabIdOfFocusedPanel(): string | undefined {
   return findLeaf(layoutState.tree, layoutState.focusedPanelId)?.activeTabId;
 }
 
+/** If the workspace is currently a plain two-way split (side by side or stacked, not nested
+ * further) with exactly one tab showing in each half, returns those two tabs in tree order.
+ * Used to auto-surface a comparison insight for split views the user made themselves by
+ * dragging/splitting a tab - not just the ones the "agent" demo opens - since a side-by-side
+ * view is the same "comparing two things" moment either way (see layout-agent-demo.svelte.ts). */
+export function getTwoPanelSplitTabs(): [WorkspaceTab, WorkspaceTab] | undefined {
+  const root = layoutState.tree;
+  if (root.kind !== 'split' || root.children.length !== 2) return undefined;
+  const [left, right] = root.children;
+  if (left.kind !== 'leaf' || right.kind !== 'leaf') return undefined;
+  if (left.tabIds.length !== 1 || right.tabIds.length !== 1) return undefined;
+  const a = layoutState.tabs[left.tabIds[0]];
+  const b = layoutState.tabs[right.tabIds[0]];
+  if (!a || !b) return undefined;
+  return [a, b];
+}
+
 export function selectTabAnyPanel(tabId: string): void {
   const leaf = findLeafContainingTab(layoutState.tree, tabId);
   if (leaf) selectTab(leaf.id, tabId);
