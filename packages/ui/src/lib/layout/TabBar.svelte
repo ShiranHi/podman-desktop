@@ -202,7 +202,12 @@ function contextMenuActions(tabId: string): ContextMenuAction[] {
 </script>
 
 <div
-  class="flex items-stretch border-b border-[var(--pd-content-divider)] bg-[var(--pd-content-card-bg)] text-sm min-w-0">
+  class="flex items-stretch min-h-6 border-b border-[var(--pd-content-divider)] bg-[var(--pd-content-card-bg)] text-sm min-w-0">
+  <!-- min-h-6 keeps this bar's height stable across empty <-> non-empty tab states: with no tabs
+       open, `items-stretch` would otherwise size the whole row down to its shortest child (the
+       icon-only trailing button, ~11px) instead of a real tab's own height (~24.5px, from its
+       padding + text-sm line-height) - shifting the empty-state placeholder below it up/down
+       every time the last tab closes or the first one opens. -->
   <div
     bind:this={scrollEl}
     onwheel={onWheel}
