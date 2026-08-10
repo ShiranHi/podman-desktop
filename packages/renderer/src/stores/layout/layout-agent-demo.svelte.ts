@@ -32,7 +32,12 @@ import { podsInfos } from '/@/stores/pods';
 
 import { openTab, resetLayout } from './layout-store.svelte';
 import { imageKey, podKey } from './layout-types';
-import { formatVulnBreakdown, getImageMockMetrics, getPodMockMetrics } from './mock-resource-metrics';
+import {
+  formatVulnBreakdown,
+  getImageMockMetrics,
+  getPodMockMetrics,
+  type ImageMockMetrics,
+} from './mock-resource-metrics';
 
 export const agentBannerState: { visible: boolean; message: string } = $state({ visible: false, message: '' });
 
@@ -40,53 +45,143 @@ export function dismissAgentBanner(): void {
   agentBannerState.visible = false;
 }
 
+interface CompareDimension {
+  /** Matches the exact stat label shown in the two opened tabs' own "Live stats" card
+   * (MockResourceStats.svelte), so the insight always points at something the user can
+   * immediately verify by eye on screen instead of citing a number that isn't visible anywhere. */
+  label: string;
+  aVal: number;
+  bVal: number;
+  format: (n: number) => string;
+  /** If the user's own prompt mentions this dimension by name, lead with it - "restart count
+   * check" should produce a restarts insight even if CPU happens to differ more. */
+  keywords: RegExp;
+  /** Minimum gap before the difference is worth mentioning at all. */
+  threshold: number;
+}
+
+/** Picks which dimension the banner should lead with: whatever the prompt asked about, if that
+ * dimension actually differs by more than its threshold; otherwise the first dimension (in the
+ * given priority order) that differs meaningfully. */
+function pickCompareDimension(prompt: string, dimensions: CompareDimension[]): CompareDimension | undefined {
+  const lower = prompt.toLowerCase();
+  const significant = dimensions.filter(d => Math.abs(d.aVal - d.bVal) >= d.threshold);
+  return significant.find(d => d.keywords.test(lower)) ?? significant[0];
+}
+
 /** Turns the same mock metrics shown in the two pod tabs the agent just opened into a one-line
- * takeaway, instead of leaving the banner saying only that a comparison happened. Checks
- * restarts before memory before CPU - a crash-looping pod is worth flagging over a merely
- * busier one. */
-function buildPodCompareInsight(aName: string, aId: string, bName: string, bId: string): string {
+ * takeaway, instead of leaving the banner saying only that a comparison happened. Mirrors the
+ * four stats the "Live stats" card on both tabs already shows (Restarts / Memory / CPU usage /
+ * Network I/O) using the same labels and units, and leads with whichever of those the prompt
+ * actually asked about - falling back to restarts, then memory, then CPU, then network. */
+function buildPodCompareInsight(prompt: string, aName: string, aId: string, bName: string, bId: string): string {
   const a = getPodMockMetrics(aId);
   const b = getPodMockMetrics(bId);
 
-  if (a.restarts !== b.restarts) {
-    const [worse, worseCount, other, otherCount] =
-      a.restarts > b.restarts ? [aName, a.restarts, bName, b.restarts] : [bName, b.restarts, aName, a.restarts];
-    return `"${worse}" has restarted ${worseCount} time${worseCount === 1 ? '' : 's'} (vs ${otherCount} for "${other}") - worth checking first.`;
-  }
-  if (Math.abs(a.memoryMb - b.memoryMb) > 40) {
-    const [heavier, heavyMb, lighter, lightMb] =
-      a.memoryMb > b.memoryMb ? [aName, a.memoryMb, bName, b.memoryMb] : [bName, b.memoryMb, aName, a.memoryMb];
-    return `"${heavier}" is using more memory (${heavyMb} MB vs ${lightMb} MB) than "${lighter}".`;
-  }
-  if (Math.abs(a.cpuPercent - b.cpuPercent) > 15) {
-    const [hotter, hotPct, cooler, coolPct] =
-      a.cpuPercent > b.cpuPercent
-        ? [aName, a.cpuPercent, bName, b.cpuPercent]
-        : [bName, b.cpuPercent, aName, a.cpuPercent];
-    return `"${hotter}" is using more CPU (${hotPct}% vs ${coolPct}%) than "${cooler}".`;
-  }
-  return 'Both pods look similar - no obvious hotspot between them.';
+  const dimension = pickCompareDimension(prompt, [
+    {
+      label: 'Restarts',
+      aVal: a.restarts,
+      bVal: b.restarts,
+      format: (n: number): string => `${n}`,
+      keywords: /restart/,
+      threshold: 1,
+    },
+    {
+      label: 'Memory',
+      aVal: a.memoryMb,
+      bVal: b.memoryMb,
+      format: (n: number): string => `${n} MB`,
+      keywords: /\bmem(ory)?\b/,
+      threshold: 40,
+    },
+    {
+      label: 'CPU usage',
+      aVal: a.cpuPercent,
+      bVal: b.cpuPercent,
+      format: (n: number): string => `${n}%`,
+      keywords: /\bcpu\b/,
+      threshold: 15,
+    },
+    {
+      label: 'Network I/O',
+      aVal: a.rxMb,
+      bVal: b.rxMb,
+      format: (n: number): string => `${n.toFixed(1)} MB/s`,
+      keywords: /network|\bi\/o\b|\bio\b/,
+      threshold: 10,
+    },
+  ]);
+
+  if (!dimension)
+    return 'Both pods look similar across CPU, memory, restarts, and network - no obvious hotspot between them.';
+
+  const [worseName, worseVal, otherName, otherVal] =
+    dimension.aVal > dimension.bVal
+      ? [aName, dimension.aVal, bName, dimension.bVal]
+      : [bName, dimension.bVal, aName, dimension.aVal];
+  const flag = dimension.label === 'Restarts' && worseVal > 0 ? ' - worth checking first' : '';
+  return `${dimension.label}: "${worseName}" ${dimension.format(worseVal)} vs "${otherName}" ${dimension.format(otherVal)}${flag}.`;
 }
 
-/** Same idea as buildPodCompareInsight, for the two image tabs the agent opened: leads with
- * whichever image has the more severe vulnerabilities (critical counts twice as much as high
- * in the severity score), falling back to layer count when both are equally clean. */
-function buildImageCompareInsight(aName: string, aId: string, bName: string, bId: string): string {
+/** Same idea as buildPodCompareInsight, mirroring the four stats the two image tabs' own "Live
+ * stats" card shows (Vulnerabilities / Layers / Pulls / Last scanned). */
+function buildImageCompareInsight(prompt: string, aName: string, aId: string, bName: string, bId: string): string {
   const a = getImageMockMetrics(aId);
   const b = getImageMockMetrics(bId);
-  const severity = (m: typeof a): number => m.critical * 10 + m.high;
+  const severity = (m: ImageMockMetrics): number => m.critical * 10 + m.high;
 
-  if (severity(a) !== severity(b)) {
+  const dimension = pickCompareDimension(prompt, [
+    {
+      label: 'Vulnerabilities',
+      aVal: severity(a),
+      bVal: severity(b),
+      // Unused: vulnerabilities need the full critical/high/medium breakdown (formatVulnBreakdown
+      // below), not a single number, so this dimension is rendered by its own branch after
+      // pickCompareDimension - severity here only decides whether it's picked at all.
+      format: (): string => '',
+      keywords: /vulnerab|cve|security/,
+      threshold: 1,
+    },
+    {
+      label: 'Layers',
+      aVal: a.layers,
+      bVal: b.layers,
+      format: (n: number): string => `${n}`,
+      keywords: /layer/,
+      threshold: 1,
+    },
+    {
+      label: 'Pulls',
+      aVal: a.pulls,
+      bVal: b.pulls,
+      format: (n: number): string => n.toLocaleString(),
+      keywords: /pull/,
+      threshold: 500,
+    },
+    {
+      label: 'Last scanned',
+      aVal: a.daysSinceScan,
+      bVal: b.daysSinceScan,
+      format: (n: number): string => `${n}d ago`,
+      keywords: /scan|stale|old/,
+      threshold: 2,
+    },
+  ]);
+
+  if (!dimension) return 'Both images look similarly safe and lean.';
+
+  if (dimension.label === 'Vulnerabilities') {
     const [worse, worseMetrics, other, otherMetrics] =
       severity(a) > severity(b) ? [aName, a, bName, b] : [bName, b, aName, a];
-    return `"${worse}" has more vulnerabilities (${formatVulnBreakdown(worseMetrics)}) than "${other}" (${formatVulnBreakdown(otherMetrics)}) - start there.`;
+    return `Vulnerabilities: "${worse}" ${formatVulnBreakdown(worseMetrics)} vs "${other}" ${formatVulnBreakdown(otherMetrics)} - start there.`;
   }
-  if (a.layers !== b.layers) {
-    const [bulkier, bulkierLayers, leaner, leanerLayers] =
-      a.layers > b.layers ? [aName, a.layers, bName, b.layers] : [bName, b.layers, aName, a.layers];
-    return `"${bulkier}" has more layers (${bulkierLayers} vs ${leanerLayers}) than "${leaner}".`;
-  }
-  return 'Both images look similarly safe and lean.';
+
+  const [worseName, worseVal, otherName, otherVal] =
+    dimension.aVal > dimension.bVal
+      ? [aName, dimension.aVal, bName, dimension.bVal]
+      : [bName, dimension.bVal, aName, dimension.aVal];
+  return `${dimension.label}: "${worseName}" ${dimension.format(worseVal)} vs "${otherName}" ${dimension.format(otherVal)}.`;
 }
 
 function debugContainersLayout(promptLabel?: string): void {
@@ -190,12 +285,13 @@ export function runAgentPrompt(prompt: string): void {
         'splitRight',
       );
       const insight = buildPodCompareInsight(
+        trimmed,
         pick[0].name,
         podKey(pick[0].name, pick[0].engineId),
         pick[1].name,
         podKey(pick[1].name, pick[1].engineId),
       );
-      agentBannerState.message = `Based on "${trimmed}", an agent opened "${pick[0].name}" and "${pick[1].name}" side by side to compare. ${insight}`;
+      agentBannerState.message = `An agent opened "${pick[0].name}" and "${pick[1].name}" side by side, based on "${trimmed}". ${insight}`;
     } else {
       openTab(
         {
@@ -251,12 +347,13 @@ export function runAgentPrompt(prompt: string): void {
         'splitRight',
       );
       const insight = buildImageCompareInsight(
+        trimmed,
         `${pick[0].name}:${pick[0].tag}`,
         imageKey(pick[0].id, pick[0].engineId, pick[0].base64RepoTag),
         `${pick[1].name}:${pick[1].tag}`,
         imageKey(pick[1].id, pick[1].engineId, pick[1].base64RepoTag),
       );
-      agentBannerState.message = `Based on "${trimmed}", an agent opened "${pick[0].name}:${pick[0].tag}" and "${pick[1].name}:${pick[1].tag}" side by side to compare. ${insight}`;
+      agentBannerState.message = `An agent opened "${pick[0].name}:${pick[0].tag}" and "${pick[1].name}:${pick[1].tag}" side by side, based on "${trimmed}". ${insight}`;
     } else {
       agentBannerState.message = `Based on "${trimmed}", an agent opened "${pick[0].name}:${pick[0].tag}".`;
     }
