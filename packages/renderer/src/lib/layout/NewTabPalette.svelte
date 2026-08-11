@@ -41,7 +41,11 @@ import { autofocus } from './autofocus';
 interface Props {
   panelId: string;
   activeTab: WorkspaceTab | undefined;
-  onClose: () => void;
+  /** Called with `true` when the palette closes *because something was picked* (as opposed to
+   * Escape/backdrop dismissal, which calls it with no argument) - callers opening this from
+   * outside /workspace (see GlobalTabBar) use that distinction to navigate to /workspace only
+   * once a tab actually exists to show there, not on every dismissal. */
+  onClose: (opened?: boolean) => void;
 }
 
 let { panelId, activeTab, onClose }: Props = $props();
@@ -88,7 +92,7 @@ const subViewEntries = $derived.by((): PaletteEntry[] => {
             'newTab',
             panelId,
           );
-          onClose();
+          onClose(true);
         },
       }),
     );
@@ -113,7 +117,7 @@ const podEntries = $derived(
           'newTab',
           panelId,
         );
-        onClose();
+        onClose(true);
       },
     }),
   ),
@@ -140,7 +144,7 @@ const containerEntries = $derived(
             'newTab',
             panelId,
           );
-          onClose();
+          onClose(true);
         },
       }),
     ),
@@ -171,7 +175,7 @@ const imageEntries = $derived(
           'newTab',
           panelId,
         );
-        onClose();
+        onClose(true);
       },
     }),
   ),
@@ -201,7 +205,7 @@ const agentEntry = $derived.by((): PaletteEntry => {
       group: 'Agent',
       onSelect: (): void => {
         runAgentPrompt(trimmedQuery);
-        onClose();
+        onClose(true);
       },
     };
   }
@@ -225,7 +229,7 @@ const agentEntry = $derived.by((): PaletteEntry => {
           'newTab',
           panelId,
         );
-        onClose();
+        onClose(true);
       },
     };
   }
@@ -239,7 +243,7 @@ const agentEntry = $derived.by((): PaletteEntry => {
     group: 'Agent',
     onSelect: (): void => {
       runAgentPrompt(trimmedQuery);
-      onClose();
+      onClose(true);
     },
   };
 });
@@ -283,6 +287,17 @@ function onKeydown(event: KeyboardEvent): void {
     allEntries[selectedIndex]?.onSelect();
   }
 }
+
+/** Every list backing this palette (pods/containers/images) comes straight from stores that
+ * get a brand-new array - and brand-new entry objects - on every background poll, even when
+ * nothing actually changed. Looking a row up by *object reference* (`allEntries.indexOf(entry)`)
+ * would then silently return -1 the instant a poll lands between render and hover, which made
+ * `selectedIndex` stick at -1 and, since every row's own index lookup failed the exact same
+ * way, every row matched `-1 === -1` and lit up as "selected" at once. `id` strings are stable
+ * across those refreshes, so look rows up by id instead of by identity. */
+function indexOfEntry(entryId: string): number {
+  return allEntries.findIndex(e => e.id === entryId);
+}
 </script>
 
 <Modal name="Open a new tab" top onclose={onClose}>
@@ -311,7 +326,7 @@ function onKeydown(event: KeyboardEvent): void {
             {group.name}
           </div>
           {#each group.entries as entry (entry.id)}
-            {@const idx = allEntries.indexOf(entry)}
+            {@const idx = indexOfEntry(entry.id)}
             <button
               type="button"
               class="w-full flex items-center gap-3 px-3 py-2 text-left {idx === selectedIndex

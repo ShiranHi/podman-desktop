@@ -139,7 +139,7 @@ function openNewTabPalette(panelId: string, activeTab: TabDescriptor | undefined
       onResizeSplit={resizeSplit}
       onAddTab={openNewTabPalette}>
       {#snippet trailing(panelId)}
-        <LayoutToolbar panelId={panelId} />
+        <LayoutToolbar panelId={panelId} onAddTab={(): void => openNewTabPalette(panelId, undefined)} />
       {/snippet}
       {#snippet tabContent(tabDescriptor)}
         {@const tab = tabDescriptor as WorkspaceTab}

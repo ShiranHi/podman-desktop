@@ -37,8 +37,10 @@ import {
   closeAllTabsEverywhere,
   closeAllTabsExcept,
   closeTabById,
+  findLeafContainingTab,
   getAllTabsOrdered,
   hasEverOpenedTab,
+  layoutState,
   moveToNewPanelAnyPanel,
   pinToggle,
   reorderTabGlobal,
@@ -46,8 +48,10 @@ import {
   splitDownAnyPanel,
   splitRightAnyPanel,
 } from '/@/stores/layout/layout-store.svelte';
+import type { WorkspaceTab } from '/@/stores/layout/layout-types';
 
 import LayoutToolbar from './LayoutToolbar.svelte';
+import NewTabPalette from './NewTabPalette.svelte';
 
 let tabs = $derived(getAllTabsOrdered());
 let activeTabId = $derived(activeTabIdOfFocusedPanel());
@@ -59,6 +63,29 @@ let showFirstRunHint = $derived(tabs.length === 0 && !hasEverOpenedTab());
 function onSelect(tabId: string): void {
   selectTabAnyPanel(tabId);
   router.goto('/workspace');
+}
+
+// Powers this bar's own "+" (both the inline one TabBar renders once there's at least one tab,
+// and the one LayoutToolbar renders next to the gear when there are none) - same palette
+// WorkspaceLayout uses per-panel, just targeting whichever panel currently has focus (or the
+// one holding the active tab, so "another view of X" suggestions still make sense) since this
+// bar has no panel of its own to scope to. This component is mounted on every page except
+// /workspace (see App.svelte) - /workspace has its own instance per panel.
+let newTabPaletteFor: { panelId: string; activeTab: WorkspaceTab | undefined } | undefined = $state();
+
+function openNewTabPalette(): void {
+  const activeTab = activeTabId ? layoutState.tabs[activeTabId] : undefined;
+  const panelId =
+    (activeTabId && findLeafContainingTab(layoutState.tree, activeTabId)?.id) ?? layoutState.focusedPanelId;
+  newTabPaletteFor = { panelId, activeTab };
+}
+
+function closeNewTabPalette(opened?: boolean): void {
+  newTabPaletteFor = undefined;
+  // A pick from here always lands the new tab inside /workspace's panel tree - without this,
+  // it'd open successfully but stay invisible until the user happened to navigate there
+  // themselves. Escape/backdrop dismissal (opened is undefined) stays right where it was.
+  if (opened) router.goto('/workspace');
 }
 </script>
 
@@ -84,8 +111,16 @@ function onSelect(tabId: string): void {
   onSplitRight={splitRightAnyPanel}
   onSplitDown={splitDownAnyPanel}
   onMoveToNewPanel={moveToNewPanelAnyPanel}
+  onAddTab={openNewTabPalette}
   emptyHint={showFirstRunHint ? firstRunHint : undefined}>
   {#snippet trailing()}
-    <LayoutToolbar />
+    <LayoutToolbar onAddTab={openNewTabPalette} />
   {/snippet}
 </TabBar>
+
+{#if newTabPaletteFor}
+  <NewTabPalette
+    panelId={newTabPaletteFor.panelId}
+    activeTab={newTabPaletteFor.activeTab}
+    onClose={closeNewTabPalette} />
+{/if}

@@ -129,6 +129,14 @@ onMount(loadManifest);
     {/if}
   </SummaryCard>
 
+  <InspectCard
+    resourceType="image"
+    resourceId={imageKey(image.id, image.engineId, image.base64RepoTag)}
+    resourceTitle="{image.name}:{image.tag}"
+    {tabId}>
+    <ImageDetailsInspect image={image} />
+  </InspectCard>
+
   {#if labelEntries.length > 0}
     <SummaryCard title="Labels" icon="fas fa-tags">
       <div class="flex flex-wrap gap-1.5 px-4 pb-3">
@@ -175,12 +183,4 @@ onMount(loadManifest);
       </div>
     </SummaryCard>
   {/if}
-
-  <InspectCard
-    resourceType="image"
-    resourceId={imageKey(image.id, image.engineId, image.base64RepoTag)}
-    resourceTitle="{image.name}:{image.tag}"
-    {tabId}>
-    <ImageDetailsInspect image={image} />
-  </InspectCard>
 </div>

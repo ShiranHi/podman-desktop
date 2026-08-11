@@ -135,6 +135,10 @@ function openPort(port: number): void {
     </SummaryCard>
   {/if}
 
+  <InspectCard resourceType="container" resourceId={container.id} resourceTitle={container.name} {tabId}>
+    <ContainerDetailsInspect container={container} />
+  </InspectCard>
+
   {#if labelEntries.length > 0}
     <SummaryCard title="Labels" icon="fas fa-tags">
       <div class="flex flex-wrap gap-1.5 px-4 pb-3">
@@ -147,8 +151,4 @@ function openPort(port: number): void {
       </div>
     </SummaryCard>
   {/if}
-
-  <InspectCard resourceType="container" resourceId={container.id} resourceTitle={container.name} {tabId}>
-    <ContainerDetailsInspect container={container} />
-  </InspectCard>
 </div>

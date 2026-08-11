@@ -24,7 +24,7 @@
 // current one, jump to a preset) up front, with everything about *managing*
 // saved layouts (the full list, export/import, the agent demo) tucked behind
 // a single "Manage Layouts…" entry instead of turning this into a mile-long list.
-import { faFloppyDisk, faFolderOpen, faGear, faXmark } from '@fortawesome/free-solid-svg-icons';
+import { faFloppyDisk, faFolderOpen, faGear, faPlus, faXmark } from '@fortawesome/free-solid-svg-icons';
 import { Button, DropdownMenu } from '@podman-desktop/ui-svelte';
 import { Icon } from '@podman-desktop/ui-svelte/icons';
 
@@ -50,9 +50,13 @@ interface Props {
    * sections the user never touched. Save/Manage Layouts/Presets stay whole-workspace concepts
    * either way, since a saved/applied layout is the full split arrangement, not one panel. */
   panelId?: string;
+  /** When this bar has no tabs of its own, TabBar skips its usual inline "+" entirely (there's
+   * no tab strip left to put it in) - passing this renders an equivalent "+" right next to the
+   * gear so there's still a one-click way to open a first tab instead of only a menu. */
+  onAddTab?: () => void;
 }
 
-let { panelId }: Props = $props();
+let { panelId, onAddTab }: Props = $props();
 
 const hasTabsInScope = $derived(panelId ? getTabsForPanel(panelId).length > 0 : hasAnyTabs());
 
@@ -169,6 +173,16 @@ function openManageModal(): void {
 <svelte:window onkeyup={handleEscape} onclick={onWindowClick} />
 
 <div class="relative flex items-stretch text-left">
+  {#if onAddTab && !hasTabsInScope}
+    <button
+      type="button"
+      aria-label="Open a new tab"
+      title="Open a new tab"
+      class="flex items-center px-2.5 border-r border-[var(--pd-content-divider)] hover:bg-[var(--pd-action-button-details-bg)] text-[var(--pd-tab-text)]"
+      onclick={onAddTab}>
+      <Icon class="w-4 text-sm" icon={faPlus} />
+    </button>
+  {/if}
   <button
     bind:this={menuAnchor}
     type="button"
