@@ -20,22 +20,29 @@
 // Maximizing a panel (Panel.svelte's expand/compress button) makes every other section vanish
 // from the screen entirely - WorkspaceLayout only renders the maximized leaf, so a side-by-side
 // comparison the user set up can end up completely hidden with nothing on screen to say it's
-// still there. This names what's behind the maximized panel and offers a one-click way back,
-// so maximizing to focus on one tab doesn't read as if the other tabs were closed.
+// still there. This is a small "+N" badge (not a full sentence banner) that names how many tabs
+// are hidden and restores the prior split in one click, so maximizing to focus on one tab
+// doesn't read as if the other tabs were closed.
+import { faLayerGroup } from '@fortawesome/free-solid-svg-icons';
+import { Tooltip } from '@podman-desktop/ui-svelte';
+import { Icon } from '@podman-desktop/ui-svelte/icons';
+
 import { getHiddenWhileMaximized, layoutState, toggleMaximize } from '/@/stores/layout/layout-store.svelte';
 
 const hidden = $derived(getHiddenWhileMaximized());
-
-// Naming every hidden tab could run on forever with enough open tabs - three names plus a count
-// keeps the banner to one line while still being concrete about what's behind it.
-const MAX_NAMED_TABS = 3;
 
 function tabLabel(tab: { title: string }): string {
   return tab.title.split(' · ')[0];
 }
 
-const namedTabs = $derived(hidden?.otherTabs.slice(0, MAX_NAMED_TABS).map(tabLabel).join('", "') ?? '');
-const extraCount = $derived(Math.max(0, (hidden?.otherTabs.length ?? 0) - MAX_NAMED_TABS));
+const namedTabs = $derived(hidden?.otherTabs.map(tabLabel).join('", "') ?? '');
+
+const tooltipText = $derived.by((): string => {
+  if (!hidden) return '';
+  const tabWord = hidden.otherTabs.length === 1 ? 'tab' : 'tabs';
+  const sectionWord = hidden.otherPanelCount === 1 ? 'section' : 'sections';
+  return `${hidden.otherTabs.length} ${tabWord} hidden in ${hidden.otherPanelCount} other ${sectionWord}: "${namedTabs}" - click to restore`;
+});
 
 function restore(): void {
   if (layoutState.maximizedPanelId) toggleMaximize(layoutState.maximizedPanelId);
@@ -43,18 +50,19 @@ function restore(): void {
 </script>
 
 {#if hidden}
-  <div
-    class="flex items-center gap-3 px-3 py-2 bg-[var(--pd-content-bg)] border-b border-[var(--pd-content-divider)] text-sm">
-    <i class="fas fa-layer-group text-[var(--pd-content-text)] opacity-70" aria-hidden="true"></i>
-    <span class="grow">
-      This panel is maximized - {hidden.otherTabs.length} tab{hidden.otherTabs.length === 1 ? '' : 's'} hidden in {hidden.otherPanelCount}
-      other section{hidden.otherPanelCount === 1 ? '' : 's'}: "{namedTabs}"{#if extraCount > 0}, +{extraCount} more{/if}
-    </span>
-    <button
-      type="button"
-      class="shrink-0 px-2 py-1 rounded-sm hover:bg-[var(--pd-action-button-details-bg)] text-[var(--pd-link)]"
-      onclick={restore}>
-      Restore
-    </button>
+  <div class="flex items-center px-3 py-1 bg-[var(--pd-content-bg)] border-b border-[var(--pd-content-divider)]">
+    <Tooltip tip={tooltipText} bottom>
+      <button
+        type="button"
+        aria-label="This panel is maximized - restore {hidden.otherTabs.length} hidden tab{hidden.otherTabs.length ===
+        1
+          ? ''
+          : 's'}"
+        class="flex items-center gap-1.5 pl-1.5 pr-2 py-0.5 rounded-full border border-[var(--pd-content-divider)] hover:bg-[var(--pd-action-button-details-bg)] text-[var(--pd-content-text)] text-xs"
+        onclick={restore}>
+        <Icon class="w-2.5 text-[10px] opacity-70" icon={faLayerGroup} />
+        <span class="font-semibold">+{hidden.otherTabs.length}</span>
+      </button>
+    </Tooltip>
   </div>
 {/if}

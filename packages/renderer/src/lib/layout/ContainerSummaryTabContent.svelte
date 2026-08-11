@@ -63,66 +63,72 @@ function openPort(port: number): void {
     created={createdTime}
     age={container.uptime || undefined} />
 
-  <SummaryCard title="Details" icon="fas fa-circle-info">
-    <div class="flex flex-col gap-2 px-4 pb-3 text-sm">
-      <div class="flex items-center justify-between gap-3">
-        <span class="text-xs text-[var(--pd-content-text)] opacity-60 shrink-0">Image</span>
-        <Link class="truncate" on:click={(): void => router.goto(container.imageHref ?? $router.path)}>
-          {container.image}
-        </Link>
-      </div>
-      {#if container.command}
-        <div class="flex items-center justify-between gap-3">
-          <span class="text-xs text-[var(--pd-content-text)] opacity-60 shrink-0">Command</span>
-          <span class="text-[var(--pd-content-header)] font-mono text-xs truncate" title={container.command}>
-            {container.command}
-          </span>
-        </div>
-      {/if}
-      <div class="flex items-center justify-between gap-3">
-        <span class="text-xs text-[var(--pd-content-text)] opacity-60 shrink-0">Engine</span>
-        <span class="text-[var(--pd-content-header)]">{container.engineType}</span>
-      </div>
-      {#if container.uptime}
-        <div class="flex items-center justify-between gap-3">
-          <span class="text-xs text-[var(--pd-content-text)] opacity-60 shrink-0">Started</span>
-          <span class="text-[var(--pd-content-header)]">{startedTime.toLocaleString()}</span>
-        </div>
-      {/if}
-    </div>
-  </SummaryCard>
-
-  {#if container.hasPublicPort}
-    <SummaryCard title="Network" icon="fas fa-network-wired">
-      <div class="divide-y divide-[var(--pd-content-divider)]">
-        {#each container.ports as port, i (`${port.IP ?? ''}-${port.PublicPort}-${port.Type}-${i}`)}
-          <div class="flex items-center justify-between px-4 py-2 text-sm">
-            <span class="text-[var(--pd-content-text)] opacity-80">{port.Type}</span>
-            <Tooltip tip={portUrl(port.PublicPort)} bottom>
-              <Link on:click={(): void => openPort(port.PublicPort)}>
-                <span class="inline-flex items-center gap-1 font-mono text-xs">
-                  localhost:{port.PublicPort} → {port.PrivatePort}
-                  <Icon icon={faExternalLink} class="w-2.5 text-[10px]" />
-                </span>
-              </Link>
-            </Tooltip>
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <div class={container.hasPublicPort ? '' : 'sm:col-span-2'}>
+      <SummaryCard title="Details" icon="fas fa-circle-info">
+        <div class="flex flex-col gap-2 px-4 pb-3 text-sm">
+          <div class="flex items-baseline gap-3">
+            <span class="text-xs text-[var(--pd-content-text)] opacity-60 w-16 shrink-0">Image</span>
+            <Link class="truncate min-w-0" on:click={(): void => router.goto(container.imageHref ?? $router.path)}>
+              {container.image}
+            </Link>
           </div>
-        {/each}
-      </div>
-    </SummaryCard>
-  {/if}
+          {#if container.command}
+            <div class="flex items-baseline gap-3">
+              <span class="text-xs text-[var(--pd-content-text)] opacity-60 w-16 shrink-0">Command</span>
+              <span
+                class="text-[var(--pd-content-header)] font-mono text-xs truncate min-w-0"
+                title={container.command}>
+                {container.command}
+              </span>
+            </div>
+          {/if}
+          <div class="flex items-baseline gap-3">
+            <span class="text-xs text-[var(--pd-content-text)] opacity-60 w-16 shrink-0">Engine</span>
+            <span class="text-[var(--pd-content-header)] truncate min-w-0">{container.engineType}</span>
+          </div>
+          {#if container.uptime}
+            <div class="flex items-baseline gap-3">
+              <span class="text-xs text-[var(--pd-content-text)] opacity-60 w-16 shrink-0">Started</span>
+              <span class="text-[var(--pd-content-header)] truncate min-w-0">{startedTime.toLocaleString()}</span>
+            </div>
+          {/if}
+        </div>
+      </SummaryCard>
+    </div>
+
+    {#if container.hasPublicPort}
+      <SummaryCard title="Network" icon="fas fa-network-wired">
+        <div class="flex flex-col gap-2 px-4 pb-3 text-sm">
+          {#each container.ports as port, i (`${port.IP ?? ''}-${port.PublicPort}-${port.Type}-${i}`)}
+            <div class="flex items-baseline gap-3">
+              <span class="text-xs text-[var(--pd-content-text)] opacity-60 w-16 shrink-0">{port.Type}</span>
+              <Tooltip tip={portUrl(port.PublicPort)} bottom>
+                <Link on:click={(): void => openPort(port.PublicPort)}>
+                  <span class="inline-flex items-center gap-1 font-mono text-xs">
+                    localhost:{port.PublicPort} → {port.PrivatePort}
+                    <Icon icon={faExternalLink} class="w-2.5 text-[10px]" />
+                  </span>
+                </Link>
+              </Tooltip>
+            </div>
+          {/each}
+        </div>
+      </SummaryCard>
+    {/if}
+  </div>
 
   {#if container.groupInfo.type !== ContainerGroupInfoTypeUI.STANDALONE}
     <SummaryCard title={container.groupInfo.type === ContainerGroupInfoTypeUI.POD ? 'Pod' : 'Compose project'} icon="fas fa-layer-group">
       <div class="flex flex-col gap-2 px-4 pb-3 text-sm">
-        <div class="flex items-center justify-between gap-3">
-          <span class="text-xs text-[var(--pd-content-text)] opacity-60 shrink-0">Name</span>
-          <span class="text-[var(--pd-content-header)] truncate">{container.groupInfo.name}</span>
+        <div class="flex items-baseline gap-3">
+          <span class="text-xs text-[var(--pd-content-text)] opacity-60 w-16 shrink-0">Name</span>
+          <span class="text-[var(--pd-content-header)] truncate min-w-0">{container.groupInfo.name}</span>
         </div>
         {#if container.groupInfo.status}
-          <div class="flex items-center justify-between gap-3">
-            <span class="text-xs text-[var(--pd-content-text)] opacity-60 shrink-0">Status</span>
-            <span class="text-[var(--pd-content-header)] lowercase">{container.groupInfo.status}</span>
+          <div class="flex items-baseline gap-3">
+            <span class="text-xs text-[var(--pd-content-text)] opacity-60 w-16 shrink-0">Status</span>
+            <span class="text-[var(--pd-content-header)] lowercase truncate min-w-0">{container.groupInfo.status}</span>
           </div>
         {/if}
       </div>

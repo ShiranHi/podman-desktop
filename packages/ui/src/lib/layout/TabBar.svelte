@@ -56,8 +56,9 @@ interface Props {
   onAddTab?: () => void;
   /** Rendered pinned to the far right of the bar, regardless of tab count - e.g. a settings
    * button - so the bar itself doubles as the app's persistent toolbar instead of needing a
-   * separate full-width row above it. */
-  trailing?: Snippet;
+   * separate full-width row above it. Called with this bar's own `panelId`, so a "close all"
+   * style action in there can be scoped to just this panel instead of every panel. */
+  trailing?: Snippet<[string]>;
   /** Rendered in place of the tab list only while `tabs` is empty - a first-run hint like "Open
    * a resource to start a tab here", so an empty bar isn't just an unlabeled strip with no clue
    * what it's for. Callers are expected to only pass this once (e.g. gated on a "has the user
@@ -355,7 +356,7 @@ function contextMenuActions(tabId: string): ContextMenuAction[] {
 
   {#if trailing}
     <div class="flex items-stretch border-l border-[var(--pd-content-divider)]">
-      {@render trailing()}
+      {@render trailing(panelId)}
     </div>
   {/if}
 </div>

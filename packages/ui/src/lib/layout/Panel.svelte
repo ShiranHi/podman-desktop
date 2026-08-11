@@ -51,7 +51,7 @@ interface Props {
   /** See TabBar's `onAddTab` - resolved here against this panel's own active tab. */
   onAddTab?: (panelId: string, activeTab: TabDescriptor | undefined) => void;
   /** See TabBar's `trailing`. */
-  trailing?: Snippet;
+  trailing?: Snippet<[string]>;
   tabContent: Snippet<[TabDescriptor]>;
   emptyState?: Snippet;
 }

@@ -31,11 +31,30 @@ import { Icon } from '@podman-desktop/ui-svelte/icons';
 import Dialog from '/@/lib/dialogs/Dialog.svelte';
 import { saveNamedLayout } from '/@/stores/layout/layout-persistence.svelte';
 import { type PresetId, PRESETS } from '/@/stores/layout/layout-presets';
-import { closeAllTabsEverywhere, hasAnyTabs } from '/@/stores/layout/layout-store.svelte';
+import {
+  closeAllInPanel,
+  closeAllTabsEverywhere,
+  getTabsForPanel,
+  hasAnyTabs,
+} from '/@/stores/layout/layout-store.svelte';
 
 import { autofocus } from './autofocus';
 import ManageLayoutsModal from './ManageLayoutsModal.svelte';
 import PresetPickerModal from './PresetPickerModal.svelte';
+
+interface Props {
+  /** When provided (i.e. this toolbar lives in one panel's own tab bar inside /workspace, not
+   * the global "everything I have open" bar), "Close All Tabs" only closes this panel's own
+   * tabs - each panel already has its own instance of this menu, so "close all" reading as
+   * "close every tab in every section" is surprising and destructive to work in *other*
+   * sections the user never touched. Save/Manage Layouts/Presets stay whole-workspace concepts
+   * either way, since a saved/applied layout is the full split arrangement, not one panel. */
+  panelId?: string;
+}
+
+let { panelId }: Props = $props();
+
+const hasTabsInScope = $derived(panelId ? getTabsForPanel(panelId).length > 0 : hasAnyTabs());
 
 let showMenu = $state(false);
 let menuAnchor = $state<HTMLButtonElement>();
@@ -108,8 +127,12 @@ function onWindowClick(e: MouseEvent): void {
 
 function closeAllTabsAction(): void {
   showMenu = false;
-  if (!hasAnyTabs()) return;
-  closeAllTabsEverywhere();
+  if (!hasTabsInScope) return;
+  if (panelId) {
+    closeAllInPanel(panelId);
+  } else {
+    closeAllTabsEverywhere();
+  }
 }
 
 function openSaveDialog(): void {
@@ -178,7 +201,11 @@ function openManageModal(): void {
         <div class="px-3 pt-2 pb-1 text-xs font-semibold uppercase tracking-wide text-[var(--pd-dropdown-item-text)] opacity-60">
           Layouts
         </div>
-        <DropdownMenu.Item title="Close All Tabs" icon={faXmark} enabled={hasAnyTabs()} onClick={closeAllTabsAction} />
+        <DropdownMenu.Item
+          title={panelId ? 'Close All Tabs in This Section' : 'Close All Tabs'}
+          icon={faXmark}
+          enabled={hasTabsInScope}
+          onClick={closeAllTabsAction} />
         <DropdownMenu.Item
           title="Save Layout As…"
           icon={faFloppyDisk}

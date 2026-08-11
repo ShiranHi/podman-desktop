@@ -54,8 +54,9 @@ interface Props {
   /** See Panel's `onAddTab`. */
   onAddTab?: (panelId: string, activeTab: TabDescriptor | undefined) => void;
   /** See Panel's `trailing`. Threaded down to every leaf panel's tab bar (there's normally
-   * just one, until the user splits). */
-  trailing?: Snippet;
+   * just one, until the user splits) - called with that panel's own id, so the caller can scope
+   * whatever it renders (e.g. a "close all" action) to just that panel instead of every panel. */
+  trailing?: Snippet<[string]>;
   tabContent: Snippet<[TabDescriptor]>;
   emptyState?: Snippet;
 }
