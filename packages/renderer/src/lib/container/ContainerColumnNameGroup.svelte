@@ -1,8 +1,11 @@
 <script lang="ts">
-import { ContextMenu } from '@podman-desktop/ui-svelte';
-import { router } from 'tinro';
+import { ContextMenu, type OpenMode } from '@podman-desktop/ui-svelte';
 
-import { buildOpenContextMenuActions, openPodInWorkspace } from '/@/lib/layout/resource-open-actions';
+import {
+  buildOpenContextMenuActions,
+  openComposeInWorkspace,
+  openPodInWorkspace,
+} from '/@/lib/layout/resource-open-actions';
 
 import type { ContainerGroupInfoUI } from './ContainerInfoUI';
 import { ContainerGroupInfoTypeUI } from './ContainerInfoUI';
@@ -23,32 +26,28 @@ function displayContainersCount(containerGroup: ContainerGroupInfoUI): string {
   return result;
 }
 
-// Compose groups don't have a workspace tab yet, so they keep using the legacy detail route.
-function openComposeDetails(containerGroup: ContainerGroupInfoUI): void {
-  if (!containerGroup.engineId) {
-    return;
-  }
-  router.goto(`/compose/details/${encodeURI(containerGroup.name)}/${encodeURI(containerGroup.engineId)}/logs`);
-}
-
-// A plain click on a pod group opens straight into the workspace in its own new section
-// (split), rather than just appending another tab to whatever panel happens to be
-// focused - with several tabs already open, an appended tab can get lost in the strip,
-// while a new section is impossible to miss. Existing tabs are never removed, and
-// re-clicking an already-open resource just focuses its existing tab/section.
 function onClick(_event: MouseEvent): void {
   if (!object.engineId) return;
   if (object.type === ContainerGroupInfoTypeUI.POD) {
     openPodInWorkspace({ name: object.name, engineId: object.engineId }, 'newTab');
   } else {
-    openComposeDetails(object);
+    openComposeInWorkspace({ name: object.name, engineId: object.engineId }, 'newTab');
   }
 }
 
 function onContextMenu(event: MouseEvent): void {
-  if (!object.engineId || object.type !== ContainerGroupInfoTypeUI.POD) return;
+  if (!object.engineId) return;
   event.preventDefault();
   contextMenu = { x: event.clientX, y: event.clientY };
+}
+
+function openInMode(mode: OpenMode): void {
+  if (!object.engineId) return;
+  if (object.type === ContainerGroupInfoTypeUI.POD) {
+    openPodInWorkspace({ name: object.name, engineId: object.engineId }, mode);
+  } else {
+    openComposeInWorkspace({ name: object.name, engineId: object.engineId }, mode);
+  }
 }
 </script>
 
@@ -69,7 +68,7 @@ function onContextMenu(event: MouseEvent): void {
   <ContextMenu
     x={contextMenu.x}
     y={contextMenu.y}
-    actions={buildOpenContextMenuActions((mode): void => openPodInWorkspace({ name: object.name, engineId: object.engineId ?? '' }, mode))}
+    actions={buildOpenContextMenuActions(openInMode)}
     onClose={(): void => {
       contextMenu = undefined;
     }} />

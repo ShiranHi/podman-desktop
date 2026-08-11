@@ -4,12 +4,15 @@ import type { Menu } from '@podman-desktop/core-api';
 import { MenuContext } from '@podman-desktop/core-api';
 import { DropdownMenu } from '@podman-desktop/ui-svelte';
 import { createEventDispatcher, onMount } from 'svelte';
+import { get } from 'svelte/store';
 import { router } from 'tinro';
 
 import ContributionActions from '/@/lib/actions/ContributionActions.svelte';
 import { withConfirmation } from '/@/lib/dialogs/messagebox-utils';
+import { openComposeInWorkspace } from '/@/lib/layout/resource-open-actions';
 import FlatMenu from '/@/lib/ui/FlatMenu.svelte';
 import ListItemButtonIcon from '/@/lib/ui/ListItemButtonIcon.svelte';
+import { currentScreen, isTabsLayoutScreen } from '/@/stores/prototype';
 
 import type { ComposeInfoUI } from './ComposeInfoUI';
 
@@ -124,6 +127,10 @@ function deployToKubernetes(): void {
 }
 
 function openGenerateKube(): void {
+  if (isTabsLayoutScreen(get(currentScreen))) {
+    openComposeInWorkspace({ name: compose.name, engineId: compose.engineId }, 'newTab', 'kube');
+    return;
+  }
   router.goto(`/compose/details/${encodeURI(compose.name)}/${encodeURI(compose.engineId)}/kube`);
 }
 

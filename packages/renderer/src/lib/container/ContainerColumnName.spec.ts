@@ -20,11 +20,18 @@ import '@testing-library/jest-dom/vitest';
 
 import { fireEvent } from '@testing-library/dom';
 import { render, screen } from '@testing-library/svelte';
-import { router } from 'tinro';
-import { expect, test, vi } from 'vitest';
+import { beforeEach, expect, test, vi } from 'vitest';
+
+import * as resourceOpenActions from '/@/lib/layout/resource-open-actions';
 
 import ContainerColumnName from './ContainerColumnName.svelte';
 import { ContainerGroupInfoTypeUI, type ContainerGroupInfoUI, type ContainerInfoUI } from './ContainerInfoUI';
+
+vi.mock(import('/@/lib/layout/resource-open-actions'));
+
+beforeEach(() => {
+  vi.clearAllMocks();
+});
 
 const container: ContainerInfoUI = {
   id: 'sha256:1234567890123',
@@ -117,11 +124,9 @@ test('Expect clicking works - container', async () => {
   const text = screen.getByText(container.name);
   expect(text).toBeInTheDocument();
 
-  // test click
-  const routerGotoSpy = vi.spyOn(router, 'goto');
   fireEvent.click(text);
 
-  expect(routerGotoSpy).toBeCalledWith(`/containers/${container.id}/`);
+  expect(resourceOpenActions.openContainerInWorkspace).toHaveBeenCalledWith(container, 'newTab');
 });
 
 test('Expect clicking works - pod', async () => {
@@ -130,11 +135,12 @@ test('Expect clicking works - pod', async () => {
   const text = screen.getByText(`${pod.name} (pod)`);
   expect(text).toBeInTheDocument();
 
-  // test click
-  const routerGotoSpy = vi.spyOn(router, 'goto');
   fireEvent.click(text);
 
-  expect(routerGotoSpy).toBeCalledWith(`/pods/podman/${pod.name}/${pod.engineId}/logs`);
+  expect(resourceOpenActions.openPodInWorkspace).toHaveBeenCalledWith(
+    { name: pod.name, engineId: pod.engineId },
+    'newTab',
+  );
 });
 
 test('Expect clicking works - compose', async () => {
@@ -143,9 +149,10 @@ test('Expect clicking works - compose', async () => {
   const text = screen.getByText(`${compose.name} (compose)`);
   expect(text).toBeInTheDocument();
 
-  // test click
-  const routerGotoSpy = vi.spyOn(router, 'goto');
   fireEvent.click(text);
 
-  expect(routerGotoSpy).toBeCalledWith(`/compose/details/${compose.name}/${compose.engineId}/logs`);
+  expect(resourceOpenActions.openComposeInWorkspace).toHaveBeenCalledWith(
+    { name: compose.name, engineId: compose.engineId },
+    'newTab',
+  );
 });

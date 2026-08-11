@@ -54,16 +54,16 @@ interface Props {
    * "at least two non-permanent tabs in this bar" (fine for a per-panel bar; global bars
    * should pass a per-section check so a lone tab in its section cannot be moved out). */
   canOpenInNewSection?: (tabId: string) => boolean;
-  /** When provided, renders a "+" button after the tabs that opens a new-tab picker (other
-   * views of the active resource, any pod/container/image, or a free-text ask-the-agent
-   * entry) - instead of cluttering every tab's content with a static row of sub-views. */
+  /** When provided, renders a "+" button after the tab scroller (always visible — does not
+   * scroll away with overflow) that opens a new-tab picker (other views of the active
+   * resource, any pod/container/image, or a free-text ask-the-agent entry). */
   onAddTab?: () => void;
   /** Rendered pinned to the far right of the bar, regardless of tab count - e.g. a settings
    * button - so the bar itself doubles as the app's persistent toolbar instead of needing a
    * separate full-width row above it. Called with this bar's own `panelId`, so a "close all"
    * style action in there can be scoped to just this panel instead of every panel. */
   trailing?: Snippet<[string]>;
-  /** Rendered after the last tab and before the "+" button (still in the scrollable row) —
+  /** Rendered after the last tab inside the scrollable row (before the pinned "+") —
    * e.g. a compact "+N hidden sections" chip. */
   beforeAdd?: Snippet;
   /** Rendered in place of the tab list only while `tabs` is empty - a first-run hint like "Open
@@ -243,117 +243,112 @@ function contextMenuActions(tabId: string): ContextMenuAction[] {
 
 <div
   class="flex items-stretch min-h-6 border-b border-[var(--pd-content-divider)] bg-[var(--pd-content-card-bg)] text-sm min-w-0">
-  <!-- min-h-6 keeps this bar's height stable across empty <-> non-empty tab states: with no tabs
-       open, `items-stretch` would otherwise size the whole row down to its shortest child (the
-       icon-only trailing button, ~11px) instead of a real tab's own height (~24.5px, from its
-       padding + text-sm line-height) - shifting the empty-state placeholder below it up/down
-       every time the last tab closes or the first one opens. -->
-  <div
-    bind:this={scrollEl}
-    onwheel={onWheel}
-    class="flex flex-row items-stretch overflow-x-auto min-w-0 grow scrollbar-hide"
-    role="tablist"
-    tabindex="-1"
-    ondragover={(e: DragEvent): void => e.preventDefault()}
-    ondrop={onDropOnEnd}>
-    {#each tabs as tab (tab.id)}
-      <div
-        role="tab"
-        tabindex="0"
-        aria-selected={tab.id === activeTabId}
-        draggable={!tab.permanent}
-        ondragstart={(e: DragEvent): void => onDragStart(e, tab.id)}
-        ondragover={(e: DragEvent): void => {
-          if (!tab.permanent) onDragOverTab(e, tab.id);
-        }}
-        ondragleave={onDragLeaveTab}
-        ondrop={(e: DragEvent): void => {
-          if (!tab.permanent) onDropOnTab(e, tab.id);
-        }}
-        oncontextmenu={(e: MouseEvent): void => openContextMenu(e, tab.id)}
-        onclick={(): void => onSelect(tab.id)}
-        onkeydown={(e: KeyboardEvent): void => {
-          if (e.key === 'Enter' || e.key === ' ') onSelect(tab.id);
-        }}
-        class="group flex items-center gap-2 px-3 py-1 border-r border-[var(--pd-content-divider)] whitespace-nowrap cursor-pointer select-none max-w-[220px]"
-        class:bg-[var(--pd-content-bg)]={tab.id === activeTabId}
-        class:border-l-2={dragOverTabId === tab.id}
-        class:border-l-[var(--pd-tab-highlight)]={dragOverTabId === tab.id}
-        class:text-[var(--pd-tab-text-highlight)]={tab.id === activeTabId}
-        class:text-[var(--pd-tab-text)]={tab.id !== activeTabId}
-        class:opacity-70={!!tab.stale}
-        title={tab.subtitle ? `${tab.title} — ${tab.subtitle}` : tab.title}>
-        {#if tab.pinned && !tab.permanent}
-          <Icon class="w-3 text-xs opacity-70" icon={faThumbtack} />
-        {/if}
-        {#if tab.agentCreated}
-          <Tooltip tip="Opened by an agent" top>
-            <span class="block w-1.5 h-1.5 rounded-full bg-[var(--pd-status-running)] shrink-0"></span>
-          </Tooltip>
-        {/if}
-        <span class="overflow-hidden text-ellipsis">{tab.title}</span>
-        {#if tab.stale}
-          <span class="text-[10px] uppercase tracking-wide text-[var(--pd-status-degraded)]">missing</span>
-        {/if}
-        {#if !tab.permanent}
-          {@const canOpenSection = sectionOpenAllowed(tab.id)}
-          <div class="flex items-center gap-0.5">
-            <Tooltip
-              tip={canOpenSection ? 'Open in a new section' : 'Need another tab to remain in this section'}
-              top>
-              <button
-                type="button"
-                aria-label="Open {tab.title} in a new section"
-                disabled={!canOpenSection}
-                class="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 disabled:group-hover:opacity-40 disabled:group-focus-within:opacity-40 hover:bg-[var(--pd-action-button-details-bg)] disabled:hover:bg-transparent rounded-sm p-0.5 disabled:cursor-not-allowed"
-                onclick={(e: MouseEvent): void => {
-                  e.stopPropagation();
-                  if (canOpenSection) onSplitRight(tab.id);
-                }}>
-                <Icon class="w-3 text-xs" icon={faTableColumns} />
-              </button>
+  <!-- Tabs + "+" share a grow group: scroller sizes to content when it fits (so "+" sits
+       right after the last tab), and shrinks with overflow-x when it doesn't — "+" stays
+       pinned outside the scroller so it never scrolls away. -->
+  <div class="flex items-stretch min-w-0 grow min-h-6">
+    <div
+      bind:this={scrollEl}
+      onwheel={onWheel}
+      class="flex flex-row items-stretch overflow-x-auto min-w-0 shrink scrollbar-hide"
+      role="tablist"
+      tabindex="-1"
+      ondragover={(e: DragEvent): void => e.preventDefault()}
+      ondrop={onDropOnEnd}>
+      {#each tabs as tab (tab.id)}
+        <div
+          role="tab"
+          tabindex="0"
+          aria-selected={tab.id === activeTabId}
+          draggable={!tab.permanent}
+          ondragstart={(e: DragEvent): void => onDragStart(e, tab.id)}
+          ondragover={(e: DragEvent): void => {
+            if (!tab.permanent) onDragOverTab(e, tab.id);
+          }}
+          ondragleave={onDragLeaveTab}
+          ondrop={(e: DragEvent): void => {
+            if (!tab.permanent) onDropOnTab(e, tab.id);
+          }}
+          oncontextmenu={(e: MouseEvent): void => openContextMenu(e, tab.id)}
+          onclick={(): void => onSelect(tab.id)}
+          onkeydown={(e: KeyboardEvent): void => {
+            if (e.key === 'Enter' || e.key === ' ') onSelect(tab.id);
+          }}
+          class="group flex items-center gap-2 px-3 py-1 border-r border-[var(--pd-content-divider)] whitespace-nowrap cursor-pointer select-none max-w-[220px]"
+          class:bg-[var(--pd-content-bg)]={tab.id === activeTabId}
+          class:border-l-2={dragOverTabId === tab.id}
+          class:border-l-[var(--pd-tab-highlight)]={dragOverTabId === tab.id}
+          class:text-[var(--pd-tab-text-highlight)]={tab.id === activeTabId}
+          class:text-[var(--pd-tab-text)]={tab.id !== activeTabId}
+          class:opacity-70={!!tab.stale}
+          title={tab.subtitle ? `${tab.title} — ${tab.subtitle}` : tab.title}>
+          {#if tab.pinned && !tab.permanent}
+            <Icon class="w-3 text-xs opacity-70" icon={faThumbtack} />
+          {/if}
+          {#if tab.agentCreated}
+            <Tooltip tip="Opened by an agent" top>
+              <span class="block w-1.5 h-1.5 rounded-full bg-[var(--pd-status-running)] shrink-0"></span>
             </Tooltip>
-            {#if !tab.pinned}
-              <Tooltip tip="Close tab" top>
+          {/if}
+          <span class="overflow-hidden text-ellipsis">{tab.title}</span>
+          {#if tab.stale}
+            <span class="text-[10px] uppercase tracking-wide text-[var(--pd-status-degraded)]">missing</span>
+          {/if}
+          {#if !tab.permanent}
+            {@const canOpenSection = sectionOpenAllowed(tab.id)}
+            <div class="flex items-center gap-0.5">
+              <Tooltip
+                tip={canOpenSection ? 'Open in a new section' : 'Need another tab to remain in this section'}
+                top>
                 <button
                   type="button"
-                  aria-label="Close tab {tab.title}"
-                  class="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 hover:bg-[var(--pd-action-button-details-bg)] rounded-sm p-0.5"
-                  class:opacity-100={tab.id === activeTabId}
+                  aria-label="Open {tab.title} in a new section"
+                  disabled={!canOpenSection}
+                  class="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 disabled:group-hover:opacity-40 disabled:group-focus-within:opacity-40 hover:bg-[var(--pd-action-button-details-bg)] disabled:hover:bg-transparent rounded-sm p-0.5 disabled:cursor-not-allowed"
                   onclick={(e: MouseEvent): void => {
                     e.stopPropagation();
-                    onClose(tab.id);
+                    if (canOpenSection) onSplitRight(tab.id);
                   }}>
-                  <Icon class="w-3 text-xs" icon={faXmark} />
+                  <Icon class="w-3 text-xs" icon={faTableColumns} />
                 </button>
               </Tooltip>
-            {/if}
-          </div>
-        {/if}
-      </div>
-    {/each}
+              {#if !tab.pinned}
+                <Tooltip tip="Close tab" top>
+                  <button
+                    type="button"
+                    aria-label="Close tab {tab.title}"
+                    class="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 hover:bg-[var(--pd-action-button-details-bg)] rounded-sm p-0.5"
+                    class:opacity-100={tab.id === activeTabId}
+                    onclick={(e: MouseEvent): void => {
+                      e.stopPropagation();
+                      onClose(tab.id);
+                    }}>
+                    <Icon class="w-3 text-xs" icon={faXmark} />
+                  </button>
+                </Tooltip>
+              {/if}
+            </div>
+          {/if}
+        </div>
+      {/each}
 
-    {#if tabs.length === 0 && emptyHint}
-      <div class="flex items-center px-3 text-xs text-[var(--pd-content-text)] opacity-60 whitespace-nowrap">
-        {@render emptyHint()}
-      </div>
-    {/if}
+      {#if tabs.length === 0 && emptyHint}
+        <div class="flex items-center px-3 text-xs text-[var(--pd-content-text)] opacity-60 whitespace-nowrap">
+          {@render emptyHint()}
+        </div>
+      {/if}
 
-    {#if beforeAdd}
-      {@render beforeAdd()}
-    {/if}
+      {#if beforeAdd}
+        {@render beforeAdd()}
+      {/if}
+    </div>
 
     {#if onAddTab && tabs.length > 0}
-      <!-- Lives inside the scrollable row, right next to the last tab - not pinned to the
-           far edge of the bar - and scrolls along with the tabs, like Cursor/VS Code.
-           Nothing to offer "another view" of with zero tabs open - the empty state already
-           covers that case, so skip the button rather than leave it floating alone in an
-           otherwise-empty bar. -->
-      <Tooltip tip="Open a new tab" top containerClass="flex items-stretch" class="flex items-stretch">
+      <Tooltip tip="Open a new tab" top containerClass="flex items-stretch shrink-0" class="flex items-stretch">
         <button
           type="button"
           aria-label="Open a new tab"
-          class="flex items-center px-2.5 shrink-0 hover:bg-[var(--pd-action-button-details-bg)]"
+          class="flex items-center px-2.5 shrink-0 border-l border-[var(--pd-content-divider)] hover:bg-[var(--pd-action-button-details-bg)]"
           onclick={onAddTab}>
           <Icon class="w-3 text-xs" icon={faPlus} />
         </button>

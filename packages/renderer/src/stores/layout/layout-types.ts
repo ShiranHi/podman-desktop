@@ -30,6 +30,8 @@ export type WorkspaceResourceType =
   | 'volume'
   | 'network'
   | 'secret'
+  | 'compose'
+  | 'manifest'
   /** Form/create pages (Load Images, Pull, Create Volume, …) opened as workspace tabs in V2. */
   | 'action';
 
@@ -63,7 +65,21 @@ export type NetworkSubView = (typeof NETWORK_SUB_VIEWS)[number];
 export const SECRET_SUB_VIEWS = ['summary', 'inspect'] as const;
 export type SecretSubView = (typeof SECRET_SUB_VIEWS)[number];
 
-export type SubView = ContainerSubView | PodSubView | ImageSubView | VolumeSubView | NetworkSubView | SecretSubView;
+export const COMPOSE_SUB_VIEWS = ['summary', 'logs', 'inspect', 'kube'] as const;
+export type ComposeSubView = (typeof COMPOSE_SUB_VIEWS)[number];
+
+export const MANIFEST_SUB_VIEWS = ['summary'] as const;
+export type ManifestSubView = (typeof MANIFEST_SUB_VIEWS)[number];
+
+export type SubView =
+  | ContainerSubView
+  | PodSubView
+  | ImageSubView
+  | VolumeSubView
+  | NetworkSubView
+  | SecretSubView
+  | ComposeSubView
+  | ManifestSubView;
 
 /** A workspace tab is a TabDescriptor plus enough identity to resolve + re-resolve its resource and content. */
 export interface WorkspaceTab extends TabDescriptor {
@@ -91,6 +107,10 @@ export function subViewsForResourceType(resourceType: WorkspaceResourceType): re
       return NETWORK_SUB_VIEWS;
     case 'secret':
       return SECRET_SUB_VIEWS;
+    case 'compose':
+      return COMPOSE_SUB_VIEWS;
+    case 'manifest':
+      return MANIFEST_SUB_VIEWS;
     default:
       return [];
   }
@@ -160,6 +180,24 @@ export function secretKey(secretId: string, engineId: string): string {
 export function parseSecretKey(resourceId: string): { secretId: string; engineId: string } {
   const [secretId, engineId] = resourceId.split('::');
   return { secretId, engineId };
+}
+
+export function composeKey(name: string, engineId: string): string {
+  return `${name}::${engineId}`;
+}
+
+export function parseComposeKey(resourceId: string): { name: string; engineId: string } {
+  const [name, engineId] = resourceId.split('::');
+  return { name, engineId };
+}
+
+/** Manifests share the same identity shape as images (id + engine + repo tag). */
+export function manifestKey(imageId: string, engineId: string, base64RepoTag: string): string {
+  return imageKey(imageId, engineId, base64RepoTag);
+}
+
+export function parseManifestKey(resourceId: string): { imageId: string; engineId: string; base64RepoTag: string } {
+  return parseImageKey(resourceId);
 }
 
 export function tabKey(resourceType: WorkspaceResourceType, resourceId: string, subView: SubView | undefined): string {

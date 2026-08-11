@@ -41,6 +41,7 @@ function isResourceDetailBridge(url: string): boolean {
   if (/^\/networks\/[^/]+\/[^/]+/.test(path)) return true;
   if (/^\/secrets\/[^/]+\/[^/]+/.test(path)) return true;
   if (/^\/images\/[^/]+\/[^/]+\/[^/]+/.test(path)) return true;
+  if (/^\/manifests\//.test(path)) return true;
   return false;
 }
 
@@ -48,11 +49,12 @@ function listRootForDetail(url: string): { url: string; name: string } {
   const path = url.split('?')[0] || '/';
   if (path.startsWith('/containers')) return { url: '/containers', name: 'Containers' };
   if (path.startsWith('/pods')) return { url: '/pods', name: 'Pods' };
-  if (path.startsWith('/images')) return { url: '/images', name: 'Images' };
+  if (path.startsWith('/images') || path.startsWith('/manifests')) return { url: '/images', name: 'Images' };
   if (path.startsWith('/volumes')) return { url: '/volumes', name: 'Volumes' };
   if (path.startsWith('/networks')) return { url: '/networks', name: 'Networks' };
   if (path.startsWith('/secrets')) return { url: '/secrets', name: 'Secrets' };
-  if (path.startsWith('/compose')) return { url: '/pods', name: 'Pods' };
+  // Compose groups live in the Containers list.
+  if (path.startsWith('/compose')) return { url: '/containers', name: 'Containers' };
   return { url: '/containers', name: 'Containers' };
 }
 

@@ -20,14 +20,20 @@ import '@testing-library/jest-dom/vitest';
 
 import { fireEvent } from '@testing-library/dom';
 import { render, screen } from '@testing-library/svelte';
-import { router } from 'tinro';
-import { expect, test, vi } from 'vitest';
+import { beforeEach, expect, test, vi } from 'vitest';
 
 import type { AppearanceUtil } from '/@/lib/appearance/appearance-util';
 import ImageIcon from '/@/lib/images/ImageIcon.svelte';
+import * as resourceOpenActions from '/@/lib/layout/resource-open-actions';
 
 import ImageColumnName from './ImageColumnName.svelte';
 import type { ImageInfoUI } from './ImageInfoUI';
+
+vi.mock(import('/@/lib/layout/resource-open-actions'));
+
+beforeEach(() => {
+  vi.clearAllMocks();
+});
 
 const image: ImageInfoUI = {
   id: 'my-image',
@@ -81,12 +87,9 @@ test('Expect clicking works', async () => {
   const text = screen.getByText(image.name);
   expect(text).toBeInTheDocument();
 
-  // test click
-  const routerGotoSpy = vi.spyOn(router, 'goto');
-
   fireEvent.click(text);
 
-  expect(routerGotoSpy).toBeCalledWith('/images/my-image/podman/bXktaW1hZ2UtbmFtZTpsYXRlc3Q=/summary');
+  expect(resourceOpenActions.openImageInWorkspace).toHaveBeenCalledWith(image, 'newTab');
 });
 
 test('Expect badge with simple color', async () => {
@@ -187,10 +190,8 @@ test('Expect clicking works for manifests', async () => {
   const text = screen.getByText(`${image.name} (manifest)`);
   expect(text).toBeInTheDocument();
 
-  // test click
-  const routerGotoSpy = vi.spyOn(router, 'goto');
   fireEvent.click(text);
-  expect(routerGotoSpy).toBeCalledWith('/manifests/my-image/podman/bXktaW1hZ2UtbmFtZTpsYXRlc3Q=/summary');
+  expect(resourceOpenActions.openManifestInWorkspace).toHaveBeenCalledWith(manifestImage, 'newTab');
 });
 
 test('Expect clicking works for images without tag (empty tag)', async () => {
@@ -205,10 +206,7 @@ test('Expect clicking works for images without tag (empty tag)', async () => {
   const text = screen.getByText('my-untagged-image');
   expect(text).toBeInTheDocument();
 
-  // test click - should use only the name when tag is empty
-  const routerGotoSpy = vi.spyOn(router, 'goto');
   fireEvent.click(text);
 
-  // Should navigate with just the name, when tag is empty
-  expect(routerGotoSpy).toBeCalledWith('/images/my-image/podman/bXktdW50YWdnZWQtaW1hZ2U=/summary');
+  expect(resourceOpenActions.openImageInWorkspace).toHaveBeenCalledWith(imageWithoutTag, 'newTab');
 });

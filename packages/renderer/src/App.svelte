@@ -61,8 +61,10 @@ import KubePodDetails from './lib/kube/pods/PodDetails.svelte';
 import KubePodsList from './lib/kube/pods/PodsList.svelte';
 import PortForwardingList from './lib/kubernetes-port-forward/PortForwardingList.svelte';
 import CompactNavigation from './lib/layout/CompactNavigation.svelte';
+import ComposeWorkspaceEntry from './lib/layout/ComposeWorkspaceEntry.svelte';
 import ContainerWorkspaceEntry from './lib/layout/ContainerWorkspaceEntry.svelte';
 import ImageWorkspaceEntry from './lib/layout/ImageWorkspaceEntry.svelte';
+import ManifestWorkspaceEntry from './lib/layout/ManifestWorkspaceEntry.svelte';
 import NetworkWorkspaceEntry from './lib/layout/NetworkWorkspaceEntry.svelte';
 import PodWorkspaceEntry from './lib/layout/PodWorkspaceEntry.svelte';
 import SecretWorkspaceEntry from './lib/layout/SecretWorkspaceEntry.svelte';
@@ -318,10 +320,17 @@ initSessionAutosave();
           breadcrumb="Manifest Details"
           let:meta
           navigationHint="details">
-          <ManifestDetails
-            imageID={meta.params.id}
-            engineId={decodeURI(meta.params.engineId)}
-            base64RepoTag={meta.params.base64RepoTag} />
+          {#if isTabsLayoutScreen($currentScreen)}
+            <ManifestWorkspaceEntry
+              imageID={meta.params.id}
+              engineId={decodeURI(meta.params.engineId)}
+              base64RepoTag={meta.params.base64RepoTag} />
+          {:else}
+            <ManifestDetails
+              imageID={meta.params.id}
+              engineId={decodeURI(meta.params.engineId)}
+              base64RepoTag={meta.params.base64RepoTag} />
+          {/if}
         </Route>
 
         <Route path="/networks/*" breadcrumb="Networks" navigationHint="root" firstmatch>
@@ -363,7 +372,13 @@ initSessionAutosave();
             type="compose" />
         </Route>
         <Route path="/compose/details/:name/:engineId/*" breadcrumb="Compose Details" let:meta navigationHint="details">
-          <ComposeDetails composeName={decodeURI(meta.params.name)} engineId={decodeURI(meta.params.engineId)} />
+          {#if isTabsLayoutScreen($currentScreen)}
+            <ComposeWorkspaceEntry
+              composeName={decodeURI(meta.params.name)}
+              engineId={decodeURI(meta.params.engineId)} />
+          {:else}
+            <ComposeDetails composeName={decodeURI(meta.params.name)} engineId={decodeURI(meta.params.engineId)} />
+          {/if}
         </Route>
         <Route path="/pods/podman/:name/:engineId/*" breadcrumb="Pod Details" let:meta navigationHint="details">
           <PodWorkspaceEntry

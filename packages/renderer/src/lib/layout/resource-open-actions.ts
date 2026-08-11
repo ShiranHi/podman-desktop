@@ -30,7 +30,16 @@
 import type { ContextMenuAction, OpenMode } from '@podman-desktop/ui-svelte';
 
 import { openTab, type OpenTabInput } from '/@/stores/layout/layout-store.svelte';
-import { imageKey, networkKey, podKey, secretKey, volumeKey } from '/@/stores/layout/layout-types';
+import type { ComposeSubView } from '/@/stores/layout/layout-types';
+import {
+  composeKey,
+  imageKey,
+  manifestKey,
+  networkKey,
+  podKey,
+  secretKey,
+  volumeKey,
+} from '/@/stores/layout/layout-types';
 import { gotoListShell } from '/@/stores/layout/page-tab.svelte';
 
 function gotoWorkspace(): void {
@@ -124,6 +133,40 @@ export function openSecretInWorkspace(secret: { Id: string; Name: string; engine
       resourceId: secretKey(secret.Id, secret.engineId),
       subView: 'summary',
       title: `${secret.Name} · Summary`,
+    },
+    mode,
+  );
+  gotoWorkspace();
+}
+
+export function openComposeInWorkspace(
+  compose: { name: string; engineId: string },
+  mode: OpenMode,
+  subView: ComposeSubView = 'summary',
+): void {
+  const label = subView === 'summary' ? 'Summary' : subView.charAt(0).toUpperCase() + subView.slice(1);
+  openTab(
+    {
+      resourceType: 'compose',
+      resourceId: composeKey(compose.name, compose.engineId),
+      subView,
+      title: `${compose.name} · ${label}`,
+    },
+    mode,
+  );
+  gotoWorkspace();
+}
+
+export function openManifestInWorkspace(
+  image: { id: string; engineId: string; name: string; base64RepoTag: string },
+  mode: OpenMode,
+): void {
+  openTab(
+    {
+      resourceType: 'manifest',
+      resourceId: manifestKey(image.id, image.engineId, image.base64RepoTag),
+      subView: 'summary',
+      title: `${image.name} · Summary`,
     },
     mode,
   );

@@ -50,8 +50,10 @@ import {
   toggleMaximize,
 } from '/@/stores/layout/layout-store.svelte';
 import type {
+  ComposeSubView,
   ContainerSubView,
   ImageSubView,
+  ManifestSubView,
   NetworkSubView,
   PodSubView,
   SecretSubView,
@@ -59,7 +61,9 @@ import type {
   WorkspaceTab,
 } from '/@/stores/layout/layout-types';
 import {
+  parseComposeKey,
   parseImageKey,
+  parseManifestKey,
   parseNetworkKey,
   parsePodKey,
   parseSecretKey,
@@ -71,9 +75,11 @@ import ActionTabContent from './ActionTabContent.svelte';
 import AgentLayoutBanner from './AgentLayoutBanner.svelte';
 import AppPageTabContent from './AppPageTabContent.svelte';
 import CloseSectionButton from './CloseSectionButton.svelte';
+import ComposeTabContent from './ComposeTabContent.svelte';
 import ContainerTabContent from './ContainerTabContent.svelte';
 import ImageTabContent from './ImageTabContent.svelte';
 import LayoutToolbar from './LayoutToolbar.svelte';
+import ManifestTabContent from './ManifestTabContent.svelte';
 import MaximizedPanelBanner from './MaximizedPanelBanner.svelte';
 import NetworkTabContent from './NetworkTabContent.svelte';
 import NewTabPalette from './NewTabPalette.svelte';
@@ -218,6 +224,21 @@ function openNewTabPalette(panelId: string, activeTab: TabDescriptor | undefined
             secretId={parsed.secretId}
             engineId={parsed.engineId}
             subView={tab.subView as SecretSubView} />
+        {:else if tab.resourceType === 'compose'}
+          {@const parsed = parseComposeKey(tab.resourceId)}
+          <ComposeTabContent
+            tabId={tab.id}
+            composeName={parsed.name}
+            engineId={parsed.engineId}
+            subView={tab.subView as ComposeSubView} />
+        {:else if tab.resourceType === 'manifest'}
+          {@const parsed = parseManifestKey(tab.resourceId)}
+          <ManifestTabContent
+            tabId={tab.id}
+            imageId={parsed.imageId}
+            engineId={parsed.engineId}
+            base64RepoTag={parsed.base64RepoTag}
+            subView={tab.subView as ManifestSubView} />
         {:else if tab.resourceType === 'action'}
           <ActionTabContent actionId={tab.resourceId} />
         {/if}

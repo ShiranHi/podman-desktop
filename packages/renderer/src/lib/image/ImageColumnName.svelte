@@ -1,10 +1,12 @@
 <script lang="ts">
-import { NavigationPage } from '@podman-desktop/core-api';
-import { ContextMenu } from '@podman-desktop/ui-svelte';
+import { ContextMenu, type OpenMode } from '@podman-desktop/ui-svelte';
 
-import { buildOpenContextMenuActions, openImageInWorkspace } from '/@/lib/layout/resource-open-actions';
+import {
+  buildOpenContextMenuActions,
+  openImageInWorkspace,
+  openManifestInWorkspace,
+} from '/@/lib/layout/resource-open-actions';
 import Badge from '/@/lib/ui/Badge.svelte';
-import { handleNavigation } from '/@/navigation';
 
 import type { ImageInfoUI } from './ImageInfoUI';
 
@@ -16,31 +18,25 @@ let { object }: Props = $props();
 
 let contextMenu: { x: number; y: number } | undefined = $state();
 
-// Manifests don't have a workspace tab yet, so they keep using the legacy detail route.
-function openManifestDetails(image: ImageInfoUI): void {
-  handleNavigation({
-    page: NavigationPage.MANIFEST,
-    parameters: { id: image.id, engineId: image.engineId, tag: image.tag ? `${image.name}:${image.tag}` : image.name },
-  });
-}
-
-// A plain click opens straight into the workspace in its own new section (split), rather
-// than just appending another tab to whatever panel happens to be focused - with several
-// tabs already open, an appended tab can get lost in the strip, while a new section is
-// impossible to miss. Existing tabs are never removed, and re-clicking an already-open
-// resource just focuses its existing tab/section instead of opening a duplicate.
 function onClick(_event: MouseEvent): void {
   if (object.isManifest) {
-    openManifestDetails(object);
+    openManifestInWorkspace(object, 'newTab');
     return;
   }
   openImageInWorkspace(object, 'newTab');
 }
 
 function onContextMenu(event: MouseEvent): void {
-  if (object.isManifest) return;
   event.preventDefault();
   contextMenu = { x: event.clientX, y: event.clientY };
+}
+
+function openInMode(mode: OpenMode): void {
+  if (object.isManifest) {
+    openManifestInWorkspace(object, mode);
+  } else {
+    openImageInWorkspace(object, mode);
+  }
 }
 </script>
 
@@ -66,7 +62,7 @@ function onContextMenu(event: MouseEvent): void {
   <ContextMenu
     x={contextMenu.x}
     y={contextMenu.y}
-    actions={buildOpenContextMenuActions((mode): void => openImageInWorkspace(object, mode))}
+    actions={buildOpenContextMenuActions(openInMode)}
     onClose={(): void => {
       contextMenu = undefined;
     }} />
