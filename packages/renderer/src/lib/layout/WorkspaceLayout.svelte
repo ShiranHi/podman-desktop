@@ -36,6 +36,7 @@ import {
   ensurePageTab,
   findLeaf,
   focusPanel,
+  getLastLeafId,
   getTabsForPanel,
   layoutState,
   moveTabFromOtherPanel,
@@ -67,6 +68,7 @@ import {
 
 import AgentLayoutBanner from './AgentLayoutBanner.svelte';
 import AppPageTabContent from './AppPageTabContent.svelte';
+import CloseSectionButton from './CloseSectionButton.svelte';
 import ContainerTabContent from './ContainerTabContent.svelte';
 import ImageTabContent from './ImageTabContent.svelte';
 import LayoutToolbar from './LayoutToolbar.svelte';
@@ -141,6 +143,7 @@ function openNewTabPalette(panelId: string, activeTab: TabDescriptor | undefined
       node={displayedNode}
       getTabs={getTabsForPanel}
       focusedPanelId={layoutState.focusedPanelId}
+      maximizedPanelId={layoutState.maximizedPanelId}
       panelCount={panelCount}
       onFocusPanel={focusPanel}
       onSelectTab={selectTab}
@@ -158,7 +161,13 @@ function openNewTabPalette(panelId: string, activeTab: TabDescriptor | undefined
       onAddTab={openNewTabPalette}
       canOpenInNewSection={canMoveTabToNewSection}>
       {#snippet trailing(panelId)}
-        <LayoutToolbar panelId={panelId} />
+        <CloseSectionButton panelId={panelId} />
+      {/snippet}
+      {#snippet globalTrailing(panelId)}
+        <!-- Global settings once: far right of last section (or maximized section). -->
+        {#if panelId === (layoutState.maximizedPanelId ?? getLastLeafId())}
+          <LayoutToolbar panelId={panelId} />
+        {/if}
       {/snippet}
       {#snippet beforeAdd(panelId)}
         {#if layoutState.maximizedPanelId === panelId}

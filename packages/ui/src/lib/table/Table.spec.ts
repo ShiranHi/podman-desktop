@@ -24,7 +24,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { Table, TableColumn, tablePersistence } from '/@/lib';
 import SimpleColumn from '/@/lib/table/SimpleColumn.svelte';
-import { Column, Row } from '/@/lib/table/table';
+import { Column, filterColumnsByWidth, Row } from '/@/lib/table/table';
 import { collapsedStateMap } from '/@/lib/table/table-persistence-store.svelte';
 
 import TestTable from './TestTable.svelte';
@@ -795,5 +795,55 @@ describe('Table collapse state persistence across remounts', () => {
     const g2Row = getByRole2('row', { name: 'Group 2' });
     const g2Btn = within(g2Row).getByRole('button', { name: 'Collapse Row' });
     expect(g2Btn).toHaveAttribute('aria-expanded', 'true');
+  });
+});
+
+describe('filterColumnsByWidth', () => {
+  const status = new Column('Status', { width: '70px' });
+  const name = new Column('Name', { width: '2fr' });
+  const env = new Column('Environment', {});
+  const age = new Column('Age', {});
+  const size = new Column('Size', {});
+  const arch = new Column('Arch', {});
+  const actions = new Column('Actions', { width: '150px', alwaysVisible: true });
+  const columns = [status, name, env, age, size, arch, actions];
+
+  test('keeps all columns when wide enough', () => {
+    expect(filterColumnsByWidth(columns, 1200).map(c => c.title)).toEqual([
+      'Status',
+      'Name',
+      'Environment',
+      'Age',
+      'Size',
+      'Arch',
+      'Actions',
+    ]);
+  });
+
+  test('hides rightmost columns first and always keeps Actions', () => {
+    expect(filterColumnsByWidth(columns, 1000).map(c => c.title)).toEqual([
+      'Status',
+      'Name',
+      'Environment',
+      'Age',
+      'Size',
+      'Actions',
+    ]);
+    expect(filterColumnsByWidth(columns, 900).map(c => c.title)).toEqual([
+      'Status',
+      'Name',
+      'Environment',
+      'Age',
+      'Actions',
+    ]);
+    expect(filterColumnsByWidth(columns, 750).map(c => c.title)).toEqual(['Status', 'Name', 'Environment', 'Actions']);
+    expect(filterColumnsByWidth(columns, 650).map(c => c.title)).toEqual(['Status', 'Name', 'Actions']);
+  });
+
+  test('respects hideBelow override', () => {
+    const customEnv = new Column('Environment', { hideBelow: 500 });
+    const custom = [status, name, customEnv, actions];
+    expect(filterColumnsByWidth(custom, 600).map(c => c.title)).toEqual(['Status', 'Name', 'Environment', 'Actions']);
+    expect(filterColumnsByWidth(custom, 400).map(c => c.title)).toEqual(['Status', 'Name', 'Actions']);
   });
 });

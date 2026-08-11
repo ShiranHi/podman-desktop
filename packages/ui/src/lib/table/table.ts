@@ -1,5 +1,5 @@
 /**********************************************************************
- * Copyright (C) 2023-2025 Red Hat, Inc.
+ * Copyright (C) 2023-2026 Red Hat, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -84,6 +84,61 @@ export interface ColumnInformation<Type, RenderType = Type> {
    * Defaults to 'false'.
    */
   readonly overflow?: boolean;
+
+  /**
+   * When set, the column is hidden when the table width is below
+   * this value (pixels). Takes precedence over automatic responsive hiding.
+   */
+  readonly hideBelow?: number;
+
+  /**
+   * When true, the column is never hidden by responsive width rules.
+   * The Actions column is always treated as always-visible.
+   */
+  readonly alwaysVisible?: boolean;
+}
+
+/** Breakpoints (px) for auto-hiding columns from the right, excluding Actions. */
+export const TABLE_RESPONSIVE_BREAKPOINTS = [1100, 960, 820, 700] as const;
+
+/** Minimum number of leading columns kept before Actions when auto-hiding. */
+export const TABLE_RESPONSIVE_MIN_KEEP = 2;
+
+/**
+ * Hide columns from the right as the table narrows; Actions (and leading
+ * identity columns) stay visible. Columns with alwaysVisible / hideBelow
+ * override the automatic breakpoints.
+ */
+export function filterColumnsByWidth<Type, RenderType = Type>(
+  columns: Column<Type, RenderType>[],
+  width: number,
+): Column<Type, RenderType>[] {
+  if (width <= 0 || columns.length === 0) {
+    return columns;
+  }
+
+  const actionsIndex = columns.findIndex(column => column.title === 'Actions');
+  const beforeActions = actionsIndex >= 0 ? columns.slice(0, actionsIndex) : columns;
+  const trailing = actionsIndex >= 0 ? columns.slice(actionsIndex) : [];
+
+  const minKeep = Math.min(TABLE_RESPONSIVE_MIN_KEEP, beforeActions.length);
+  const leading = beforeActions.slice(0, minKeep);
+  const hideable = beforeActions.slice(minKeep);
+
+  const visibleHideable = hideable.filter((column, index) => {
+    if (column.info.alwaysVisible || column.title === 'Actions') {
+      return true;
+    }
+    if (column.info.hideBelow !== undefined) {
+      return width >= column.info.hideBelow;
+    }
+    const fromRight = hideable.length - 1 - index;
+    const breakpoint =
+      TABLE_RESPONSIVE_BREAKPOINTS[fromRight] ?? TABLE_RESPONSIVE_BREAKPOINTS[TABLE_RESPONSIVE_BREAKPOINTS.length - 1];
+    return width >= breakpoint;
+  });
+
+  return [...leading, ...visibleHideable, ...trailing];
 }
 
 /**

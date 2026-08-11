@@ -40,10 +40,12 @@ import { autofocus } from './autofocus';
 
 interface Props {
   presetId: PresetId;
+  /** Section the preset was opened from — new tabs land here; existing tabs stay. */
+  panelId?: string;
   onClose: () => void;
 }
 
-let { presetId, onClose }: Props = $props();
+let { presetId, panelId, onClose }: Props = $props();
 
 const containerUtils = new ContainerUtils();
 const imageUtils = new ImageUtils();
@@ -94,12 +96,12 @@ function apply(): void {
     case 'debug-duo': {
       const a = containerOptions.find(c => c?.id === containerAId);
       const b = containerOptions.find(c => c?.id === containerBId);
-      if (a && b) applyDebugDuoPreset(a, b);
+      if (a && b) applyDebugDuoPreset(a, b, panelId);
       break;
     }
     case 'logs-terminal': {
       const a = containerOptions.find(c => c?.id === containerAId);
-      if (a) applyLogsPlusTerminalPreset(a);
+      if (a) applyLogsPlusTerminalPreset(a, panelId);
       break;
     }
     case 'pod-inspector': {
@@ -109,6 +111,7 @@ function apply(): void {
         applyPodInspectorPreset(
           pod,
           firstContainer ? { id: firstContainer.Id, name: firstContainer.Names } : undefined,
+          panelId,
         );
       }
       break;
@@ -116,12 +119,12 @@ function apply(): void {
     case 'image-diff': {
       const a = imageOptions.find(i => i?.id === imageAId);
       const b = imageOptions.find(i => i?.id === imageBId);
-      if (a && b) applyImageDiffPreset(a, b);
+      if (a && b) applyImageDiffPreset(a, b, panelId);
       break;
     }
   }
-  // The Layout menu is global chrome (see App.svelte), so applying a preset from any page
-  // needs to jump to /workspace for the user to actually see the panels it created.
+  // Applying a preset from a list shell still needs /workspace (or list shell) so the
+  // new section tabs are visible alongside whatever was already open.
   gotoListShell();
   onClose();
 }

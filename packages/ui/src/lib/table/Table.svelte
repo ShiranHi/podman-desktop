@@ -16,7 +16,7 @@ import ChevronExpander from '../icons/ChevronExpander.svelte';
 import type { ListOrganizerItem } from '../layouts/ListOrganizer';
 import ListOrganizer from '../layouts/ListOrganizer.svelte';
 /* eslint-enable import/no-duplicates */
-import type { Column, Row } from './table';
+import { type Column, filterColumnsByWidth, type Row } from './table';
 import { collapsedStateMap, tablePersistence } from './table-persistence-store.svelte';
 
 export let kind: string;
@@ -84,6 +84,25 @@ onMount(async () => {
   await initializeColumns();
 });
 
+// Track table width for responsive column hiding
+onMount(() => {
+  const element = tableHtmlDivElement;
+  if (!element) {
+    return;
+  }
+  const resizeObserver = new ResizeObserver(entries => {
+    const entry = entries[0];
+    if (entry) {
+      tableWidth = entry.contentRect.width;
+    }
+  });
+  resizeObserver.observe(element);
+  tableWidth = element.clientWidth;
+  return (): void => {
+    resizeObserver.disconnect();
+  };
+});
+
 // Load configuration
 async function loadColumnConfiguration(): Promise<ListOrganizerItem[]> {
   if (enableLayoutConfiguration && tablePersistence.storage) {
@@ -148,33 +167,37 @@ $: if (isInitialized && columnItems.length > 0) {
   });
 }
 
-// Computed visible columns based on configuration
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-$: visibleColumns = ((): Column<T, any>[] => {
+let tableHtmlDivElement: HTMLDivElement | undefined = undefined;
+let tableWidth = 0;
+
+// Computed visible columns based on configuration + responsive width
+$: visibleColumns = ((): typeof columns => {
+  // Depend on tableWidth for responsive hiding
+  tableWidth;
+
+  let configured: typeof columns;
   if (columnItems.length === 0) {
     // Fallback to all columns when not yet initialized
-    return columns;
+    configured = columns;
+  } else {
+    // Get ordered columns inline to ensure reactivity
+    const orderedColumns =
+      columnOrdering.size === 0
+        ? columnItems.toSorted((a, b) => a.originalOrder - b.originalOrder)
+        : columnItems.toSorted((a, b) => {
+            const aOrder = columnOrdering.get(a.id) ?? a.originalOrder;
+            const bOrder = columnOrdering.get(b.id) ?? b.originalOrder;
+            return aOrder - bOrder;
+          });
+
+    configured = orderedColumns
+      .filter(item => item.enabled)
+      .map(item => columns.find(col => col.title === item.id)!)
+      .filter(Boolean);
   }
 
-  // Get ordered columns inline to ensure reactivity
-  const orderedColumns =
-    columnOrdering.size === 0
-      ? columnItems.toSorted((a, b) => a.originalOrder - b.originalOrder)
-      : columnItems.toSorted((a, b) => {
-          const aOrder = columnOrdering.get(a.id) ?? a.originalOrder;
-          const bOrder = columnOrdering.get(b.id) ?? b.originalOrder;
-          return aOrder - bOrder;
-        });
-
-  const result = orderedColumns
-    .filter(item => item.enabled)
-    .map(item => columns.find(col => col.title === item.id)!)
-    .filter(Boolean);
-
-  return result;
+  return filterColumnsByWidth(configured, tableWidth) as typeof columns;
 })();
-
-let tableHtmlDivElement: HTMLDivElement | undefined = undefined;
 
 // number of selected items in the list
 export let selectedItemsNumber: number = 0;

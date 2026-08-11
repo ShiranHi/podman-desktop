@@ -20,7 +20,10 @@
 // The four built-in layout presets from section 4.8 of the vision doc. Each
 // takes plain identifiers (rather than full store objects) so this module
 // stays decoupled from the container/pod/image UI-model types.
-import { layoutState, openTab, resetLayout } from './layout-store.svelte';
+//
+// Every preset opens two new side-by-side sections (splitRight × 2). Existing
+// tabs in the source section stay put — presets append sections to the right.
+import { layoutState, openTab } from './layout-store.svelte';
 import { imageKey, podKey } from './layout-types';
 
 export type PresetId = 'debug-duo' | 'logs-terminal' | 'pod-inspector' | 'image-diff';
@@ -42,7 +45,7 @@ export const PRESETS: PresetDefinition[] = [
   {
     id: 'logs-terminal',
     title: 'Logs + Terminal',
-    description: 'One container: live logs on top, a shell below.',
+    description: 'One container: logs and a shell side by side.',
     iconClass: 'fas fa-terminal',
   },
   {
@@ -62,51 +65,60 @@ export const PRESETS: PresetDefinition[] = [
 export function applyDebugDuoPreset(
   containerA: { id: string; name: string },
   containerB: { id: string; name: string },
+  targetPanelId?: string,
 ): void {
-  resetLayout();
-  const firstPanel = openTabAndGetPanel({
-    resourceType: 'container',
-    resourceId: containerA.id,
-    subView: 'logs',
-    title: `${containerA.name} · Logs`,
-  });
-  openTab(
-    { resourceType: 'container', resourceId: containerB.id, subView: 'logs', title: `${containerB.name} · Logs` },
-    'splitRight',
-    firstPanel,
+  openSideBySide(
+    {
+      resourceType: 'container',
+      resourceId: containerA.id,
+      subView: 'logs',
+      title: `${containerA.name} · Logs`,
+    },
+    {
+      resourceType: 'container',
+      resourceId: containerB.id,
+      subView: 'logs',
+      title: `${containerB.name} · Logs`,
+    },
+    targetPanelId,
   );
 }
 
-export function applyLogsPlusTerminalPreset(container: { id: string; name: string }): void {
-  resetLayout();
-  const firstPanel = openTabAndGetPanel({
-    resourceType: 'container',
-    resourceId: container.id,
-    subView: 'logs',
-    title: `${container.name} · Logs`,
-  });
-  openTab(
-    { resourceType: 'container', resourceId: container.id, subView: 'terminal', title: `${container.name} · Terminal` },
-    'splitDown',
-    firstPanel,
+export function applyLogsPlusTerminalPreset(container: { id: string; name: string }, targetPanelId?: string): void {
+  openSideBySide(
+    {
+      resourceType: 'container',
+      resourceId: container.id,
+      subView: 'logs',
+      title: `${container.name} · Logs`,
+    },
+    {
+      resourceType: 'container',
+      resourceId: container.id,
+      subView: 'terminal',
+      title: `${container.name} · Terminal`,
+    },
+    targetPanelId,
   );
 }
 
 export function applyPodInspectorPreset(
   pod: { name: string; engineId: string },
   container?: { id: string; name: string },
+  targetPanelId?: string,
 ): void {
-  resetLayout();
-  const firstPanel = openTabAndGetPanel({
-    resourceType: 'pod',
-    resourceId: podKey(pod.name, pod.engineId),
-    subView: 'summary',
-    title: `${pod.name} · Summary`,
-  });
+  const firstPanel = openInNewSection(
+    {
+      resourceType: 'pod',
+      resourceId: podKey(pod.name, pod.engineId),
+      subView: 'summary',
+      title: `${pod.name} · Summary`,
+    },
+    targetPanelId,
+  );
   if (container) {
-    openTab(
+    openInNewSection(
       { resourceType: 'container', resourceId: container.id, subView: 'logs', title: `${container.name} · Logs` },
-      'splitRight',
       firstPanel,
     );
   }
@@ -115,28 +127,36 @@ export function applyPodInspectorPreset(
 export function applyImageDiffPreset(
   imageA: { id: string; engineId: string; base64RepoTag: string; name: string },
   imageB: { id: string; engineId: string; base64RepoTag: string; name: string },
+  targetPanelId?: string,
 ): void {
-  resetLayout();
-  const firstPanel = openTabAndGetPanel({
-    resourceType: 'image',
-    resourceId: imageKey(imageA.id, imageA.engineId, imageA.base64RepoTag),
-    subView: 'inspect',
-    title: `${imageA.name} · Inspect`,
-  });
-  openTab(
+  openSideBySide(
+    {
+      resourceType: 'image',
+      resourceId: imageKey(imageA.id, imageA.engineId, imageA.base64RepoTag),
+      subView: 'inspect',
+      title: `${imageA.name} · Inspect`,
+    },
     {
       resourceType: 'image',
       resourceId: imageKey(imageB.id, imageB.engineId, imageB.base64RepoTag),
       subView: 'inspect',
       title: `${imageB.name} · Inspect`,
     },
-    'splitRight',
-    firstPanel,
+    targetPanelId,
   );
 }
 
-function openTabAndGetPanel(input: Parameters<typeof openTab>[0]): string {
-  openTab(input, 'newTab');
-  // openTab() always leaves layoutState.focusedPanelId pointing at the panel it just placed the tab in.
+/** Open both tabs each in their own new section, side by side to the right of target. */
+function openSideBySide(
+  first: Parameters<typeof openTab>[0],
+  second: Parameters<typeof openTab>[0],
+  targetPanelId?: string,
+): void {
+  const firstPanel = openInNewSection(first, targetPanelId);
+  openInNewSection(second, firstPanel);
+}
+
+function openInNewSection(input: Parameters<typeof openTab>[0], targetPanelId?: string): string {
+  openTab(input, 'splitRight', targetPanelId);
   return layoutState.focusedPanelId;
 }

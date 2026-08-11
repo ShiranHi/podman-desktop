@@ -32,6 +32,8 @@ interface Props {
   node: PanelNode;
   getTabs: (panelId: string) => TabDescriptor[];
   focusedPanelId?: string;
+  /** When set, that leaf is shown full-width and should use the restore icon/tooltip. */
+  maximizedPanelId?: string;
   panelCount: number;
   onFocusPanel: (panelId: string) => void;
   onSelectTab: (panelId: string, tabId: string) => void;
@@ -55,10 +57,10 @@ interface Props {
   onAddTab?: (panelId: string, activeTab: TabDescriptor | undefined) => void;
   /** See Panel's `canOpenInNewSection`. */
   canOpenInNewSection?: (tabId: string) => boolean;
-  /** See Panel's `trailing`. Threaded down to every leaf panel's tab bar (there's normally
-   * just one, until the user splits) - called with that panel's own id, so the caller can scope
-   * whatever it renders (e.g. a "close all" action) to just that panel instead of every panel. */
+  /** See Panel's `trailing` — after maximize, before globalTrailing (e.g. close section). */
   trailing?: Snippet<[string]>;
+  /** See Panel's `globalTrailing` — far-right after trailing. */
+  globalTrailing?: Snippet<[string]>;
   /** See Panel's `beforeAdd`. */
   beforeAdd?: Snippet<[string]>;
   /** See Panel's `showTabBar`. Defaults true; set false when a global tab strip owns chrome. */
@@ -129,8 +131,8 @@ function equalize(_index: number): void {
     tabs={props.getTabs(leaf.id)}
     activeTabId={leaf.activeTabId}
     focused={props.focusedPanelId === leaf.id}
-    maximized={!!leaf.maximized}
-    canMaximize={props.panelCount > 1}
+    maximized={leaf.id === props.maximizedPanelId}
+    canMaximize={props.panelCount > 1 || leaf.id === props.maximizedPanelId}
     onFocus={(): void => props.onFocusPanel(leaf.id)}
     onSelect={(tabId): void => props.onSelectTab(leaf.id, tabId)}
     onClose={(tabId): void => props.onCloseTab(leaf.id, tabId)}
@@ -147,6 +149,7 @@ function equalize(_index: number): void {
     onAddTab={props.onAddTab}
     canOpenInNewSection={props.canOpenInNewSection}
     trailing={props.trailing}
+    globalTrailing={props.globalTrailing}
     beforeAdd={props.beforeAdd}
     showTabBar={props.showTabBar}
     tabContent={props.tabContent}
@@ -166,6 +169,7 @@ function equalize(_index: number): void {
           node={child}
           getTabs={props.getTabs}
           focusedPanelId={props.focusedPanelId}
+          maximizedPanelId={props.maximizedPanelId}
           panelCount={props.panelCount}
           onFocusPanel={props.onFocusPanel}
           onSelectTab={props.onSelectTab}
@@ -183,6 +187,7 @@ function equalize(_index: number): void {
           onAddTab={props.onAddTab}
           canOpenInNewSection={props.canOpenInNewSection}
           trailing={props.trailing}
+          globalTrailing={props.globalTrailing}
           beforeAdd={props.beforeAdd}
           showTabBar={props.showTabBar}
           tabContent={props.tabContent}

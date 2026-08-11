@@ -115,6 +115,15 @@ export function findFirstLeaf(node: PanelNode): LeafPanelNode {
   return node.kind === 'leaf' ? node : findFirstLeaf(node.children[0]);
 }
 
+/** Last leaf in tree order (rightmost / bottommost section) — hosts the shared settings gear. */
+export function findLastLeaf(node: PanelNode): LeafPanelNode {
+  return node.kind === 'leaf' ? node : findLastLeaf(node.children[node.children.length - 1]);
+}
+
+export function getLastLeafId(): string {
+  return findLastLeaf(layoutState.tree).id;
+}
+
 function findParent(node: PanelNode, childId: string): SplitPanelNode | undefined {
   if (node.kind === 'leaf') return undefined;
   for (const child of node.children) {
@@ -307,6 +316,31 @@ function splitLeaf(targetLeafId: string, direction: SplitDirection, position: 'b
 export function openTab(input: OpenTabInput, mode: OpenMode = 'replace', targetPanelId?: string): string {
   const key = tabKey(input.resourceType, input.resourceId, input.subView);
   const existing = findExistingTabByKey(key);
+
+  // Default into the home section (permanent page tab) so list clicks keep Containers
+  // in the same strip. Explicit targetPanelId (palette / per-panel +) still wins.
+  const homeLeaf = findFirstLeaf(layoutState.tree);
+  const baseLeaf = targetPanelId ? (findLeaf(layoutState.tree, targetPanelId) ?? homeLeaf) : homeLeaf;
+
+  // Split modes always create a new section. If the tab already exists, move it there
+  // instead of only focusing it in place (presets need a reliable side-by-side layout).
+  if (existing && (mode === 'splitRight' || mode === 'splitDown')) {
+    ensurePageTab();
+    const sourceLeaf = findLeafContainingTab(layoutState.tree, existing.id);
+    const destinationLeaf = splitLeaf(baseLeaf.id, mode === 'splitRight' ? 'row' : 'column', 'after');
+    if (sourceLeaf && sourceLeaf.id !== destinationLeaf.id) {
+      removeTabFromLeaf(sourceLeaf, existing.id);
+      if (sourceLeaf.tabIds.length === 0) {
+        pruneEmptyLeaf(sourceLeaf.id);
+      }
+    }
+    destinationLeaf.tabIds.push(existing.id);
+    destinationLeaf.activeTabId = existing.id;
+    layoutState.focusedPanelId = destinationLeaf.id;
+    ensurePageTab();
+    return existing.id;
+  }
+
   if (existing) {
     ensurePageTab();
     const leaf = findLeafContainingTab(layoutState.tree, existing.id);
@@ -332,11 +366,6 @@ export function openTab(input: OpenTabInput, mode: OpenMode = 'replace', targetP
     agentCreated: input.agentCreated,
   };
   layoutState.tabs[id] = tab;
-
-  // Default into the home section (permanent page tab) so list clicks keep Containers
-  // in the same strip. Explicit targetPanelId (palette / per-panel +) still wins.
-  const homeLeaf = findFirstLeaf(layoutState.tree);
-  const baseLeaf = targetPanelId ? (findLeaf(layoutState.tree, targetPanelId) ?? homeLeaf) : homeLeaf;
 
   let destinationLeaf: LeafPanelNode;
   switch (mode) {
@@ -522,8 +551,14 @@ export function markTabStale(tabId: string, stale: boolean): void {
   if (tab) tab.stale = stale;
 }
 
+/** True when at least one closable resource tab is open (ignores the permanent page tab). */
 export function hasAnyTabs(): boolean {
-  return Object.keys(layoutState.tabs).length > 0;
+  return resourceTabCount() > 0;
+}
+
+/** True when this panel has tabs that "Close section" can remove (not only the page tab). */
+export function hasClosableTabsInPanel(panelId: string): boolean {
+  return getTabsForPanel(panelId).some(tab => tab.id !== PAGE_TAB_ID && !tab.permanent);
 }
 
 /** Total number of open tabs across every panel - used for the persistent global tab bar. */
@@ -674,7 +709,7 @@ export function canMoveTabToNewSection(tabId: string): boolean {
   return leaf.tabIds.some(id => id !== tabId);
 }
 
-/** Test-only / reset hook used by the "apply preset" and "load named layout" flows. */
+/** Reset hook used by the "load named layout" flow (and tests). Presets do not call this. */
 export function resetLayout(): void {
   const leaf = createLeaf();
   layoutState.tree = leaf;
