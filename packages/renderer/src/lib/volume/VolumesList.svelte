@@ -1,5 +1,5 @@
 <script lang="ts">
-import { faPieChart, faPlusCircle, faTrash } from '@fortawesome/free-solid-svg-icons';
+import { faPieChart, faPlusCircle, faTableColumns, faTrash } from '@fortawesome/free-solid-svg-icons';
 import {
   Button,
   FilteredEmptyScreen,
@@ -20,8 +20,11 @@ import type { EngineInfoUI } from '/@/lib/engine/EngineInfoUI';
 import Prune from '/@/lib/engine/Prune.svelte';
 import NoContainerEngineEmptyScreen from '/@/lib/image/NoContainerEngineEmptyScreen.svelte';
 import VolumeIcon from '/@/lib/images/VolumeIcon.svelte';
+import { compareResourcesWithTabs } from '/@/lib/layout/resource-open-actions';
 import ContainerEngineEnvironmentColumn from '/@/lib/table/columns/ContainerEngineEnvironmentColumn.svelte';
 import EnvironmentDropdown from '/@/lib/ui/EnvironmentDropdown.svelte';
+import { volumeKey } from '/@/stores/layout/layout-types';
+import { currentScreen } from '/@/stores/prototype';
 import { providerInfos } from '/@/stores/providers';
 import { fetchVolumesWithData, filtered, searchPattern, volumeListInfos } from '/@/stores/volumes';
 
@@ -143,6 +146,18 @@ function gotoCreateVolume(): void {
 
 let selectedItemsNumber: number = $state(0);
 
+function compareSelectedWithTabs(): void {
+  const selected = filteredVolumes.filter(volume => volume.selected);
+  compareResourcesWithTabs(
+    selected.map(volume => ({
+      resourceType: 'volume',
+      resourceId: volumeKey(volume.name, volume.engineId),
+      subView: 'summary',
+      title: `${volume.shortName} · Summary`,
+    })),
+  );
+}
+
 let statusColumn = new TableColumn<VolumeInfoUI>('Status', {
   align: 'center',
   width: '70px',
@@ -226,6 +241,7 @@ function label(obj: VolumeInfoUI): string {
     <EnvironmentDropdown bind:selectedEnvironment={selectedEnvironment} />
     {#if selectedItemsNumber > 0}
       <Button
+        type="secondary"
         on:click={(): void =>
           withBulkConfirmation(
             deleteSelectedVolumes,
@@ -235,7 +251,17 @@ function label(obj: VolumeInfoUI): string {
         title="Delete {selectedItemsNumber} selected items"
         inProgress={bulkDeleteInProgress}
         icon={faTrash} />
-      <span>On {selectedItemsNumber} selected items.</span>
+      {#if $currentScreen === 'tabs-layout'}
+        <Button
+          type="secondary"
+          on:click={compareSelectedWithTabs}
+          title="Compare {selectedItemsNumber} selected items with tabs"
+          aria-label="Compare with tabs"
+          icon={faTableColumns}>
+          Compare
+        </Button>
+      {/if}
+      <span class="text-sm whitespace-nowrap opacity-80">On {selectedItemsNumber} selected items.</span>
     {/if}
   {/snippet}
 

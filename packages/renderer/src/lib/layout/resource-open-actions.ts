@@ -28,15 +28,27 @@
 // e.g. opening a Pod tab and then browsing to the Images list still leaves
 // that Pod tab reachable from Workspace.
 import type { ContextMenuAction, OpenMode } from '@podman-desktop/ui-svelte';
-import { router } from 'tinro';
 
-import { openTab } from '/@/stores/layout/layout-store.svelte';
-import { imageKey, podKey } from '/@/stores/layout/layout-types';
+import { openTab, type OpenTabInput } from '/@/stores/layout/layout-store.svelte';
+import { imageKey, networkKey, podKey, secretKey, volumeKey } from '/@/stores/layout/layout-types';
+import { gotoListShell } from '/@/stores/layout/page-tab.svelte';
 
 function gotoWorkspace(): void {
-  // openTab() has already updated the shared layout state; navigating to the
-  // persistent /workspace route makes sure it's visible immediately.
-  router.goto('/workspace');
+  // Stay on the list route (Containers, …) so the permanent page tab + nav highlight
+  // remain; resource content is shown in a section tab inside TabbedListShell.
+  gotoListShell();
+}
+
+/**
+ * Open each selected resource as its own section (splitRight chain) for side-by-side compare.
+ * First fills an empty leaf (or splits if one already has tabs); each next item gets a new section.
+ */
+export function compareResourcesWithTabs(inputs: OpenTabInput[]): void {
+  if (inputs.length === 0) return;
+  for (const input of inputs) {
+    openTab(input, 'splitRight');
+  }
+  gotoWorkspace();
 }
 
 export function openContainerInWorkspace(container: { id: string; name: string }, mode: OpenMode): void {
@@ -70,6 +82,48 @@ export function openImageInWorkspace(
       resourceId: imageKey(image.id, image.engineId, image.base64RepoTag),
       subView: 'summary',
       title: `${image.name} · Summary`,
+    },
+    mode,
+  );
+  gotoWorkspace();
+}
+
+export function openVolumeInWorkspace(
+  volume: { name: string; shortName: string; engineId: string },
+  mode: OpenMode,
+): void {
+  openTab(
+    {
+      resourceType: 'volume',
+      resourceId: volumeKey(volume.name, volume.engineId),
+      subView: 'summary',
+      title: `${volume.shortName} · Summary`,
+    },
+    mode,
+  );
+  gotoWorkspace();
+}
+
+export function openNetworkInWorkspace(network: { name: string; engineId: string }, mode: OpenMode): void {
+  openTab(
+    {
+      resourceType: 'network',
+      resourceId: networkKey(network.name, network.engineId),
+      subView: 'summary',
+      title: `${network.name} · Summary`,
+    },
+    mode,
+  );
+  gotoWorkspace();
+}
+
+export function openSecretInWorkspace(secret: { Id: string; Name: string; engineId: string }, mode: OpenMode): void {
+  openTab(
+    {
+      resourceType: 'secret',
+      resourceId: secretKey(secret.Id, secret.engineId),
+      subView: 'summary',
+      title: `${secret.Name} · Summary`,
     },
     mode,
   );

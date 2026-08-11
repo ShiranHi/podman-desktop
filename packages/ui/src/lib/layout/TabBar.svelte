@@ -50,6 +50,10 @@ interface Props {
   onSplitRight: (tabId: string) => void;
   onSplitDown: (tabId: string) => void;
   onMoveToNewPanel: (tabId: string) => void;
+  /** When set, controls whether "Open in a new section" is enabled for a tab. Defaults to
+   * "at least two non-permanent tabs in this bar" (fine for a per-panel bar; global bars
+   * should pass a per-section check so a lone tab in its section cannot be moved out). */
+  canOpenInNewSection?: (tabId: string) => boolean;
   /** When provided, renders a "+" button after the tabs that opens a new-tab picker (other
    * views of the active resource, any pod/container/image, or a free-text ask-the-agent
    * entry) - instead of cluttering every tab's content with a static row of sub-views. */
@@ -59,6 +63,9 @@ interface Props {
    * separate full-width row above it. Called with this bar's own `panelId`, so a "close all"
    * style action in there can be scoped to just this panel instead of every panel. */
   trailing?: Snippet<[string]>;
+  /** Rendered after the last tab and before the "+" button (still in the scrollable row) —
+   * e.g. a compact "+N hidden sections" chip. */
+  beforeAdd?: Snippet;
   /** Rendered in place of the tab list only while `tabs` is empty - a first-run hint like "Open
    * a resource to start a tab here", so an empty bar isn't just an unlabeled strip with no clue
    * what it's for. Callers are expected to only pass this once (e.g. gated on a "has the user
@@ -80,10 +87,20 @@ let {
   onSplitRight,
   onSplitDown,
   onMoveToNewPanel,
+  canOpenInNewSection,
   onAddTab,
   trailing,
+  beforeAdd,
   emptyHint,
 }: Props = $props();
+
+function sectionOpenAllowed(tabId: string): boolean {
+  if (canOpenInNewSection) return canOpenInNewSection(tabId);
+  // Default: leave at least one tab behind (permanent page tab counts).
+  const tab = tabs.find(t => t.id === tabId);
+  if (tab?.permanent) return false;
+  return tabs.some(t => t.id !== tabId);
+}
 
 let scrollEl: HTMLDivElement | undefined = $state();
 let overflowing = $state(false);
@@ -110,6 +127,11 @@ function onWheel(event: WheelEvent): void {
 }
 
 function onDragStart(event: DragEvent, tabId: string): void {
+  const tab = tabs.find(t => t.id === tabId);
+  if (tab?.permanent) {
+    event.preventDefault();
+    return;
+  }
   const payload: DragPayload = { panelId, tabId };
   event.dataTransfer?.setData(TAB_DRAG_MIME, JSON.stringify(payload));
   if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
@@ -165,6 +187,16 @@ function openContextMenu(event: MouseEvent, tabId: string): void {
 
 function contextMenuActions(tabId: string): ContextMenuAction[] {
   const tab = tabs.find(t => t.id === tabId);
+  if (tab?.permanent) {
+    return [
+      {
+        id: 'close-others',
+        title: 'Close Others',
+        iconClass: 'fas fa-xmark',
+        onSelect: (): void => onCloseOthers(tabId),
+      },
+    ];
+  }
   return [
     { id: 'close', title: 'Close', iconClass: 'fas fa-xmark', onSelect: (): void => onClose(tabId) },
     {
@@ -175,7 +207,7 @@ function contextMenuActions(tabId: string): ContextMenuAction[] {
     },
     {
       id: 'close-all',
-      title: 'Close All in Panel',
+      title: 'Close section',
       iconClass: 'fas fa-xmark',
       onSelect: (): void => onCloseAllInPanel(),
     },
@@ -229,11 +261,15 @@ function contextMenuActions(tabId: string): ContextMenuAction[] {
         role="tab"
         tabindex="0"
         aria-selected={tab.id === activeTabId}
-        draggable="true"
+        draggable={!tab.permanent}
         ondragstart={(e: DragEvent): void => onDragStart(e, tab.id)}
-        ondragover={(e: DragEvent): void => onDragOverTab(e, tab.id)}
+        ondragover={(e: DragEvent): void => {
+          if (!tab.permanent) onDragOverTab(e, tab.id);
+        }}
         ondragleave={onDragLeaveTab}
-        ondrop={(e: DragEvent): void => onDropOnTab(e, tab.id)}
+        ondrop={(e: DragEvent): void => {
+          if (!tab.permanent) onDropOnTab(e, tab.id);
+        }}
         oncontextmenu={(e: MouseEvent): void => openContextMenu(e, tab.id)}
         onclick={(): void => onSelect(tab.id)}
         onkeydown={(e: KeyboardEvent): void => {
@@ -247,7 +283,7 @@ function contextMenuActions(tabId: string): ContextMenuAction[] {
         class:text-[var(--pd-tab-text)]={tab.id !== activeTabId}
         class:opacity-70={!!tab.stale}
         title={tab.subtitle ? `${tab.title} — ${tab.subtitle}` : tab.title}>
-        {#if tab.pinned}
+        {#if tab.pinned && !tab.permanent}
           <Icon class="w-3 text-xs opacity-70" icon={faThumbtack} />
         {/if}
         {#if tab.agentCreated}
@@ -259,36 +295,41 @@ function contextMenuActions(tabId: string): ContextMenuAction[] {
         {#if tab.stale}
           <span class="text-[10px] uppercase tracking-wide text-[var(--pd-status-degraded)]">missing</span>
         {/if}
-        <div class="flex items-center gap-0.5">
-          <Tooltip tip={tabs.length > 1 ? 'Open in a new section' : 'Can\'t split - only tab in section'} top>
-            <button
-              type="button"
-              aria-label="Split {tab.title} to the right"
-              disabled={tabs.length <= 1}
-              class="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 disabled:group-hover:opacity-40 disabled:group-focus-within:opacity-40 hover:bg-[var(--pd-action-button-details-bg)] disabled:hover:bg-transparent rounded-sm p-0.5 disabled:cursor-not-allowed"
-              onclick={(e: MouseEvent): void => {
-                e.stopPropagation();
-                onSplitRight(tab.id);
-              }}>
-              <Icon class="w-3 text-xs" icon={faTableColumns} />
-            </button>
-          </Tooltip>
-          {#if !tab.pinned}
-            <Tooltip tip="Close tab" top>
+        {#if !tab.permanent}
+          {@const canOpenSection = sectionOpenAllowed(tab.id)}
+          <div class="flex items-center gap-0.5">
+            <Tooltip
+              tip={canOpenSection ? 'Open in a new section' : 'Need another tab to remain in this section'}
+              top>
               <button
                 type="button"
-                aria-label="Close tab {tab.title}"
-                class="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 hover:bg-[var(--pd-action-button-details-bg)] rounded-sm p-0.5"
-                class:opacity-100={tab.id === activeTabId}
+                aria-label="Open {tab.title} in a new section"
+                disabled={!canOpenSection}
+                class="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 disabled:group-hover:opacity-40 disabled:group-focus-within:opacity-40 hover:bg-[var(--pd-action-button-details-bg)] disabled:hover:bg-transparent rounded-sm p-0.5 disabled:cursor-not-allowed"
                 onclick={(e: MouseEvent): void => {
                   e.stopPropagation();
-                  onClose(tab.id);
+                  if (canOpenSection) onSplitRight(tab.id);
                 }}>
-                <Icon class="w-3 text-xs" icon={faXmark} />
+                <Icon class="w-3 text-xs" icon={faTableColumns} />
               </button>
             </Tooltip>
-          {/if}
-        </div>
+            {#if !tab.pinned}
+              <Tooltip tip="Close tab" top>
+                <button
+                  type="button"
+                  aria-label="Close tab {tab.title}"
+                  class="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 hover:bg-[var(--pd-action-button-details-bg)] rounded-sm p-0.5"
+                  class:opacity-100={tab.id === activeTabId}
+                  onclick={(e: MouseEvent): void => {
+                    e.stopPropagation();
+                    onClose(tab.id);
+                  }}>
+                  <Icon class="w-3 text-xs" icon={faXmark} />
+                </button>
+              </Tooltip>
+            {/if}
+          </div>
+        {/if}
       </div>
     {/each}
 
@@ -296,6 +337,10 @@ function contextMenuActions(tabId: string): ContextMenuAction[] {
       <div class="flex items-center px-3 text-xs text-[var(--pd-content-text)] opacity-60 whitespace-nowrap">
         {@render emptyHint()}
       </div>
+    {/if}
+
+    {#if beforeAdd}
+      {@render beforeAdd()}
     {/if}
 
     {#if onAddTab && tabs.length > 0}

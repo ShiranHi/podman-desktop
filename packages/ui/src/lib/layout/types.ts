@@ -32,6 +32,8 @@ export interface TabDescriptor {
   /** Font Awesome icon class list, e.g. 'fa-solid fa-box' */
   iconClass?: string;
   pinned?: boolean;
+  /** Permanent tabs cannot be closed, pinned, dragged, or split (e.g. the app page tab). */
+  permanent?: boolean;
   /** Set when the underlying resource this tab points to no longer exists. */
   stale?: boolean;
   /** Set when this tab/panel was opened programmatically (e.g. by an agent) rather than by the user. */

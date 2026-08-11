@@ -19,7 +19,7 @@ let contextMenu: { x: number; y: number } | undefined;
 // impossible to miss. Existing tabs are never removed, and re-clicking an already-open
 // resource just focuses its existing tab/section instead of opening a duplicate.
 function onClick(_event: MouseEvent): void {
-  openPodInWorkspace(object, 'splitRight');
+  openPodInWorkspace(object, 'newTab');
 }
 
 function onContextMenu(event: MouseEvent): void {

@@ -21,10 +21,10 @@
 // Bridges the legacy `/pods/podman/:name/:engineId/*` deep link to the
 // single, persistent tabbed workspace at `/workspace`. See
 // ContainerWorkspaceEntry.svelte for the general pattern.
-import { router } from 'tinro';
 
 import { findAnyTabForResource, openTab } from '/@/stores/layout/layout-store.svelte';
 import { podKey } from '/@/stores/layout/layout-types';
+import { gotoListShell } from '/@/stores/layout/page-tab.svelte';
 import { podsInfos } from '/@/stores/pods';
 
 interface Props {
@@ -42,7 +42,7 @@ $effect(() => {
   if (!findAnyTabForResource('pod', resourceId)) {
     openTab({ resourceType: 'pod', resourceId, subView: 'summary', title: `${pod.name} · Summary` }, 'newTab');
   }
-  router.goto('/workspace');
+  gotoListShell();
 });
 </script>
 

@@ -27,14 +27,27 @@ import { Modal } from '@podman-desktop/ui-svelte';
 
 import { ContainerUtils } from '/@/lib/container/container-utils';
 import { ImageUtils } from '/@/lib/image/image-utils';
+import { NetworkUtils } from '/@/lib/network/network-utils';
+import { VolumeUtils } from '/@/lib/volume/volume-utils';
 import { containersInfos } from '/@/stores/containers';
 import { imagesInfos } from '/@/stores/images';
 import { runAgentPrompt } from '/@/stores/layout/layout-agent-demo.svelte';
-import { findProactiveInsight } from '/@/stores/layout/layout-proactive-insight';
+import { findProactiveInsights } from '/@/stores/layout/layout-proactive-insight';
 import { openTab } from '/@/stores/layout/layout-store.svelte';
 import type { WorkspaceTab } from '/@/stores/layout/layout-types';
-import { imageKey, podKey, subViewLabel, subViewsForResourceType } from '/@/stores/layout/layout-types';
+import {
+  imageKey,
+  networkKey,
+  podKey,
+  secretKey,
+  subViewLabel,
+  subViewsForResourceType,
+  volumeKey,
+} from '/@/stores/layout/layout-types';
+import { networksListInfo } from '/@/stores/networks';
 import { podsInfos } from '/@/stores/pods';
+import { secretsInfo } from '/@/stores/secrets';
+import { volumeListInfos } from '/@/stores/volumes';
 
 import { autofocus } from './autofocus';
 
@@ -65,6 +78,8 @@ interface PaletteEntry {
 
 const containerUtils = new ContainerUtils();
 const imageUtils = new ImageUtils();
+const volumeUtils = new VolumeUtils();
+const networkUtils = new NetworkUtils();
 
 let query = $state('');
 let selectedIndex = $state(0);
@@ -181,82 +196,178 @@ const imageEntries = $derived(
   ),
 );
 
-const trimmedQuery = $derived(query.trim());
+const volumeEntries = $derived(
+  $volumeListInfos
+    .flatMap(list => list.Volumes)
+    .map(v => {
+      try {
+        return volumeUtils.toVolumeInfoUI(v);
+      } catch {
+        return undefined;
+      }
+    })
+    .filter((v): v is NonNullable<typeof v> => !!v)
+    .map(
+      (volume): PaletteEntry => ({
+        id: `volume-${volume.engineId}-${volume.name}`,
+        title: volume.shortName,
+        subtitle: 'Volume',
+        iconClass: 'fas fa-database',
+        group: 'Volumes',
+        onSelect: (): void => {
+          openTab(
+            {
+              resourceType: 'volume',
+              resourceId: volumeKey(volume.name, volume.engineId),
+              subView: 'summary',
+              title: `${volume.shortName} · Summary`,
+            },
+            'newTab',
+            panelId,
+          );
+          onClose(true);
+        },
+      }),
+    ),
+);
 
-// A static "Ask agent to prepare a layout for me" with nothing to react to gives users nothing
-// to act on until they think of something to type. When the query's empty, lead instead with
-// whatever the agent actually found worth flagging (a vulnerable image, a flaky pod, a rebuilt
-// image) - falling back to the generic prompt only once there's genuinely nothing to report.
-const proactiveInsight = $derived(findProactiveInsight(imageUIList, $podsInfos));
+const networkEntries = $derived(
+  $networksListInfo
+    .map(n => networkUtils.toNetworkInfoUI(n))
+    .map(
+      (network): PaletteEntry => ({
+        id: `network-${network.engineId}-${network.id}`,
+        title: network.name,
+        subtitle: 'Network',
+        iconClass: 'fas fa-network-wired',
+        group: 'Networks',
+        onSelect: (): void => {
+          openTab(
+            {
+              resourceType: 'network',
+              resourceId: networkKey(network.name, network.engineId),
+              subView: 'summary',
+              title: `${network.name} · Summary`,
+            },
+            'newTab',
+            panelId,
+          );
+          onClose(true);
+        },
+      }),
+    ),
+);
 
-const agentEntry = $derived.by((): PaletteEntry => {
-  if (trimmedQuery) {
-    return {
-      id: 'agent',
-      title: `Ask agent: "${trimmedQuery}"`,
-      // Every other row's subtitle just names the resource kind ("Pod", "Container", "Image") -
-      // this one instead says what picking it *does*, since it acts on its own (opens its own
-      // tab(s), possibly more than one) instead of just opening what you asked for.
-      subtitle: 'Opens tabs automatically',
-      iconClass: 'fas fa-wand-magic-sparkles',
-      // Same color already used for the "opened by an agent" dot on agent-created tabs
-      // (TabBar.svelte), so the two agent-touched affordances read as the same visual language.
-      iconColorClass: 'text-[var(--pd-status-running)]',
-      group: 'Agent',
-      onSelect: (): void => {
-        runAgentPrompt(trimmedQuery);
-        onClose(true);
-      },
-    };
-  }
-
-  if (proactiveInsight) {
-    return {
-      id: 'agent-insight',
-      title: proactiveInsight.title,
-      subtitle: proactiveInsight.subtitle,
-      iconClass: proactiveInsight.iconClass,
-      iconColorClass: proactiveInsight.iconColorClass,
-      group: 'Agent',
+const secretEntries = $derived(
+  $secretsInfo.map(
+    (secret): PaletteEntry => ({
+      id: `secret-${secret.engineId}-${secret.Id}`,
+      title: secret.Name ?? '<none>',
+      subtitle: 'Secret',
+      iconClass: 'fas fa-key',
+      group: 'Secrets',
       onSelect: (): void => {
         openTab(
           {
-            resourceType: proactiveInsight.resourceType,
-            resourceId: proactiveInsight.resourceId,
+            resourceType: 'secret',
+            resourceId: secretKey(secret.Id, secret.engineId),
             subView: 'summary',
-            title: proactiveInsight.tabTitle,
+            title: `${secret.Name ?? '<none>'} · Summary`,
           },
           'newTab',
           panelId,
         );
         onClose(true);
       },
-    };
+    }),
+  ),
+);
+
+const trimmedQuery = $derived(query.trim());
+
+const AGENT_GROUP = 'Agent inspect';
+
+// When the query's empty, lead with up to two agent findings (vuln / flaky / rebuilt).
+// Typed query → single "Ask agent: …" row. Nothing found → generic prepare-layout prompt.
+const proactiveInsights = $derived(findProactiveInsights(imageUIList, $podsInfos));
+
+const agentEntries = $derived.by((): PaletteEntry[] => {
+  if (trimmedQuery) {
+    return [
+      {
+        id: 'agent',
+        title: `Ask agent: "${trimmedQuery}"`,
+        subtitle: 'Opens tabs automatically',
+        iconClass: 'fas fa-wand-magic-sparkles',
+        iconColorClass: 'text-[var(--pd-status-running)]',
+        group: AGENT_GROUP,
+        onSelect: (): void => {
+          runAgentPrompt(trimmedQuery);
+          onClose(true);
+        },
+      },
+    ];
   }
 
-  return {
-    id: 'agent',
-    title: 'Ask agent to prepare a layout for me',
-    subtitle: 'Opens tabs automatically',
-    iconClass: 'fas fa-wand-magic-sparkles',
-    iconColorClass: 'text-[var(--pd-status-running)]',
-    group: 'Agent',
-    onSelect: (): void => {
-      runAgentPrompt(trimmedQuery);
-      onClose(true);
+  if (proactiveInsights.length > 0) {
+    return proactiveInsights.map(
+      (insight, index): PaletteEntry => ({
+        id: `agent-insight-${index}-${insight.resourceId}`,
+        title: insight.title,
+        subtitle: insight.subtitle,
+        iconClass: insight.iconClass,
+        iconColorClass: insight.iconColorClass,
+        group: AGENT_GROUP,
+        onSelect: (): void => {
+          openTab(
+            {
+              resourceType: insight.resourceType,
+              resourceId: insight.resourceId,
+              subView: 'summary',
+              title: insight.tabTitle,
+            },
+            'newTab',
+            panelId,
+          );
+          onClose(true);
+        },
+      }),
+    );
+  }
+
+  return [
+    {
+      id: 'agent',
+      title: 'Ask agent to prepare a layout for me',
+      subtitle: 'Opens tabs automatically',
+      iconClass: 'fas fa-wand-magic-sparkles',
+      iconColorClass: 'text-[var(--pd-status-running)]',
+      group: AGENT_GROUP,
+      onSelect: (): void => {
+        runAgentPrompt(trimmedQuery);
+        onClose(true);
+      },
     },
-  };
+  ];
 });
 
 const filteredResourceEntries = $derived.by((): PaletteEntry[] => {
   const q = trimmedQuery.toLowerCase();
   const matches = (entry: PaletteEntry): boolean =>
     !q || entry.title.toLowerCase().includes(q) || entry.subtitle.toLowerCase().includes(q);
-  return [...subViewEntries, ...podEntries, ...containerEntries, ...imageEntries].filter(matches);
+  return [
+    ...subViewEntries,
+    ...podEntries,
+    ...containerEntries,
+    ...imageEntries,
+    ...volumeEntries,
+    ...networkEntries,
+    ...secretEntries,
+  ].filter(matches);
 });
 
 const groupedEntries = $derived.by((): { name: string; entries: PaletteEntry[] }[] => {
-  const groups: { name: string; entries: PaletteEntry[] }[] = [{ name: 'Agent', entries: [agentEntry] }];
+  const groups: { name: string; entries: PaletteEntry[] }[] = [{ name: AGENT_GROUP, entries: agentEntries }];
   for (const entry of filteredResourceEntries) {
     let group = groups.find(g => g.name === entry.group);
     if (!group) {
@@ -315,14 +426,19 @@ function indexOfEntry(entryId: string): number {
         oninput={onQueryInput}
         onkeydown={onKeydown}
         type="text"
-        aria-label="Search pods, containers, images, or ask the agent"
-        placeholder="Search pods, containers, images — or ask the agent…"
+        aria-label="Search pods, containers, images, volumes, networks, secrets, or ask the agent"
+        placeholder="Search resources — or ask the agent…"
         class="w-full px-3 py-2 rounded-sm bg-[var(--pd-input-field-focused-bg)] text-[var(--pd-input-field-text)] border border-[var(--pd-input-field-focused-bg)] focus:outline-hidden" />
     </div>
     <div class="overflow-y-auto py-1">
       {#each groupedEntries as group (group.name)}
         {#if group.entries.length > 0}
-          <div class="px-3 pt-2 pb-1 text-xs font-semibold uppercase tracking-wide text-[var(--pd-modal-dropdown-text)] opacity-70">
+          <div
+            class="px-3 pt-2 pb-1 text-xs font-semibold tracking-wide text-[var(--pd-modal-dropdown-text)] opacity-70 flex items-center gap-1.5"
+            class:uppercase={group.name !== AGENT_GROUP}>
+            {#if group.name === AGENT_GROUP}
+              <i class="fas fa-wand-magic-sparkles text-[var(--pd-status-running)]" aria-hidden="true"></i>
+            {/if}
             {group.name}
           </div>
           {#each group.entries as entry (entry.id)}

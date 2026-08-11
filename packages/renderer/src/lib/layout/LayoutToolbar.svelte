@@ -216,7 +216,7 @@ function openManageModal(): void {
           Layouts
         </div>
         <DropdownMenu.Item
-          title={panelId ? 'Close All Tabs in This Section' : 'Close All Tabs'}
+          title={panelId ? 'Close section' : 'Close All Tabs'}
           icon={faXmark}
           enabled={hasTabsInScope}
           onClick={closeAllTabsAction} />

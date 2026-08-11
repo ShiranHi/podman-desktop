@@ -34,7 +34,7 @@ function onClick(_event: MouseEvent): void {
     openManifestDetails(object);
     return;
   }
-  openImageInWorkspace(object, 'splitRight');
+  openImageInWorkspace(object, 'newTab');
 }
 
 function onContextMenu(event: MouseEvent): void {

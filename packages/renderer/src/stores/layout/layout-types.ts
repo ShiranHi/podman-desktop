@@ -22,7 +22,15 @@
 
 import type { TabDescriptor } from '@podman-desktop/ui-svelte';
 
-export type WorkspaceResourceType = 'container' | 'pod' | 'image' | 'kube-play';
+export type WorkspaceResourceType =
+  | 'app-page'
+  | 'container'
+  | 'pod'
+  | 'image'
+  | 'volume'
+  | 'network'
+  | 'secret'
+  | 'kube-play';
 
 export const CONTAINER_SUB_VIEWS = ['summary', 'logs', 'inspect', 'terminal', 'tty', 'kube'] as const;
 export type ContainerSubView = (typeof CONTAINER_SUB_VIEWS)[number];
@@ -33,12 +41,21 @@ export type PodSubView = (typeof POD_SUB_VIEWS)[number];
 export const IMAGE_SUB_VIEWS = ['summary', 'history', 'inspect'] as const;
 export type ImageSubView = (typeof IMAGE_SUB_VIEWS)[number];
 
-export type SubView = ContainerSubView | PodSubView | ImageSubView;
+export const VOLUME_SUB_VIEWS = ['summary', 'inspect'] as const;
+export type VolumeSubView = (typeof VOLUME_SUB_VIEWS)[number];
+
+export const NETWORK_SUB_VIEWS = ['summary', 'inspect'] as const;
+export type NetworkSubView = (typeof NETWORK_SUB_VIEWS)[number];
+
+export const SECRET_SUB_VIEWS = ['summary', 'inspect'] as const;
+export type SecretSubView = (typeof SECRET_SUB_VIEWS)[number];
+
+export type SubView = ContainerSubView | PodSubView | ImageSubView | VolumeSubView | NetworkSubView | SecretSubView;
 
 /** A workspace tab is a TabDescriptor plus enough identity to resolve + re-resolve its resource and content. */
 export interface WorkspaceTab extends TabDescriptor {
   resourceType: WorkspaceResourceType;
-  /** Opaque per-resource-type identity, e.g. containerId, `${podName}::${engineId}`, `${imageId}::${engineId}::${base64RepoTag}` */
+  /** Opaque per-resource-type identity, e.g. containerId, `${name}::${engineId}` */
   resourceId: string;
   subView?: SubView;
 }
@@ -46,6 +63,8 @@ export interface WorkspaceTab extends TabDescriptor {
 /** The sub-views offered by the tab strip's "+" menu for a given resource type (see WorkspaceLayout's addTabActions). */
 export function subViewsForResourceType(resourceType: WorkspaceResourceType): readonly SubView[] {
   switch (resourceType) {
+    case 'app-page':
+      return [];
     case 'container':
       // 'tty' is an auto-detected special case (see ContainerTabContent), not something to offer manually.
       return CONTAINER_SUB_VIEWS.filter(v => v !== 'tty');
@@ -53,6 +72,12 @@ export function subViewsForResourceType(resourceType: WorkspaceResourceType): re
       return POD_SUB_VIEWS;
     case 'image':
       return IMAGE_SUB_VIEWS;
+    case 'volume':
+      return VOLUME_SUB_VIEWS;
+    case 'network':
+      return NETWORK_SUB_VIEWS;
+    case 'secret':
+      return SECRET_SUB_VIEWS;
     default:
       return [];
   }
@@ -95,6 +120,33 @@ export function imageKey(imageId: string, engineId: string, base64RepoTag: strin
 export function parseImageKey(resourceId: string): { imageId: string; engineId: string; base64RepoTag: string } {
   const [imageId, engineId, base64RepoTag] = resourceId.split('::');
   return { imageId, engineId, base64RepoTag };
+}
+
+export function volumeKey(name: string, engineId: string): string {
+  return `${name}::${engineId}`;
+}
+
+export function parseVolumeKey(resourceId: string): { name: string; engineId: string } {
+  const [name, engineId] = resourceId.split('::');
+  return { name, engineId };
+}
+
+export function networkKey(name: string, engineId: string): string {
+  return `${name}::${engineId}`;
+}
+
+export function parseNetworkKey(resourceId: string): { name: string; engineId: string } {
+  const [name, engineId] = resourceId.split('::');
+  return { name, engineId };
+}
+
+export function secretKey(secretId: string, engineId: string): string {
+  return `${secretId}::${engineId}`;
+}
+
+export function parseSecretKey(resourceId: string): { secretId: string; engineId: string } {
+  const [secretId, engineId] = resourceId.split('::');
+  return { secretId, engineId };
 }
 
 export function tabKey(resourceType: WorkspaceResourceType, resourceId: string, subView: SubView | undefined): string {

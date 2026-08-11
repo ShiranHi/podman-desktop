@@ -13,13 +13,10 @@ let { object }: Props = $props();
 
 let contextMenu: { x: number; y: number } | undefined = $state();
 
-// A plain click opens straight into the workspace in its own new section (split), rather
-// than just appending another tab to whatever panel happens to be focused - with several
-// tabs already open, an appended tab can get lost in the strip, while a new section is
-// impossible to miss. Existing tabs are never removed, and re-clicking an already-open
-// resource just focuses its existing tab/section instead of opening a duplicate.
+// Plain click opens as a new tab in the home section beside the permanent page tab
+// (Containers, …) so that tab stays visible. Use the context menu for split / new section.
 function onClick(_event: MouseEvent): void {
-  openContainerInWorkspace(object, 'splitRight');
+  openContainerInWorkspace(object, 'newTab');
 }
 
 function onContextMenu(event: MouseEvent): void {

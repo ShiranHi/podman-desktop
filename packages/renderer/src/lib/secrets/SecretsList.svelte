@@ -1,5 +1,5 @@
 <script lang="ts">
-import { faPlusCircle, faTrash } from '@fortawesome/free-solid-svg-icons';
+import { faPlusCircle, faTableColumns, faTrash } from '@fortawesome/free-solid-svg-icons';
 import type { SecretInfo } from '@podman-desktop/core-api';
 import { NavigationPage } from '@podman-desktop/core-api';
 import {
@@ -16,6 +16,7 @@ import moment from 'moment/moment';
 import { withBulkConfirmation } from '/@/lib/actions/BulkActions';
 import NoContainerEngineEmptyScreen from '/@/lib/image/NoContainerEngineEmptyScreen.svelte';
 import SecretIcon from '/@/lib/images/SecretIcon.svelte';
+import { compareResourcesWithTabs } from '/@/lib/layout/resource-open-actions';
 import SecretColumnEnvironment from '/@/lib/secrets/columns/SecretColumnEnvironment.svelte';
 import SecretColumnName from '/@/lib/secrets/columns/SecretColumnName.svelte';
 import SecretActions from '/@/lib/secrets/components/SecretActions.svelte';
@@ -23,6 +24,8 @@ import SecretEmptyScreen from '/@/lib/secrets/components/SecretEmptyScreen.svelt
 import type { SecretInfoUI } from '/@/lib/secrets/SecretInfoUI';
 import EnvironmentDropdown from '/@/lib/ui/EnvironmentDropdown.svelte';
 import { handleNavigation } from '/@/navigation';
+import { secretKey } from '/@/stores/layout/layout-types';
+import { currentScreen } from '/@/stores/prototype';
 import { providerInfos } from '/@/stores/providers';
 import { filtered, searchPattern } from '/@/stores/secrets';
 
@@ -39,6 +42,18 @@ let secrets: Array<SecretInfoUI> = $derived(
 );
 
 let selectedItemsNumber: number = $state(0);
+
+function compareSelectedWithTabs(): void {
+  const selected = secrets.filter(secret => secret.selected);
+  compareResourcesWithTabs(
+    selected.map(secret => ({
+      resourceType: 'secret',
+      resourceId: secretKey(secret.Id, secret.engineId),
+      subView: 'summary',
+      title: `${secret.Name} · Summary`,
+    })),
+  );
+}
 
 let nameColumn = new TableColumn<SecretInfoUI>('Name', {
   align: 'left',
@@ -106,6 +121,7 @@ function gotoCreateSecret(): void {
     <EnvironmentDropdown bind:selectedEnvironment={selectedEnvironment} />
     {#if selectedItemsNumber > 0}
       <Button
+        type="secondary"
         onclick={(): void =>
           withBulkConfirmation(
             bulkDeleteSecrets,
@@ -115,7 +131,17 @@ function gotoCreateSecret(): void {
         title="Delete {selectedItemsNumber} selected items"
         inProgress={bulkDeleteInProgress}
         icon={faTrash} />
-      <span>On {selectedItemsNumber} selected items.</span>
+      {#if $currentScreen === 'tabs-layout'}
+        <Button
+          type="secondary"
+          onclick={compareSelectedWithTabs}
+          title="Compare {selectedItemsNumber} selected items with tabs"
+          aria-label="Compare with tabs"
+          icon={faTableColumns}>
+          Compare
+        </Button>
+      {/if}
+      <span class="text-sm whitespace-nowrap opacity-80">On {selectedItemsNumber} selected items.</span>
     {/if}
   {/snippet}
 

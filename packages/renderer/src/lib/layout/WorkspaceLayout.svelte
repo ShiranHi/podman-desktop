@@ -27,11 +27,13 @@ import type { TabDescriptor } from '@podman-desktop/ui-svelte';
 import { EmptyScreen, PanelGroup } from '@podman-desktop/ui-svelte';
 
 import {
+  canMoveTabToNewSection,
   closeActiveTab,
   closeAllInPanel,
   closeOthers,
   closeTab,
   cycleActiveTab,
+  ensurePageTab,
   findLeaf,
   focusPanel,
   getTabsForPanel,
@@ -46,17 +48,39 @@ import {
   splitRight,
   toggleMaximize,
 } from '/@/stores/layout/layout-store.svelte';
-import type { ContainerSubView, ImageSubView, PodSubView, WorkspaceTab } from '/@/stores/layout/layout-types';
-import { parseImageKey, parsePodKey } from '/@/stores/layout/layout-types';
+import type {
+  ContainerSubView,
+  ImageSubView,
+  NetworkSubView,
+  PodSubView,
+  SecretSubView,
+  VolumeSubView,
+  WorkspaceTab,
+} from '/@/stores/layout/layout-types';
+import {
+  parseImageKey,
+  parseNetworkKey,
+  parsePodKey,
+  parseSecretKey,
+  parseVolumeKey,
+} from '/@/stores/layout/layout-types';
 
 import AgentLayoutBanner from './AgentLayoutBanner.svelte';
+import AppPageTabContent from './AppPageTabContent.svelte';
 import ContainerTabContent from './ContainerTabContent.svelte';
 import ImageTabContent from './ImageTabContent.svelte';
 import LayoutToolbar from './LayoutToolbar.svelte';
 import MaximizedPanelBanner from './MaximizedPanelBanner.svelte';
+import NetworkTabContent from './NetworkTabContent.svelte';
 import NewTabPalette from './NewTabPalette.svelte';
 import PodTabContent from './PodTabContent.svelte';
+import SecretTabContent from './SecretTabContent.svelte';
 import SplitInsightBanner from './SplitInsightBanner.svelte';
+import VolumeTabContent from './VolumeTabContent.svelte';
+
+$effect(() => {
+  ensurePageTab();
+});
 
 const panelCount = $derived(countTabsPanels());
 
@@ -106,16 +130,10 @@ function openNewTabPalette(panelId: string, activeTab: TabDescriptor | undefined
 <svelte:window onkeydown={onWindowKeydown} />
 
 <div class="flex flex-col h-full min-h-0 w-full">
-  <!-- The flat "all open tabs" bar is mounted once, globally, in App.svelte (hidden here to
-       avoid a redundant second tab strip), so it stays visible on every other page. The Layout
-       settings button lives in each panel's own tab bar instead (via `trailing` below), since
-       there's no other persistent chrome inside /workspace to anchor it to. -->
+  <!-- Each section has its own TabBar above its content. First section always
+       includes the permanent page tab (Containers / Pods / …). -->
   <AgentLayoutBanner />
-  {#if layoutState.maximizedPanelId}
-    <!-- A side-by-side comparison banner doesn't make sense once only one side is actually
-         visible on screen - the maximized-panel banner below takes its place instead. -->
-    <MaximizedPanelBanner />
-  {:else}
+  {#if !layoutState.maximizedPanelId}
     <SplitInsightBanner />
   {/if}
   <div class="grow min-h-0">
@@ -137,13 +155,21 @@ function openNewTabPalette(panelId: string, activeTab: TabDescriptor | undefined
       onMoveToNewPanel={moveToNewPanel}
       onToggleMaximize={toggleMaximize}
       onResizeSplit={resizeSplit}
-      onAddTab={openNewTabPalette}>
+      onAddTab={openNewTabPalette}
+      canOpenInNewSection={canMoveTabToNewSection}>
       {#snippet trailing(panelId)}
-        <LayoutToolbar panelId={panelId} onAddTab={(): void => openNewTabPalette(panelId, undefined)} />
+        <LayoutToolbar panelId={panelId} />
+      {/snippet}
+      {#snippet beforeAdd(panelId)}
+        {#if layoutState.maximizedPanelId === panelId}
+          <MaximizedPanelBanner />
+        {/if}
       {/snippet}
       {#snippet tabContent(tabDescriptor)}
         {@const tab = tabDescriptor as WorkspaceTab}
-        {#if tab.resourceType === 'container'}
+        {#if tab.resourceType === 'app-page'}
+          <AppPageTabContent />
+        {:else if tab.resourceType === 'container'}
           <ContainerTabContent tabId={tab.id} containerId={tab.resourceId} subView={tab.subView as ContainerSubView} />
         {:else if tab.resourceType === 'pod'}
           {@const parsed = parsePodKey(tab.resourceId)}
@@ -160,6 +186,27 @@ function openNewTabPalette(panelId: string, activeTab: TabDescriptor | undefined
             engineId={parsed.engineId}
             base64RepoTag={parsed.base64RepoTag}
             subView={tab.subView as ImageSubView} />
+        {:else if tab.resourceType === 'volume'}
+          {@const parsed = parseVolumeKey(tab.resourceId)}
+          <VolumeTabContent
+            tabId={tab.id}
+            volumeName={parsed.name}
+            engineId={parsed.engineId}
+            subView={tab.subView as VolumeSubView} />
+        {:else if tab.resourceType === 'network'}
+          {@const parsed = parseNetworkKey(tab.resourceId)}
+          <NetworkTabContent
+            tabId={tab.id}
+            networkName={parsed.name}
+            engineId={parsed.engineId}
+            subView={tab.subView as NetworkSubView} />
+        {:else if tab.resourceType === 'secret'}
+          {@const parsed = parseSecretKey(tab.resourceId)}
+          <SecretTabContent
+            tabId={tab.id}
+            secretId={parsed.secretId}
+            engineId={parsed.engineId}
+            subView={tab.subView as SecretSubView} />
         {/if}
       {/snippet}
       {#snippet emptyState()}
@@ -167,7 +214,7 @@ function openNewTabPalette(panelId: string, activeTab: TabDescriptor | undefined
           <EmptyScreen
             icon="fas fa-table-cells"
             title="No tabs open"
-            message="Open a container, pod, or image from its list to get started." />
+            message="Open a container, pod, image, volume, network, or secret from its list to get started." />
         </div>
       {/snippet}
     </PanelGroup>

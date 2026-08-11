@@ -1,5 +1,12 @@
 <script lang="ts">
-import { faArrowCircleDown, faCube, faDownload, faTrash, faUpload } from '@fortawesome/free-solid-svg-icons';
+import {
+  faArrowCircleDown,
+  faCube,
+  faDownload,
+  faTableColumns,
+  faTrash,
+  faUpload,
+} from '@fortawesome/free-solid-svg-icons';
 import type { ContainerInfo, ImageInfo, ViewInfoUI } from '@podman-desktop/core-api';
 import {
   Button,
@@ -21,12 +28,15 @@ import type { ContextUI } from '/@/lib/context/context';
 import type { EngineInfoUI } from '/@/lib/engine/EngineInfoUI';
 import Prune from '/@/lib/engine/Prune.svelte';
 import ImageIcon from '/@/lib/images/ImageIcon.svelte';
+import { compareResourcesWithTabs } from '/@/lib/layout/resource-open-actions';
 import ContainerEngineEnvironmentColumn from '/@/lib/table/columns/ContainerEngineEnvironmentColumn.svelte';
 import EnvironmentDropdown from '/@/lib/ui/EnvironmentDropdown.svelte';
 import { IMAGE_LIST_VIEW_BADGES, IMAGE_LIST_VIEW_ICONS, IMAGE_VIEW_BADGES, IMAGE_VIEW_ICONS } from '/@/lib/view/views';
 import { containersInfos } from '/@/stores/containers';
 import { context } from '/@/stores/context';
 import { filtered, imagesInfos, searchPattern } from '/@/stores/images';
+import { imageKey } from '/@/stores/layout/layout-types';
+import { currentScreen } from '/@/stores/prototype';
 import { providerInfos } from '/@/stores/providers';
 import { saveImagesInfo } from '/@/stores/save-images-store';
 import { viewsContributions } from '/@/stores/views';
@@ -227,6 +237,18 @@ async function saveSelectedImages(): Promise<void> {
 
 let selectedItemsNumber: number | undefined = $state();
 
+function compareSelectedWithTabs(): void {
+  const selectedImages = filteredImages.filter(image => image.selected && !image.isManifest);
+  compareResourcesWithTabs(
+    selectedImages.map(image => ({
+      resourceType: 'image',
+      resourceId: imageKey(image.id, image.engineId, image.base64RepoTag),
+      subView: 'summary',
+      title: `${image.name} · Summary`,
+    })),
+  );
+}
+
 let statusColumn = new TableColumn<ImageInfoUI>('Status', {
   align: 'center',
   width: '70px',
@@ -332,6 +354,7 @@ function label(item: ImageInfoUI): string {
     <EnvironmentDropdown bind:selectedEnvironment={selectedEnvironment} />
     {#if selectedItemsNumber && selectedItemsNumber > 0}
       <Button
+        type="secondary"
         on:click={(): void => {
           if (selectedItemsNumber) {withBulkConfirmation(
             deleteSelectedImages,
@@ -342,11 +365,22 @@ function label(item: ImageInfoUI): string {
         inProgress={bulkDeleteInProgress}
         icon={faTrash} />
       <Button
+        type="secondary"
         on:click={saveSelectedImages}
         title="Save {selectedItemsNumber} selected items"
         aria-label="Save images"
         icon={faDownload} />
-      <span>On {selectedItemsNumber} selected items.</span>
+      {#if $currentScreen === 'tabs-layout'}
+        <Button
+          type="secondary"
+          on:click={compareSelectedWithTabs}
+          title="Compare {selectedItemsNumber} selected items with tabs"
+          aria-label="Compare with tabs"
+          icon={faTableColumns}>
+          Compare
+        </Button>
+      {/if}
+      <span class="text-sm whitespace-nowrap opacity-80">On {selectedItemsNumber} selected items.</span>
     {/if}
   {/snippet}
 

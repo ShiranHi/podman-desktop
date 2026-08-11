@@ -24,13 +24,14 @@
 // vision doc's "two containers + a database" debugging scenario) and patches
 // the underlying window.list* calls so periodic engine-health refreshes don't
 // wipe the demo data back to an empty list. Never runs in production builds.
-import type { ContainerInfo, ImageInfo, PodInfo, ProviderInfo } from '@podman-desktop/core-api';
+import type { ContainerInfo, ImageInfo, PodInfo, ProviderInfo, SecretInfo } from '@podman-desktop/core-api';
 
 import { PodUtils } from '/@/lib/pod/pod-utils';
 import { containersInfos } from '/@/stores/containers';
 import { imagesInfos } from '/@/stores/images';
 import { podsInfos } from '/@/stores/pods';
 import { providerInfos } from '/@/stores/providers';
+import { secretsInfo } from '/@/stores/secrets';
 
 const ENGINE_ID = 'podman.podman-machine-default';
 const ENGINE_NAME = 'Podman Machine';
@@ -225,6 +226,43 @@ function buildMockProviders(): ProviderInfo[] {
   ];
 }
 
+function buildMockSecrets(): SecretInfo[] {
+  const created = new Date(NOW - 2 * 24 * 60 * 60 * 1000).toISOString();
+  const updated = new Date(NOW - 60 * 60 * 1000).toISOString();
+  return [
+    {
+      Id: 'mocksecret000dbpassword0000000000000000000000000000000001',
+      Name: 'db-password',
+      CreatedAt: created,
+      UpdatedAt: updated,
+      Labels: { app: 'postgres-db', env: 'demo' },
+      engineId: ENGINE_ID,
+      engineName: ENGINE_NAME,
+      engineType: 'podman',
+    },
+    {
+      Id: 'mocksecret000apikey00000000000000000000000000000000000002',
+      Name: 'api-token',
+      CreatedAt: created,
+      UpdatedAt: updated,
+      Labels: { app: 'next-app' },
+      engineId: ENGINE_ID,
+      engineName: ENGINE_NAME,
+      engineType: 'podman',
+    },
+    {
+      Id: 'mocksecret000tls000000000000000000000000000000000000000003',
+      Name: 'tls-cert',
+      CreatedAt: created,
+      UpdatedAt: created,
+      Labels: {},
+      engineId: ENGINE_ID,
+      engineName: ENGINE_NAME,
+      engineType: 'podman',
+    },
+  ];
+}
+
 let seeding = false;
 
 function seedMockWorkspaceResources(): void {
@@ -239,6 +277,7 @@ function seedMockWorkspaceResources(): void {
   const mockContainers = buildMockContainers();
   const mockPods = buildMockPods();
   const mockImages = buildMockImages();
+  const mockSecrets = buildMockSecrets();
   const mockProviders = buildMockProviders();
   const podUtils = new PodUtils();
   const mockPodsUI = mockPods.map(pod => podUtils.getPodInfoUI(pod));
@@ -248,13 +287,31 @@ function seedMockWorkspaceResources(): void {
     containersInfos.set(mockContainers);
     podsInfos.set(mockPodsUI);
     imagesInfos.set(mockImages);
+    secretsInfo.set(mockSecrets);
   };
 
   reassert();
   setInterval(reassert, 3000);
 
   // eslint-disable-next-line no-console
-  console.info('[layout-mock-data] Seeded demo containers/pods/images for the Tabs & Flexible Layout prototype.');
+  console.info(
+    '[layout-mock-data] Seeded demo containers/pods/images/secrets for the Tabs & Flexible Layout prototype.',
+  );
+}
+
+function seedMockSecretsIfEmpty(): void {
+  let hasSecrets = false;
+  secretsInfo.subscribe(value => (hasSecrets = value.length > 0))();
+  if (hasSecrets) return;
+  const mockSecrets = buildMockSecrets();
+  secretsInfo.set(mockSecrets);
+  setInterval(() => {
+    let stillEmpty = false;
+    secretsInfo.subscribe(value => (stillEmpty = value.length === 0))();
+    if (stillEmpty) secretsInfo.set(mockSecrets);
+  }, 3000);
+  // eslint-disable-next-line no-console
+  console.info('[layout-mock-data] Seeded demo secrets for the Tabs & Flexible Layout prototype.');
 }
 
 // Give the real engine a few seconds to connect; only fall back to demo data
@@ -265,6 +322,9 @@ if (import.meta.env.DEV) {
     containersInfos.subscribe(value => (hasRealData = hasRealData || value.length > 0))();
     if (!hasRealData) {
       seedMockWorkspaceResources();
+    } else {
+      // Engine may have containers but no secrets — still seed secrets for the prototype.
+      seedMockSecretsIfEmpty();
     }
   }, 8000);
 }

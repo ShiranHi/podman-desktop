@@ -23,21 +23,10 @@
 // `tablePersistence` in @podman-desktop/ui-svelte) so it survives component
 // remounts as the user navigates between routes.
 import type { LeafPanelNode, OpenMode, PanelNode, SplitDirection, SplitPanelNode } from '@podman-desktop/ui-svelte';
-import { router } from 'tinro';
-
-import { goBack, navigationHistory } from '/@/stores/navigation-history.svelte';
 
 import type { SubView, WorkspaceResourceType, WorkspaceTab } from './layout-types';
 import { tabKey } from './layout-types';
-
-// Tracks the current route so closing the last tab can tell whether the user is
-// actually looking at /workspace right now (see closeTabInternal below) - closing a
-// tab from the global bar while browsing e.g. Pods shouldn't yank the user anywhere,
-// since they're already on the page they want.
-let currentRouteUrl = $state('/');
-router.subscribe(route => {
-  currentRouteUrl = route.url;
-});
+import { getPageTabTitle, goToAppPageRoute, PAGE_TAB_ID } from './page-tab.svelte';
 
 // Whether this profile has ever opened a tab, persisted across restarts so the empty global tab
 // bar's first-run hint (see GlobalTabBar.svelte) is shown exactly until someone opens their
@@ -196,25 +185,87 @@ function pruneEmptyLeaf(leafId: string): void {
   }
 }
 
+/** Remove page-tab id from every leaf except the home leaf (first section). */
+function stripPageTabFromOtherLeaves(node: PanelNode, homeLeafId: string): void {
+  if (node.kind === 'leaf') {
+    if (node.id === homeLeafId) return;
+    const idx = node.tabIds.indexOf(PAGE_TAB_ID);
+    if (idx !== -1) {
+      node.tabIds.splice(idx, 1);
+      if (node.activeTabId === PAGE_TAB_ID) {
+        node.activeTabId = node.tabIds[0];
+      }
+    }
+    return;
+  }
+  for (const child of node.children) {
+    stripPageTabFromOtherLeaves(child, homeLeafId);
+  }
+}
+
+/**
+ * Permanent first-section tab: current list/dashboard page (Containers, …).
+ * Always present as the first tab of the first leaf; never closable.
+ */
+export function ensurePageTab(): void {
+  const title = getPageTabTitle();
+  const existing = layoutState.tabs[PAGE_TAB_ID];
+  if (!existing) {
+    layoutState.tabs[PAGE_TAB_ID] = {
+      id: PAGE_TAB_ID,
+      key: PAGE_TAB_ID,
+      title,
+      permanent: true,
+      pinned: true,
+      resourceType: 'app-page',
+      resourceId: 'app-page',
+      iconClass: 'fas fa-house',
+    };
+  } else if (existing.title !== title || !existing.permanent || !existing.pinned) {
+    existing.title = title;
+    existing.permanent = true;
+    existing.pinned = true;
+  }
+
+  const first = findFirstLeaf(layoutState.tree);
+  stripPageTabFromOtherLeaves(layoutState.tree, first.id);
+
+  const idx = first.tabIds.indexOf(PAGE_TAB_ID);
+  if (idx === -1) {
+    first.tabIds.unshift(PAGE_TAB_ID);
+  } else if (idx > 0) {
+    first.tabIds.splice(idx, 1);
+    first.tabIds.unshift(PAGE_TAB_ID);
+  }
+  if (!first.activeTabId || !first.tabIds.includes(first.activeTabId)) {
+    first.activeTabId = PAGE_TAB_ID;
+  }
+}
+
+/** Focus the permanent page tab in the first section (and navigate to its list route if needed). */
+export function activatePageTab(): void {
+  ensurePageTab();
+  const leaf = findLeafContainingTab(layoutState.tree, PAGE_TAB_ID) ?? findFirstLeaf(layoutState.tree);
+  leaf.activeTabId = PAGE_TAB_ID;
+  layoutState.focusedPanelId = leaf.id;
+  goToAppPageRoute();
+}
+
+export function resourceTabCount(): number {
+  return Object.keys(layoutState.tabs).filter(id => id !== PAGE_TAB_ID).length;
+}
+
 function closeTabInternal(panelId: string, tabId: string): void {
+  if (tabId === PAGE_TAB_ID) return;
   const leaf = findLeaf(layoutState.tree, panelId);
   if (!leaf) return;
   removeTabFromLeaf(leaf, tabId);
   delete layoutState.tabs[tabId];
   if (leaf.tabIds.length === 0) pruneEmptyLeaf(leaf.id);
 
-  // Match VS Code/Cursor: closing the very last open tab leaves nothing for
-  // /workspace to show, so send the user back to whatever page they were on
-  // before they started opening tabs - browser-style "back", not a dead end.
-  // Only applies while /workspace is actually on screen; closing a tab via the
-  // global bar from e.g. the Pods list should just drop it from the bar and
-  // leave the user right where they already are.
-  if (Object.keys(layoutState.tabs).length === 0 && currentRouteUrl.startsWith('/workspace')) {
-    if (navigationHistory.index > 0) {
-      goBack();
-    } else {
-      router.goto('/');
-    }
+  // No resource tabs left: show the permanent page tab (list content), never an empty shell.
+  if (resourceTabCount() === 0) {
+    activatePageTab();
   }
 }
 
@@ -257,6 +308,7 @@ export function openTab(input: OpenTabInput, mode: OpenMode = 'replace', targetP
   const key = tabKey(input.resourceType, input.resourceId, input.subView);
   const existing = findExistingTabByKey(key);
   if (existing) {
+    ensurePageTab();
     const leaf = findLeafContainingTab(layoutState.tree, existing.id);
     if (leaf) {
       leaf.activeTabId = existing.id;
@@ -266,6 +318,7 @@ export function openTab(input: OpenTabInput, mode: OpenMode = 'replace', targetP
   }
 
   markTabEverOpened();
+  ensurePageTab();
   const id = genId('tab');
   const tab: WorkspaceTab = {
     id,
@@ -280,30 +333,24 @@ export function openTab(input: OpenTabInput, mode: OpenMode = 'replace', targetP
   };
   layoutState.tabs[id] = tab;
 
-  const basePanelId = targetPanelId ?? layoutState.focusedPanelId;
-  const baseLeaf = findLeaf(layoutState.tree, basePanelId) ?? findFirstLeaf(layoutState.tree);
+  // Default into the home section (permanent page tab) so list clicks keep Containers
+  // in the same strip. Explicit targetPanelId (palette / per-panel +) still wins.
+  const homeLeaf = findFirstLeaf(layoutState.tree);
+  const baseLeaf = targetPanelId ? (findLeaf(layoutState.tree, targetPanelId) ?? homeLeaf) : homeLeaf;
 
   let destinationLeaf: LeafPanelNode;
   switch (mode) {
     case 'splitRight':
     case 'splitDown':
-      // Splitting a leaf that has no tabs of its own would just create a permanently empty
-      // sibling panel (nothing will ever move into the original leaf) - there's nothing to be
-      // "beside", so fill the empty leaf directly instead, same as 'newTab'. This matters now
-      // that list pages open every resource with splitRight by default (see
-      // resource-open-actions.ts): the very first tab in a fresh/emptied workspace must not
-      // leave a dead "No tabs open" panel next to it.
-      destinationLeaf =
-        baseLeaf.tabIds.length === 0
-          ? baseLeaf
-          : splitLeaf(baseLeaf.id, mode === 'splitRight' ? 'row' : 'column', 'after');
+      // Home leaf always has the page tab, so this always creates a real sibling section.
+      destinationLeaf = splitLeaf(baseLeaf.id, mode === 'splitRight' ? 'row' : 'column', 'after');
       break;
     case 'replace': {
-      // mirrors today's "clicking a list item replaces the current view" default,
-      // while leaving pinned tabs untouched
+      // Leave the permanent page tab (and other pinned tabs) in place.
       for (const existingTabId of [...baseLeaf.tabIds]) {
+        if (existingTabId === PAGE_TAB_ID) continue;
         const existingTab = layoutState.tabs[existingTabId];
-        if (existingTab && !existingTab.pinned) {
+        if (existingTab && !existingTab.pinned && !existingTab.permanent) {
           removeTabFromLeaf(baseLeaf, existingTabId);
           delete layoutState.tabs[existingTabId];
         }
@@ -320,6 +367,7 @@ export function openTab(input: OpenTabInput, mode: OpenMode = 'replace', targetP
   destinationLeaf.tabIds.push(id);
   destinationLeaf.activeTabId = id;
   layoutState.focusedPanelId = destinationLeaf.id;
+  ensurePageTab();
   return id;
 }
 
@@ -328,6 +376,9 @@ export function selectTab(panelId: string, tabId: string): void {
   if (!leaf) return;
   leaf.activeTabId = tabId;
   layoutState.focusedPanelId = panelId;
+  if (tabId === PAGE_TAB_ID) {
+    goToAppPageRoute();
+  }
 }
 
 export function closeTab(panelId: string, tabId: string): void {
@@ -362,11 +413,13 @@ export function closeAllInPanel(panelId: string): void {
 }
 
 export function pinToggle(_panelId: string, tabId: string): void {
+  if (tabId === PAGE_TAB_ID) return;
   const tab = layoutState.tabs[tabId];
   if (tab) tab.pinned = !tab.pinned;
 }
 
 export function reorderTab(panelId: string, tabId: string, beforeTabId: string | undefined): void {
+  if (tabId === PAGE_TAB_ID) return;
   const leaf = findLeaf(layoutState.tree, panelId);
   if (!leaf) return;
   const from = leaf.tabIds.indexOf(tabId);
@@ -382,6 +435,7 @@ export function moveTabFromOtherPanel(
   tabId: string,
   beforeTabId: string | undefined,
 ): void {
+  if (tabId === PAGE_TAB_ID) return;
   const sourceLeaf = findLeaf(layoutState.tree, sourcePanelId);
   const targetLeaf = findLeaf(layoutState.tree, targetPanelId);
   if (!sourceLeaf || !targetLeaf || sourceLeaf.id === targetLeaf.id) return;
@@ -394,14 +448,17 @@ export function moveTabFromOtherPanel(
 }
 
 export function splitRight(panelId: string, tabId: string): void {
+  if (tabId === PAGE_TAB_ID) return;
   moveTabToNewLeaf(panelId, tabId, splitLeaf(panelId, 'row', 'after'));
 }
 
 export function splitDown(panelId: string, tabId: string): void {
+  if (tabId === PAGE_TAB_ID) return;
   moveTabToNewLeaf(panelId, tabId, splitLeaf(panelId, 'column', 'after'));
 }
 
 export function moveToNewPanel(panelId: string, tabId: string): void {
+  if (tabId === PAGE_TAB_ID) return;
   const root = layoutState.tree;
   const direction: SplitDirection = root.kind === 'split' ? root.direction : 'row';
   moveTabToNewLeaf(panelId, tabId, splitLeaf(panelId, direction, 'after'));
@@ -569,9 +626,11 @@ export function closeAllTabsExcept(tabId: string): void {
 
 export function closeAllTabsEverywhere(): void {
   for (const id of Object.keys(layoutState.tabs)) {
-    if (layoutState.tabs[id]?.pinned) continue;
+    if (id === PAGE_TAB_ID) continue;
+    if (layoutState.tabs[id]?.pinned || layoutState.tabs[id]?.permanent) continue;
     closeTabById(id);
   }
+  activatePageTab();
 }
 
 /** Reordering in the flat bar can also move a tab between panels, resolved via the same primitives the per-panel drag-and-drop uses. */
@@ -587,6 +646,7 @@ export function reorderTabGlobal(tabId: string, beforeTabId: string | undefined)
   }
 }
 
+/** Move `tabId` into a new section beside its current one (other sections unchanged). */
 export function splitRightAnyPanel(tabId: string): void {
   const leaf = findLeafContainingTab(layoutState.tree, tabId);
   if (leaf) splitRight(leaf.id, tabId);
@@ -602,6 +662,18 @@ export function moveToNewPanelAnyPanel(tabId: string): void {
   if (leaf) moveToNewPanel(leaf.id, tabId);
 }
 
+/**
+ * True when this tab can leave its section for a new one. The permanent page tab
+ * never moves; any other tab can move as long as at least one tab remains
+ * (typically the page tab in the home section).
+ */
+export function canMoveTabToNewSection(tabId: string): boolean {
+  if (tabId === PAGE_TAB_ID) return false;
+  const leaf = findLeafContainingTab(layoutState.tree, tabId);
+  if (!leaf) return false;
+  return leaf.tabIds.some(id => id !== tabId);
+}
+
 /** Test-only / reset hook used by the "apply preset" and "load named layout" flows. */
 export function resetLayout(): void {
   const leaf = createLeaf();
@@ -609,4 +681,8 @@ export function resetLayout(): void {
   layoutState.tabs = {};
   layoutState.focusedPanelId = leaf.id;
   layoutState.maximizedPanelId = undefined;
+  ensurePageTab();
 }
+
+// Permanent page tab is part of every fresh workspace.
+ensurePageTab();

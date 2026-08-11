@@ -28,7 +28,6 @@
 import { faFileExport, faFileImport, faFolderOpen, faRobot, faXmark } from '@fortawesome/free-solid-svg-icons';
 import { Button, CloseButton, Modal } from '@podman-desktop/ui-svelte';
 import { Icon } from '@podman-desktop/ui-svelte/icons';
-import { router } from 'tinro';
 
 import { simulateAgentDebugLayout } from '/@/stores/layout/layout-agent-demo.svelte';
 import {
@@ -39,6 +38,7 @@ import {
   listNamedLayouts,
   type NamedLayout,
 } from '/@/stores/layout/layout-persistence.svelte';
+import { gotoListShell } from '/@/stores/layout/page-tab.svelte';
 
 import SummaryCard from './summary/SummaryCard.svelte';
 
@@ -56,7 +56,7 @@ function refresh(): void {
 }
 
 function goToWorkspace(): void {
-  router.goto('/workspace');
+  gotoListShell();
 }
 
 function apply(name: string): void {

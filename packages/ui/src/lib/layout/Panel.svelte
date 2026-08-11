@@ -50,8 +50,14 @@ interface Props {
   onToggleMaximize: () => void;
   /** See TabBar's `onAddTab` - resolved here against this panel's own active tab. */
   onAddTab?: (panelId: string, activeTab: TabDescriptor | undefined) => void;
+  /** See TabBar's `canOpenInNewSection`. */
+  canOpenInNewSection?: (tabId: string) => boolean;
   /** See TabBar's `trailing`. */
   trailing?: Snippet<[string]>;
+  /** See TabBar's `beforeAdd` — called with this panel's id. */
+  beforeAdd?: Snippet<[string]>;
+  /** When false, skip this panel's TabBar (global strip owns chrome — e.g. single-panel workspace). */
+  showTabBar?: boolean;
   tabContent: Snippet<[TabDescriptor]>;
   emptyState?: Snippet;
 }
@@ -76,7 +82,10 @@ let {
   onMoveToNewPanel,
   onToggleMaximize,
   onAddTab,
+  canOpenInNewSection,
   trailing,
+  beforeAdd: beforeAddForPanel,
+  showTabBar = true,
   tabContent,
   emptyState,
 }: Props = $props();
@@ -91,36 +100,60 @@ const activeTab = $derived(tabs.find(t => t.id === activeTabId));
   onclick={onFocus}
   onfocus={onFocus}
   role="presentation">
-  <div class="flex items-stretch min-w-0">
-    <div class="grow min-w-0">
-      <TabBar
-        {panelId}
-        {tabs}
-        {activeTabId}
-        {onSelect}
-        {onClose}
-        {onCloseOthers}
-        {onCloseAllInPanel}
-        {onPinToggle}
-        {onReorder}
-        {onMoveFromOtherPanel}
-        {onSplitRight}
-        {onSplitDown}
-        {onMoveToNewPanel}
-        onAddTab={onAddTab ? (): void => onAddTab(panelId, activeTab) : undefined}
-        {trailing} />
+  {#if showTabBar}
+    <div class="flex items-stretch min-w-0">
+      <div class="grow min-w-0">
+        <TabBar
+          {panelId}
+          {tabs}
+          {activeTabId}
+          {onSelect}
+          {onClose}
+          {onCloseOthers}
+          {onCloseAllInPanel}
+          {onPinToggle}
+          {onReorder}
+          {onMoveFromOtherPanel}
+          {onSplitRight}
+          {onSplitDown}
+          {onMoveToNewPanel}
+          {canOpenInNewSection}
+          onAddTab={onAddTab ? (): void => onAddTab(panelId, activeTab) : undefined}
+          {trailing}>
+          {#snippet beforeAdd()}
+            {#if beforeAddForPanel}
+              {@render beforeAddForPanel(panelId)}
+            {/if}
+          {/snippet}
+        </TabBar>
+      </div>
+      {#if canMaximize}
+        <button
+          type="button"
+          aria-label={maximized ? 'Restore panel' : 'Maximize panel'}
+          title={maximized ? 'Restore panel' : 'Maximize panel'}
+          class="px-2 border-b border-l border-[var(--pd-content-divider)] bg-[var(--pd-content-card-bg)] hover:bg-[var(--pd-action-button-details-bg)]"
+          onclick={onToggleMaximize}>
+          <Icon class="w-3 text-xs" icon={maximized ? faCompress : faExpand} />
+        </button>
+      {/if}
     </div>
-    {#if canMaximize}
+  {:else if canMaximize}
+    <!-- Maximize only — never a second tab strip (global bar is the only tab level). -->
+    <div class="flex items-stretch justify-end min-w-0 shrink-0">
       <button
         type="button"
         aria-label={maximized ? 'Restore panel' : 'Maximize panel'}
         title={maximized ? 'Restore panel' : 'Maximize panel'}
-        class="px-2 border-b border-l border-[var(--pd-content-divider)] bg-[var(--pd-content-card-bg)] hover:bg-[var(--pd-action-button-details-bg)]"
-        onclick={onToggleMaximize}>
+        class="px-2 py-1 border-b border-[var(--pd-content-divider)] bg-[var(--pd-content-card-bg)] hover:bg-[var(--pd-action-button-details-bg)]"
+        onclick={(e: MouseEvent): void => {
+          e.stopPropagation();
+          onToggleMaximize();
+        }}>
         <Icon class="w-3 text-xs" icon={maximized ? faCompress : faExpand} />
       </button>
-    {/if}
-  </div>
+    </div>
+  {/if}
   <div class="grow min-h-0 overflow-auto bg-[var(--pd-content-bg)]">
     {#if activeTab}
       {@render tabContent(activeTab)}

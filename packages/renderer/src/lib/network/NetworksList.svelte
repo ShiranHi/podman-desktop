@@ -1,15 +1,18 @@
 <script lang="ts">
-import { faPlusCircle, faTrash } from '@fortawesome/free-solid-svg-icons';
+import { faPlusCircle, faTableColumns, faTrash } from '@fortawesome/free-solid-svg-icons';
 import { NavigationPage } from '@podman-desktop/core-api';
 import { Button, FilteredEmptyScreen, NavPage, Table, TableColumn, TableRow } from '@podman-desktop/ui-svelte';
 import { ContainerIcon } from '@podman-desktop/ui-svelte/icons';
 
 import { withBulkConfirmation } from '/@/lib/actions/BulkActions';
 import NoContainerEngineEmptyScreen from '/@/lib/image/NoContainerEngineEmptyScreen.svelte';
+import { compareResourcesWithTabs } from '/@/lib/layout/resource-open-actions';
 import ContainerEngineEnvironmentColumn from '/@/lib/table/columns/ContainerEngineEnvironmentColumn.svelte';
 import EnvironmentDropdown from '/@/lib/ui/EnvironmentDropdown.svelte';
 import { handleNavigation } from '/@/navigation';
+import { networkKey } from '/@/stores/layout/layout-types';
 import { filtered, searchPattern } from '/@/stores/networks';
+import { currentScreen } from '/@/stores/prototype';
 import { providerInfos } from '/@/stores/providers';
 
 import NetworkColumnDriver from './columns/NetworkColumnDriver.svelte';
@@ -50,6 +53,18 @@ let providerConnections = $derived(
 );
 
 let selectedItemsNumber: number = $state(0);
+
+function compareSelectedWithTabs(): void {
+  const selected = filteredNetworks.filter(network => network.selected);
+  compareResourcesWithTabs(
+    selected.map(network => ({
+      resourceType: 'network',
+      resourceId: networkKey(network.name, network.engineId),
+      subView: 'summary',
+      title: `${network.name} · Summary`,
+    })),
+  );
+}
 
 let bulkDeleteInProgress = $state(false);
 async function deleteSelectedNetworks(): Promise<void> {
@@ -137,6 +152,7 @@ function key(network: NetworkInfoUI): string {
     <EnvironmentDropdown bind:selectedEnvironment={selectedEnvironment} />
     {#if selectedItemsNumber > 0}
       <Button
+        type="secondary"
         onclick={(): void =>
           withBulkConfirmation(
             deleteSelectedNetworks,
@@ -146,7 +162,17 @@ function key(network: NetworkInfoUI): string {
         title="Delete {selectedItemsNumber} selected items"
         inProgress={bulkDeleteInProgress}
         icon={faTrash} />
-      <span>On {selectedItemsNumber} selected items.</span>
+      {#if $currentScreen === 'tabs-layout'}
+        <Button
+          type="secondary"
+          onclick={compareSelectedWithTabs}
+          title="Compare {selectedItemsNumber} selected items with tabs"
+          aria-label="Compare with tabs"
+          icon={faTableColumns}>
+          Compare
+        </Button>
+      {/if}
+      <span class="text-sm whitespace-nowrap opacity-80">On {selectedItemsNumber} selected items.</span>
     {/if}
   {/snippet}
 

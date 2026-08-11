@@ -1,5 +1,5 @@
 <script lang="ts">
-import { faPlay, faPlusCircle, faTrash } from '@fortawesome/free-solid-svg-icons';
+import { faPlay, faPlusCircle, faTableColumns, faTrash } from '@fortawesome/free-solid-svg-icons';
 import type { ContainerInfo } from '@podman-desktop/core-api';
 import { NavigationPage } from '@podman-desktop/core-api';
 import {
@@ -20,6 +20,7 @@ import Dialog from '/@/lib/dialogs/Dialog.svelte';
 import Prune from '/@/lib/engine/Prune.svelte';
 import NoContainerEngineEmptyScreen from '/@/lib/image/NoContainerEngineEmptyScreen.svelte';
 import SolidPodIcon from '/@/lib/images/SolidPodIcon.svelte';
+import { compareResourcesWithTabs } from '/@/lib/layout/resource-open-actions';
 import { PodUtils } from '/@/lib/pod/pod-utils';
 import ContainerEngineEnvironmentColumn from '/@/lib/table/columns/ContainerEngineEnvironmentColumn.svelte';
 import EnvironmentDropdown from '/@/lib/ui/EnvironmentDropdown.svelte';
@@ -29,6 +30,7 @@ import { containersInfos } from '/@/stores/containers';
 import { context } from '/@/stores/context';
 import { podCreationHolder } from '/@/stores/creation-from-containers-store';
 import { podsInfos } from '/@/stores/pods';
+import { currentScreen } from '/@/stores/prototype';
 import { providerInfos } from '/@/stores/providers';
 import { findMatchInLeaves } from '/@/stores/search-util';
 import { viewsContributions } from '/@/stores/views';
@@ -212,6 +214,21 @@ function createPodFromContainers(): void {
 
   // redirect to pod creation page
   router.goto('/pod-create-from-containers');
+}
+
+function compareSelectedWithTabs(): void {
+  const selectedContainers = containerGroups
+    .map(group => group.containers)
+    .flat()
+    .filter(container => container.selected);
+  compareResourcesWithTabs(
+    selectedContainers.map(container => ({
+      resourceType: 'container',
+      resourceId: container.id,
+      subView: 'summary',
+      title: `${container.name} · Summary`,
+    })),
+  );
 }
 
 let currentContainers = $derived.by(() => {
@@ -401,39 +418,50 @@ function label(item: ContainerGroupInfoUI | ContainerInfoUI): string {
   {#snippet bottomAdditionalActions()}
     <EnvironmentDropdown bind:selectedEnvironment={selectedEnvironment} />
     {#if selectedItemsNumber && selectedItemsNumber > 0}
-      <div class="inline-flex space-x-2">
-        <Button
-          on:click={(): Promise<void> =>
-          runSelectedContainers()}
-          aria-label="Run selected containers and pods"
-          title="Run {selectedItemsNumber} selected items"
-          inProgress={bulkRunInProgress}
-          icon={faPlay}>
-        </Button>
-        <Button
-          on:click={(): void => {
-            if (selectedItemsNumber !== undefined) {
-              withBulkConfirmation(
-                deleteSelectedContainers,
-                `delete ${selectedItemsNumber} container${selectedItemsNumber > 1 ? 's' : ''}`,
-                { title: 'Delete Containers?', variant:'delete' }
-              );
-            }
-          }}
-          aria-label="Delete selected containers and pods"
-          title="Delete {selectedItemsNumber} selected items"
-          inProgress={bulkDeleteInProgress}
-          icon={faTrash}>
-        </Button>
+      <Button
+        type="secondary"
+        on:click={(): Promise<void> =>
+        runSelectedContainers()}
+        aria-label="Run selected containers and pods"
+        title="Run {selectedItemsNumber} selected items"
+        inProgress={bulkRunInProgress}
+        icon={faPlay}>
+      </Button>
+      <Button
+        type="secondary"
+        on:click={(): void => {
+          if (selectedItemsNumber !== undefined) {
+            withBulkConfirmation(
+              deleteSelectedContainers,
+              `delete ${selectedItemsNumber} container${selectedItemsNumber > 1 ? 's' : ''}`,
+              { title: 'Delete Containers?', variant:'delete' }
+            );
+          }
+        }}
+        aria-label="Delete selected containers and pods"
+        title="Delete {selectedItemsNumber} selected items"
+        inProgress={bulkDeleteInProgress}
+        icon={faTrash}>
+      </Button>
 
+      <Button
+        type="secondary"
+        on:click={createPodFromContainers}
+        title="Create Pod with {selectedItemsNumber} selected items"
+        icon={SolidPodIcon}>
+        Create Pod
+      </Button>
+      {#if $currentScreen === 'tabs-layout'}
         <Button
-          on:click={createPodFromContainers}
-          title="Create Pod with {selectedItemsNumber} selected items"
-          icon={SolidPodIcon}>
-          Create Pod
+          type="secondary"
+          on:click={compareSelectedWithTabs}
+          title="Compare {selectedItemsNumber} selected items with tabs"
+          aria-label="Compare with tabs"
+          icon={faTableColumns}>
+          Compare
         </Button>
-      </div>
-      <span>On {selectedItemsNumber} selected items.</span>
+      {/if}
+      <span class="text-sm whitespace-nowrap opacity-80">On {selectedItemsNumber} selected items.</span>
     {/if}
   {/snippet}
 

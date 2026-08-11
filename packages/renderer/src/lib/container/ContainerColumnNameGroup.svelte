@@ -39,7 +39,7 @@ function openComposeDetails(containerGroup: ContainerGroupInfoUI): void {
 function onClick(_event: MouseEvent): void {
   if (!object.engineId) return;
   if (object.type === ContainerGroupInfoTypeUI.POD) {
-    openPodInWorkspace({ name: object.name, engineId: object.engineId }, 'splitRight');
+    openPodInWorkspace({ name: object.name, engineId: object.engineId }, 'newTab');
   } else {
     openComposeDetails(object);
   }
