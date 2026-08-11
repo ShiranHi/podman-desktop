@@ -12,7 +12,7 @@ import EnvironmentDropdown from '/@/lib/ui/EnvironmentDropdown.svelte';
 import { handleNavigation } from '/@/navigation';
 import { networkKey } from '/@/stores/layout/layout-types';
 import { filtered, searchPattern } from '/@/stores/networks';
-import { currentScreen } from '/@/stores/prototype';
+import { currentScreen, isTabsLayoutScreen } from '/@/stores/prototype';
 import { providerInfos } from '/@/stores/providers';
 
 import NetworkColumnDriver from './columns/NetworkColumnDriver.svelte';
@@ -162,7 +162,7 @@ function key(network: NetworkInfoUI): string {
         title="Delete {selectedItemsNumber} selected items"
         inProgress={bulkDeleteInProgress}
         icon={faTrash} />
-      {#if $currentScreen === 'tabs-layout'}
+      {#if isTabsLayoutScreen($currentScreen)}
         <Button
           type="secondary"
           onclick={compareSelectedWithTabs}

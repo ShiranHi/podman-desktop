@@ -23,10 +23,13 @@
 // `tablePersistence` in @podman-desktop/ui-svelte) so it survives component
 // remounts as the user navigates between routes.
 import type { LeafPanelNode, OpenMode, PanelNode, SplitDirection, SplitPanelNode } from '@podman-desktop/ui-svelte';
+import { get } from 'svelte/store';
+
+import { currentScreen, usesPermanentPageTab } from '/@/stores/prototype';
 
 import type { SubView, WorkspaceResourceType, WorkspaceTab } from './layout-types';
 import { tabKey } from './layout-types';
-import { getPageTabTitle, goToAppPageRoute, PAGE_TAB_ID } from './page-tab.svelte';
+import { getPageTabTitle, goToAppPageRoute, PAGE_TAB_ID, rememberAppPage } from './page-tab.svelte';
 
 // Whether this profile has ever opened a tab, persisted across restarts so the empty global tab
 // bar's first-run hint (see GlobalTabBar.svelte) is shown exactly until someone opens their
@@ -212,11 +215,38 @@ function stripPageTabFromOtherLeaves(node: PanelNode, homeLeafId: string): void 
   }
 }
 
+/** Drop the permanent page tab everywhere (Version 2 compact-nav). */
+function removePageTabFromLayout(): void {
+  function walk(node: PanelNode): void {
+    if (node.kind === 'leaf') {
+      const idx = node.tabIds.indexOf(PAGE_TAB_ID);
+      if (idx !== -1) {
+        node.tabIds.splice(idx, 1);
+        if (node.activeTabId === PAGE_TAB_ID) {
+          node.activeTabId = node.tabIds[0];
+        }
+      }
+      return;
+    }
+    for (const child of node.children) {
+      walk(child);
+    }
+  }
+  walk(layoutState.tree);
+  delete layoutState.tabs[PAGE_TAB_ID];
+}
+
 /**
  * Permanent first-section tab: current list/dashboard page (Containers, …).
- * Always present as the first tab of the first leaf; never closable.
+ * Present as the first tab of the first leaf in Version 1; omitted in Version 2
+ * (compact-nav) where lists live in the side panel.
  */
 export function ensurePageTab(): void {
+  if (!usesPermanentPageTab(get(currentScreen))) {
+    removePageTabFromLayout();
+    return;
+  }
+
   const title = getPageTabTitle();
   const existing = layoutState.tabs[PAGE_TAB_ID];
   if (!existing) {
@@ -253,11 +283,25 @@ export function ensurePageTab(): void {
 
 /** Focus the permanent page tab in the first section (and navigate to its list route if needed). */
 export function activatePageTab(): void {
+  if (!usesPermanentPageTab(get(currentScreen))) {
+    // Version 2: no page tab — keep resource tabs (or empty state) and only sync the route.
+    goToAppPageRoute();
+    return;
+  }
   ensurePageTab();
   const leaf = findLeafContainingTab(layoutState.tree, PAGE_TAB_ID) ?? findFirstLeaf(layoutState.tree);
   leaf.activeTabId = PAGE_TAB_ID;
   layoutState.focusedPanelId = leaf.id;
   goToAppPageRoute();
+}
+
+/**
+ * Main-nav navigation for the tabs prototype: remember the list/dashboard page,
+ * focus the permanent primary tab (Version 1), and route there.
+ */
+export function navigateToAppPage(url: string, name?: string): void {
+  rememberAppPage(url, name);
+  activatePageTab();
 }
 
 export function resourceTabCount(): number {
@@ -272,8 +316,9 @@ function closeTabInternal(panelId: string, tabId: string): void {
   delete layoutState.tabs[tabId];
   if (leaf.tabIds.length === 0) pruneEmptyLeaf(leaf.id);
 
-  // No resource tabs left: show the permanent page tab (list content), never an empty shell.
-  if (resourceTabCount() === 0) {
+  // Version 1: no resource tabs left → show the permanent page tab (list content).
+  // Version 2: leave the shell empty (lists live in the compact sidebar).
+  if (resourceTabCount() === 0 && usesPermanentPageTab(get(currentScreen))) {
     activatePageTab();
   }
 }
@@ -665,7 +710,9 @@ export function closeAllTabsEverywhere(): void {
     if (layoutState.tabs[id]?.pinned || layoutState.tabs[id]?.permanent) continue;
     closeTabById(id);
   }
-  activatePageTab();
+  if (usesPermanentPageTab(get(currentScreen))) {
+    activatePageTab();
+  }
 }
 
 /** Reordering in the flat bar can also move a tab between panels, resolved via the same primitives the per-panel drag-and-drop uses. */
@@ -719,5 +766,8 @@ export function resetLayout(): void {
   ensurePageTab();
 }
 
-// Permanent page tab is part of every fresh workspace.
+// Permanent page tab is part of every fresh Version 1 workspace; Version 2 drops it.
 ensurePageTab();
+currentScreen.subscribe(() => {
+  ensurePageTab();
+});

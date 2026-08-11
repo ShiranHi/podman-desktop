@@ -30,6 +30,19 @@ export type WorkspaceResourceType =
   | 'volume'
   | 'network'
   | 'secret'
+  /** Form/create pages (Load Images, Pull, Create Volume, …) opened as workspace tabs in V2. */
+  | 'action';
+
+/** Identity for `resourceType: 'action'` tabs (see CompactNavSectionActions). */
+export type ActionPageId =
+  | 'load-images'
+  | 'import-images'
+  | 'pull-image'
+  | 'build-image'
+  | 'create-volume'
+  | 'create-network'
+  | 'create-secret'
+  | 'create-container-existing'
   | 'kube-play';
 
 export const CONTAINER_SUB_VIEWS = ['summary', 'logs', 'inspect', 'terminal', 'tty', 'kube'] as const;

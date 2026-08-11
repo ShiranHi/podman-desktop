@@ -36,7 +36,7 @@ import { containersInfos } from '/@/stores/containers';
 import { context } from '/@/stores/context';
 import { filtered, imagesInfos, searchPattern } from '/@/stores/images';
 import { imageKey } from '/@/stores/layout/layout-types';
-import { currentScreen } from '/@/stores/prototype';
+import { currentScreen, isTabsLayoutScreen } from '/@/stores/prototype';
 import { providerInfos } from '/@/stores/providers';
 import { saveImagesInfo } from '/@/stores/save-images-store';
 import { viewsContributions } from '/@/stores/views';
@@ -370,7 +370,7 @@ function label(item: ImageInfoUI): string {
         title="Save {selectedItemsNumber} selected items"
         aria-label="Save images"
         icon={faDownload} />
-      {#if $currentScreen === 'tabs-layout'}
+      {#if isTabsLayoutScreen($currentScreen)}
         <Button
           type="secondary"
           on:click={compareSelectedWithTabs}

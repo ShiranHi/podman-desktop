@@ -13,6 +13,26 @@
 .tooltip-content :global(.flex-row) {
   flex-wrap: wrap;
 }
+
+/*
+ * Arrow is a rotated square. It sits *behind* the bubble (z-0) so only the
+ * protruding tip is visible — never painted on top of the border.
+ */
+.tooltip-arrow {
+  position: absolute;
+  z-index: 0;
+  width: 10px;
+  height: 10px;
+  transform: rotate(45deg);
+  background: var(--pd-tooltip-bg);
+  border: 1px solid var(--pd-tooltip-outer-border);
+  pointer-events: none;
+}
+
+.tooltip-bubble {
+  position: relative;
+  z-index: 1;
+}
 </style>
 
 <script module lang="ts">
@@ -25,8 +45,8 @@ function nextTooltipId(): string {
 </script>
 
 <script lang="ts">
-import type { Placement } from '@floating-ui/dom';
-import { autoUpdate, computePosition, flip, offset, shift } from '@floating-ui/dom';
+import type { Placement, Side } from '@floating-ui/dom';
+import { arrow, autoUpdate, computePosition, flip, offset, shift } from '@floating-ui/dom';
 import type { Snippet } from 'svelte';
 
 import { tooltipHidden } from './tooltip-store';
@@ -67,12 +87,17 @@ const tooltipId = nextTooltipId();
 
 let referenceElement: HTMLElement | undefined = $state(undefined);
 let tooltipElement: HTMLElement | undefined = $state(undefined);
+let arrowElement: HTMLElement | undefined = $state(undefined);
 let isVisible = $state(false);
 let isPositioned = $state(false);
 let cleanupAutoUpdate: (() => void) | undefined;
 
+const ARROW_SIZE = 10;
+/** Half the diagonal of the rotated square — how far the tip protrudes. */
+const ARROW_OFFSET = Math.round((ARROW_SIZE * Math.SQRT2) / 2);
+
 const tooltipInnerClasses =
-  'pt-[4px] pb-[5px] px-[8px] rounded-[9px] bg-[var(--pd-tooltip-bg)] text-[var(--pd-tooltip-text)] border-[1px] border-[var(--pd-tooltip-inner-border)] backdrop-blur-sm';
+  'tooltip-bubble pt-[4px] pb-[5px] px-[8px] rounded-[9px] bg-[var(--pd-tooltip-bg)] text-[var(--pd-tooltip-text)] border-[1px] border-[var(--pd-tooltip-inner-border)] backdrop-blur-sm';
 
 const FOCUSABLE_SELECTOR =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]), [contenteditable="true"]';
@@ -105,18 +130,36 @@ function getPreferredPlacement(): Placement {
   return 'top';
 }
 
+function getStaticSide(placement: Placement): Side {
+  const side = placement.split('-')[0] as Side;
+  const opposite: Record<Side, Side> = {
+    top: 'bottom',
+    bottom: 'top',
+    left: 'right',
+    right: 'left',
+  };
+  return opposite[side];
+}
+
 async function updateTooltipPosition(): Promise<void> {
   if (!referenceElement || !tooltipElement) return;
 
-  const { x, y } = await computePosition(referenceElement, tooltipElement, {
+  const {
+    x,
+    y,
+    placement,
+    middlewareData,
+  } = await computePosition(referenceElement, tooltipElement, {
     placement: getPreferredPlacement(),
     middleware: [
-      offset(8),
+      // Room for the protruding arrow tip.
+      offset(ARROW_OFFSET + 2),
       flip({
         fallbackAxisSideDirection: 'start',
         padding: 5,
       }),
       shift({ padding: 5 }),
+      ...(arrowElement ? [arrow({ element: arrowElement, padding: 8 })] : []),
     ],
   });
 
@@ -134,6 +177,19 @@ async function updateTooltipPosition(): Promise<void> {
   tooltipElement.style.width = 'auto';
   const rect = tooltipElement.getBoundingClientRect();
   tooltipElement.style.width = `${Math.ceil(rect.width)}px`;
+
+  if (arrowElement) {
+    const { x: arrowX, y: arrowY } = middlewareData.arrow ?? {};
+    const staticSide = getStaticSide(placement);
+    // Pull the square back so half sits under the bubble (covered) and half tips out.
+    Object.assign(arrowElement.style, {
+      left: arrowX !== null && arrowX !== undefined ? `${Math.round(arrowX)}px` : '',
+      top: arrowY !== null && arrowY !== undefined ? `${Math.round(arrowY)}px` : '',
+      right: '',
+      bottom: '',
+      [staticSide]: `${-Math.round(ARROW_SIZE / 2)}px`,
+    });
+  }
 
   isPositioned = true;
 }
@@ -203,9 +259,11 @@ $effect(() => {
   {#if isVisible && !$tooltipHidden && (tip ?? tipSnippet)}
     <div
       bind:this={tooltipElement}
-      class="fixed tooltip-content pointer-events-none text-[12px] leading-[16px] z-[9999] rounded-[9px] border-[1px] border-[var(--pd-tooltip-outer-border)] shadow-[0_4px_12px_var(--pd-shadow-color)]"
+      class="fixed tooltip-content pointer-events-none text-[12px] leading-[16px] z-[9999] rounded-[9px] border-[1px] border-[var(--pd-tooltip-outer-border)] bg-[var(--pd-tooltip-bg)] shadow-[0_4px_12px_var(--pd-shadow-color)]"
       class:opacity-0={!isPositioned}
       style="left: 0; top: 0;">
+      <!-- Behind the bubble so it never paints over the border -->
+      <div class="tooltip-arrow" bind:this={arrowElement} aria-hidden="true" data-testid="tooltip-arrow"></div>
       {#if tip}
         <div class="{tooltipInnerClasses} {className}" role="tooltip" id={tooltipId}>
           {tip}

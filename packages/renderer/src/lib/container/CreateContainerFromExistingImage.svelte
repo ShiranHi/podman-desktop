@@ -7,7 +7,7 @@ import {
   type ProviderContainerConnectionInfo,
   type PullEvent,
 } from '@podman-desktop/core-api';
-import { Button, Checkbox, ErrorMessage, Tooltip } from '@podman-desktop/ui-svelte';
+import { Button, Checkbox, ErrorMessage, StatusIcon, Tooltip } from '@podman-desktop/ui-svelte';
 import { Icon } from '@podman-desktop/ui-svelte/icons';
 import type { Terminal } from '@xterm/xterm';
 import { onMount, tick } from 'svelte';
@@ -373,7 +373,7 @@ onMount(() => {
 
 <EngineFormPage title="Select an image">
   {#snippet icon()}
-    <ImageIcon />
+    <StatusIcon icon={ImageIcon} size={18} />
   {/snippet}
   {#snippet actions()}
     <Button on:click={gotoManageRegistries} icon={faCog}>Manage registries</Button>

@@ -3,12 +3,13 @@
 // https://github.com/import-js/eslint-plugin-import/issues/1479
 import { faMinusCircle, faPlay, faPlusCircle } from '@fortawesome/free-solid-svg-icons';
 import type { ProviderContainerConnectionInfo, ProviderInfo } from '@podman-desktop/core-api';
-import { Button, ErrorMessage, Input } from '@podman-desktop/ui-svelte';
+import { Button, ErrorMessage, Input, StatusIcon } from '@podman-desktop/ui-svelte';
 import { onMount } from 'svelte';
 import { get } from 'svelte/store';
 import { router } from 'tinro';
 
 import ContainerConnectionDropdown from '/@/lib/forms/ContainerConnectionDropdown.svelte';
+import ImageIcon from '/@/lib/images/ImageIcon.svelte';
 import EngineFormPage from '/@/lib/ui/EngineFormPage.svelte';
 import { providerInfos } from '/@/stores/providers';
 
@@ -100,7 +101,7 @@ async function importContainers(): Promise<void> {
 
 <EngineFormPage title="Import Containers">
   {#snippet icon()}
-    <i class="fas fa-play fa-2x" aria-hidden="true"></i>
+    <StatusIcon icon={ImageIcon} size={18} />
   {/snippet}
   {#snippet content()}
   <div class="space-y-2">

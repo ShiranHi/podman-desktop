@@ -137,7 +137,7 @@ const quayScanUrl = $derived.by((): string | undefined => {
 });
 </script>
 
-<div class="mx-5 mt-4 mb-1 rounded-md border border-[var(--pd-content-divider)] bg-[var(--pd-content-card-bg)]">
+<div class="rounded-md border border-[var(--pd-content-divider)] bg-[var(--pd-content-card-bg)]">
   <div class="flex items-center gap-2 px-4 pt-3 text-xs font-semibold uppercase tracking-wide text-[var(--pd-content-header)] opacity-70">
     <i class="fas fa-chart-simple" aria-hidden="true"></i>
     <span>Live stats</span>

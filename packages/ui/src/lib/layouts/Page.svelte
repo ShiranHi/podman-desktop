@@ -12,6 +12,8 @@ interface Props {
   breadcrumbLeftPart?: string;
   breadcrumbRightPart?: string;
   hasClose?: boolean;
+  /** Smaller title + icon — matches resource summary headers inside workspace tabs. */
+  compact?: boolean;
   inProgress?: boolean;
   onclose?: () => void;
   onbreadcrumbClick?: () => void;
@@ -30,6 +32,7 @@ const {
   breadcrumbLeftPart = undefined,
   breadcrumbRightPart = undefined,
   hasClose = true,
+  compact = false,
   inProgress = false,
   onclose = (): void => {
     dispatchClose('close');
@@ -72,7 +75,7 @@ const dispatchClose = createEventDispatcher<{ close: undefined }>();
 const dispatchBreadCrumb = createEventDispatcher<{ breadcrumbClick: undefined }>();
 
 function handleKeydown(e: KeyboardEvent): void {
-  if (e.key === 'Escape') {
+  if (e.key === 'Escape' && hasClose) {
     onclose();
     e.preventDefault();
   }
@@ -102,15 +105,30 @@ function handleKeydown(e: KeyboardEvent): void {
           {/if}
         </div>
       {/if}
-      <div class="flex flex-row items-center pt-1">
+      <div class="flex flex-row items-center" class:pt-1={!compact}>
         {#if icon}
-          <div class="pr-3">
+          <div
+            class="pr-3 shrink-0 flex items-center justify-center"
+            class:[&_i]:!text-lg={compact}
+            class:[&_.fa-2x]:!text-lg={compact}
+            class:[&_svg]:!w-[18px]={compact}
+            class:[&_svg]:!h-[18px]={compact}
+            class:[&_img]:!w-[18px]={compact}
+            class:[&_img]:!h-[18px]={compact}
+            class:[&_.svelte-fa]:!h-[18px]={compact}
+            class:[&_.svelte-fa]:!w-[18px]={compact}>
             {@render icon()}
           </div>
         {/if}
         <div class="flex flex-col grow pr-2">
           <div class="flex flex-row items-baseline">
-            <h1 aria-label={title} class="text-xl font-bold leading-tight text-[var(--pd-content-header)]">
+            <h1
+              aria-label={title}
+              class="leading-tight text-[var(--pd-content-header)]"
+              class:text-lg={compact}
+              class:font-semibold={compact}
+              class:text-xl={!compact}
+              class:font-bold={!compact}>
               {title}
             </h1>
             <div class="text-[var(--pd-table-body-text-sub-secondary)] ml-2 leading-normal" class:hidden={!titleDetail}>
@@ -132,7 +150,7 @@ function handleKeydown(e: KeyboardEvent): void {
               {@render detail?.()}
             </div>
           </div>
-          {#if !showBreadcrumb}
+          {#if !showBreadcrumb && hasClose}
             <CloseButton class="justify-self-end" onclick={onclose} />
           {/if}
         </div>
@@ -142,13 +160,15 @@ function handleKeydown(e: KeyboardEvent): void {
   {#if inProgress}
     <LinearProgress />
   {/if}
-  <div
-    class="flex flex-row px-2 border-b border-[var(--pd-content-divider)]"
-    style="padding-top: {heightOfDetail > 50 ? '1rem' : '0px'}"
-    aria-label="Tabs"
-    role="region">
-    {@render tabs?.()}
-  </div>
+  {#if tabs}
+    <div
+      class="flex flex-row px-2 border-b border-[var(--pd-content-divider)]"
+      style="padding-top: {heightOfDetail > 50 ? '1rem' : '0px'}"
+      aria-label="Tabs"
+      role="region">
+      {@render tabs()}
+    </div>
+  {/if}
   <div class="h-full min-h-0" aria-label="Tab Content" role="region">
     {@render content?.()}
   </div>

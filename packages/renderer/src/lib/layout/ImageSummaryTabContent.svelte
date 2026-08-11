@@ -31,7 +31,10 @@ import type { ImageInfoUI } from '/@/lib/image/ImageInfoUI';
 import { containersInfos } from '/@/stores/containers';
 import { imageKey } from '/@/stores/layout/layout-types';
 
+import MockResourceStats from './MockResourceStats.svelte';
+import EnvironmentField from './summary/EnvironmentField.svelte';
 import InspectCard from './summary/InspectCard.svelte';
+import OverviewField from './summary/OverviewField.svelte';
 import ResourceSummaryHeader from './summary/ResourceSummaryHeader.svelte';
 import SummaryCard from './summary/SummaryCard.svelte';
 
@@ -88,23 +91,22 @@ onMount(loadManifest);
     created={createdDate}
     age={image.age} />
 
-  <SummaryCard title="Details" icon="fas fa-circle-info">
+  <MockResourceStats
+    resourceId={imageKey(image.id, image.engineId, image.base64RepoTag)}
+    kind="image"
+    imageName={image.name}
+    imageDigest={image.id} />
+
+  <!-- Same columns as the production Images table (minus Actions). -->
+  <SummaryCard title="Overview" icon="fas fa-table-list">
     <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 px-4 pb-3">
-      <div class="flex flex-col">
-        <span class="text-xs text-[var(--pd-content-text)] opacity-60">Size</span>
-        <span class="text-sm font-medium text-[var(--pd-content-header)]">{image.humanSize}</span>
-      </div>
-      <div class="flex flex-col">
-        <span class="text-xs text-[var(--pd-content-text)] opacity-60">Architecture</span>
-        <span class="text-sm font-medium text-[var(--pd-content-header)]">{image.arch}</span>
-      </div>
+      <OverviewField label="Status" value={STATUS_LABEL[image.status]} />
+      <EnvironmentField engineId={image.engineId} />
+      <OverviewField label="Age" value={image.age || 'N/A'} />
+      <OverviewField label="Size" value={image.humanSize} />
+      <OverviewField label="Arch" value={image.arch} />
       {#if image.digest}
-        <div class="flex flex-col min-w-0">
-          <span class="text-xs text-[var(--pd-content-text)] opacity-60">Digest</span>
-          <span class="text-sm font-medium text-[var(--pd-content-header)] font-mono truncate" title={image.digest}>
-            {imageUtils.getShortId(image.digest)}
-          </span>
-        </div>
+        <OverviewField label="Digest" value={imageUtils.getShortId(image.digest)} title={image.digest} />
       {/if}
     </div>
   </SummaryCard>

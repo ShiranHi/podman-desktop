@@ -299,7 +299,6 @@ const agentEntries = $derived.by((): PaletteEntry[] => {
         title: `Ask agent: "${trimmedQuery}"`,
         subtitle: 'Opens tabs automatically',
         iconClass: 'fas fa-wand-magic-sparkles',
-        iconColorClass: 'text-[var(--pd-status-running)]',
         group: AGENT_GROUP,
         onSelect: (): void => {
           runAgentPrompt(trimmedQuery);
@@ -341,7 +340,6 @@ const agentEntries = $derived.by((): PaletteEntry[] => {
       title: 'Ask agent to prepare a layout for me',
       subtitle: 'Opens tabs automatically',
       iconClass: 'fas fa-wand-magic-sparkles',
-      iconColorClass: 'text-[var(--pd-status-running)]',
       group: AGENT_GROUP,
       onSelect: (): void => {
         runAgentPrompt(trimmedQuery);
@@ -437,7 +435,7 @@ function indexOfEntry(entryId: string): number {
             class="px-3 pt-2 pb-1 text-xs font-semibold tracking-wide text-[var(--pd-modal-dropdown-text)] opacity-70 flex items-center gap-1.5"
             class:uppercase={group.name !== AGENT_GROUP}>
             {#if group.name === AGENT_GROUP}
-              <i class="fas fa-wand-magic-sparkles text-[var(--pd-status-running)]" aria-hidden="true"></i>
+              <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
             {/if}
             {group.name}
           </div>

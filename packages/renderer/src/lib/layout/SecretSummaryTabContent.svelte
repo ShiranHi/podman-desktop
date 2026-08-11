@@ -20,10 +20,12 @@
 // Redesigned Secret Summary tab — same carded layout as container/image summaries.
 import type { SecretInfo } from '@podman-desktop/core-api';
 
+import SecretColumnEnvironment from '/@/lib/secrets/columns/SecretColumnEnvironment.svelte';
 import SecretDetailsInspect from '/@/lib/secrets/tabs/SecretDetailsInspect.svelte';
 import { secretKey } from '/@/stores/layout/layout-types';
 
 import InspectCard from './summary/InspectCard.svelte';
+import OverviewField from './summary/OverviewField.svelte';
 import ResourceSummaryHeader from './summary/ResourceSummaryHeader.svelte';
 import SummaryCard from './summary/SummaryCard.svelte';
 
@@ -36,6 +38,17 @@ let { tabId, secret }: Props = $props();
 
 const labelEntries = $derived(secret.Labels ? Object.entries(secret.Labels) : []);
 const createdDate = $derived(secret.CreatedAt ? new Date(secret.CreatedAt) : undefined);
+
+function formatAge(date: Date | undefined): string {
+  if (!date) return 'N/A';
+  const ms = Date.now() - date.getTime();
+  if (ms < 0) return 'N/A';
+  const minutes = Math.floor(ms / 60_000);
+  if (minutes < 60) return `${Math.max(minutes, 1)} minutes`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 48) return `${hours} hours`;
+  return `${Math.floor(hours / 24)} days`;
+}
 </script>
 
 <div class="flex flex-col gap-4 px-5 py-4">
@@ -43,32 +56,18 @@ const createdDate = $derived(secret.CreatedAt ? new Date(secret.CreatedAt) : und
     name={secret.Name}
     icon="fas fa-key"
     id={secret.Id}
-    created={createdDate} />
+    created={createdDate}
+    age={formatAge(createdDate)} />
 
-  <SummaryCard title="Details" icon="fas fa-circle-info">
+  <!-- Same columns as the production Secrets table (minus Actions). -->
+  <SummaryCard title="Overview" icon="fas fa-table-list">
     <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 px-4 pb-3">
-      <div class="flex flex-col min-w-0">
-        <span class="text-xs text-[var(--pd-content-text)] opacity-60">Secret ID</span>
-        <span class="text-sm font-medium text-[var(--pd-content-header)] font-mono truncate" title={secret.Id}>
-          {secret.Id}
-        </span>
-      </div>
-      <div class="flex flex-col">
-        <span class="text-xs text-[var(--pd-content-text)] opacity-60">Updated</span>
-        <span class="text-sm font-medium text-[var(--pd-content-header)]">
-          {secret.UpdatedAt ? new Date(secret.UpdatedAt).toLocaleString() : 'N/A'}
-        </span>
-      </div>
-      <div class="flex flex-col min-w-0">
-        <span class="text-xs text-[var(--pd-content-text)] opacity-60">Engine</span>
-        <span class="text-sm font-medium text-[var(--pd-content-header)] truncate" title={secret.engineName}>
-          {secret.engineName}
-        </span>
-      </div>
-      <div class="flex flex-col">
-        <span class="text-xs text-[var(--pd-content-text)] opacity-60">Engine type</span>
-        <span class="text-sm font-medium text-[var(--pd-content-header)]">{secret.engineType}</span>
-      </div>
+      <OverviewField label="Created At" value={formatAge(createdDate)} />
+      <OverviewField label="Environment">
+        <SecretColumnEnvironment object={secret} />
+      </OverviewField>
+      <OverviewField label="Updated" value={secret.UpdatedAt ? new Date(secret.UpdatedAt).toLocaleString() : 'N/A'} />
+      <OverviewField label="Secret ID" value={secret.Id} title={secret.Id} />
     </div>
   </SummaryCard>
 

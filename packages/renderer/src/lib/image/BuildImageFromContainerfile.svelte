@@ -5,11 +5,12 @@ import { faCube, faMinusCircle, faPlusCircle } from '@fortawesome/free-solid-svg
 import { type OpenDialogOptions } from '@podman-desktop/api';
 import type { ProviderContainerConnectionInfo } from '@podman-desktop/core-api';
 import { NavigationPage } from '@podman-desktop/core-api';
-import { Button, Checkbox, Input } from '@podman-desktop/ui-svelte';
+import { Button, Checkbox, Input, StatusIcon } from '@podman-desktop/ui-svelte';
 import { onDestroy } from 'svelte';
 import { get, type Unsubscriber } from 'svelte/store';
 
 import ContainerConnectionDropdown from '/@/lib/forms/ContainerConnectionDropdown.svelte';
+import ImageIcon from '/@/lib/images/ImageIcon.svelte';
 import EngineFormPage from '/@/lib/ui/EngineFormPage.svelte';
 import FileInput from '/@/lib/ui/FileInput.svelte';
 import TerminalWindow from '/@/lib/ui/TerminalWindow.svelte';
@@ -351,7 +352,7 @@ let hasInvalidFields = $derived(
   inProgress={buildImageInfo.buildRunning}
   showEmptyScreen={providerConnections.length === 0 && !buildImageInfo.buildRunning}>
   {#snippet icon()}
-    <i class="fas fa-cube fa-2x" aria-hidden="true"></i>
+    <StatusIcon icon={ImageIcon} size={18} />
   {/snippet}
   {#snippet content()}
     <div class="space-y-6">

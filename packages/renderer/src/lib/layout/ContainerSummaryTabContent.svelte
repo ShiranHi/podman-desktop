@@ -29,7 +29,10 @@ import ContainerDetailsInspect from '/@/lib/container/ContainerDetailsInspect.sv
 import type { ContainerInfoUI } from '/@/lib/container/ContainerInfoUI';
 import { ContainerGroupInfoTypeUI } from '/@/lib/container/ContainerInfoUI';
 
+import MockResourceStats from './MockResourceStats.svelte';
+import EnvironmentField from './summary/EnvironmentField.svelte';
 import InspectCard from './summary/InspectCard.svelte';
+import OverviewField from './summary/OverviewField.svelte';
 import ResourceSummaryHeader from './summary/ResourceSummaryHeader.svelte';
 import SummaryCard from './summary/SummaryCard.svelte';
 
@@ -63,60 +66,50 @@ function openPort(port: number): void {
     created={createdTime}
     age={container.uptime || undefined} />
 
-  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-    <div class={container.hasPublicPort ? '' : 'sm:col-span-2'}>
-      <SummaryCard title="Details" icon="fas fa-circle-info">
-        <div class="flex flex-col gap-2 px-4 pb-3 text-sm">
-          <div class="flex items-baseline gap-3">
-            <span class="text-xs text-[var(--pd-content-text)] opacity-60 w-16 shrink-0">Image</span>
-            <Link class="truncate min-w-0" on:click={(): void => router.goto(container.imageHref ?? $router.path)}>
-              {container.image}
-            </Link>
-          </div>
-          {#if container.command}
-            <div class="flex items-baseline gap-3">
-              <span class="text-xs text-[var(--pd-content-text)] opacity-60 w-16 shrink-0">Command</span>
-              <span
-                class="text-[var(--pd-content-header)] font-mono text-xs truncate min-w-0"
-                title={container.command}>
-                {container.command}
-              </span>
-            </div>
-          {/if}
-          <div class="flex items-baseline gap-3">
-            <span class="text-xs text-[var(--pd-content-text)] opacity-60 w-16 shrink-0">Engine</span>
-            <span class="text-[var(--pd-content-header)] truncate min-w-0">{container.engineType}</span>
-          </div>
-          {#if container.uptime}
-            <div class="flex items-baseline gap-3">
-              <span class="text-xs text-[var(--pd-content-text)] opacity-60 w-16 shrink-0">Started</span>
-              <span class="text-[var(--pd-content-header)] truncate min-w-0">{startedTime.toLocaleString()}</span>
-            </div>
-          {/if}
-        </div>
-      </SummaryCard>
-    </div>
+  <MockResourceStats
+    resourceId={container.id}
+    kind="container"
+    running={container.state === 'RUNNING'} />
 
-    {#if container.hasPublicPort}
-      <SummaryCard title="Network" icon="fas fa-network-wired">
-        <div class="flex flex-col gap-2 px-4 pb-3 text-sm">
-          {#each container.ports as port, i (`${port.IP ?? ''}-${port.PublicPort}-${port.Type}-${i}`)}
-            <div class="flex items-baseline gap-3">
-              <span class="text-xs text-[var(--pd-content-text)] opacity-60 w-16 shrink-0">{port.Type}</span>
-              <Tooltip tip={portUrl(port.PublicPort)} bottom>
-                <Link on:click={(): void => openPort(port.PublicPort)}>
-                  <span class="inline-flex items-center gap-1 font-mono text-xs">
-                    localhost:{port.PublicPort} → {port.PrivatePort}
-                    <Icon icon={faExternalLink} class="w-2.5 text-[10px]" />
-                  </span>
-                </Link>
-              </Tooltip>
-            </div>
-          {/each}
-        </div>
-      </SummaryCard>
-    {/if}
-  </div>
+  <!-- Same columns as the production Containers table (minus Actions). -->
+  <SummaryCard title="Overview" icon="fas fa-table-list">
+    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 px-4 pb-3">
+      <OverviewField label="Status" value={container.state.toLowerCase()} />
+      <EnvironmentField engineId={container.engineId} />
+      <OverviewField label="Uptime" value={container.uptime || 'N/A'} />
+      <OverviewField label="Image">
+        <Link class="text-sm truncate min-w-0" on:click={(): void => router.goto(container.imageHref ?? $router.path)}>
+          {container.image}
+        </Link>
+      </OverviewField>
+      {#if container.command}
+        <OverviewField label="Command" value={container.command} title={container.command} />
+      {/if}
+      {#if container.uptime}
+        <OverviewField label="Started" value={startedTime.toLocaleString()} />
+      {/if}
+    </div>
+  </SummaryCard>
+
+  {#if container.hasPublicPort}
+    <SummaryCard title="Network" icon="fas fa-network-wired">
+      <div class="flex flex-col gap-2 px-4 pb-3 text-sm">
+        {#each container.ports as port, i (`${port.IP ?? ''}-${port.PublicPort}-${port.Type}-${i}`)}
+          <div class="flex items-baseline gap-3">
+            <span class="text-xs text-[var(--pd-content-text)] opacity-60 w-16 shrink-0">{port.Type}</span>
+            <Tooltip tip={portUrl(port.PublicPort)} bottom>
+              <Link on:click={(): void => openPort(port.PublicPort)}>
+                <span class="inline-flex items-center gap-1 font-mono text-xs">
+                  localhost:{port.PublicPort} → {port.PrivatePort}
+                  <Icon icon={faExternalLink} class="w-2.5 text-[10px]" />
+                </span>
+              </Link>
+            </Tooltip>
+          </div>
+        {/each}
+      </div>
+    </SummaryCard>
+  {/if}
 
   {#if container.groupInfo.type !== ContainerGroupInfoTypeUI.STANDALONE}
     <SummaryCard title={container.groupInfo.type === ContainerGroupInfoTypeUI.POD ? 'Pod' : 'Compose project'} icon="fas fa-layer-group">

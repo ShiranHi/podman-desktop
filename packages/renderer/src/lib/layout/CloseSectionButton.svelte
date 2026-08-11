@@ -21,18 +21,22 @@
 // Per-section close control in the tab bar trailing slot. The shared layout
 // settings gear lives only on the last section (see LayoutToolbar).
 import { faXmark } from '@fortawesome/free-solid-svg-icons';
+import type { TabDescriptor } from '@podman-desktop/ui-svelte';
 import { Tooltip } from '@podman-desktop/ui-svelte';
 import { Icon } from '@podman-desktop/ui-svelte/icons';
 
-import { closeAllInPanel, hasClosableTabsInPanel } from '/@/stores/layout/layout-store.svelte';
+import { closeAllInPanel } from '/@/stores/layout/layout-store.svelte';
+import { PAGE_TAB_ID } from '/@/stores/layout/page-tab.svelte';
 
 interface Props {
   panelId: string;
+  /** Live tabs for this panel (from Panel) — drives enabled state reactively. */
+  tabs: TabDescriptor[];
 }
 
-let { panelId }: Props = $props();
+let { panelId, tabs }: Props = $props();
 
-const canClose = $derived(hasClosableTabsInPanel(panelId));
+const canClose = $derived(tabs.some(tab => tab.id !== PAGE_TAB_ID && !tab.permanent && !tab.pinned));
 const tip = $derived(canClose ? 'Close section' : 'No tabs to close in this section');
 
 function onClose(): void {

@@ -30,7 +30,7 @@ import { containersInfos } from '/@/stores/containers';
 import { context } from '/@/stores/context';
 import { podCreationHolder } from '/@/stores/creation-from-containers-store';
 import { podsInfos } from '/@/stores/pods';
-import { currentScreen } from '/@/stores/prototype';
+import { currentScreen, isTabsLayoutScreen } from '/@/stores/prototype';
 import { providerInfos } from '/@/stores/providers';
 import { findMatchInLeaves } from '/@/stores/search-util';
 import { viewsContributions } from '/@/stores/views';
@@ -451,7 +451,7 @@ function label(item: ContainerGroupInfoUI | ContainerInfoUI): string {
         icon={SolidPodIcon}>
         Create Pod
       </Button>
-      {#if $currentScreen === 'tabs-layout'}
+      {#if isTabsLayoutScreen($currentScreen)}
         <Button
           type="secondary"
           on:click={compareSelectedWithTabs}

@@ -22,7 +22,7 @@ import ContainerEngineEnvironmentColumn from '/@/lib/table/columns/ContainerEngi
 import EnvironmentDropdown from '/@/lib/ui/EnvironmentDropdown.svelte';
 import { podKey } from '/@/stores/layout/layout-types';
 import { filtered, podsInfos, searchPattern, setPodStatus } from '/@/stores/pods';
-import { currentScreen } from '/@/stores/prototype';
+import { currentScreen, isTabsLayoutScreen } from '/@/stores/prototype';
 import { providerInfos } from '/@/stores/providers';
 
 import { PodUtils } from './pod-utils';
@@ -217,7 +217,7 @@ function label(pod: PodInfoUI): string {
         title="Delete {selectedItemsNumber} selected items"
         inProgress={bulkDeleteInProgress}
         icon={faTrash} />
-      {#if $currentScreen === 'tabs-layout'}
+      {#if isTabsLayoutScreen($currentScreen)}
         <Button
           type="secondary"
           on:click={compareSelectedWithTabs}

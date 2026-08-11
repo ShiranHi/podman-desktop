@@ -27,7 +27,12 @@ import { Icon } from '@podman-desktop/ui-svelte/icons';
 import Dialog from '/@/lib/dialogs/Dialog.svelte';
 import { saveNamedLayout } from '/@/stores/layout/layout-persistence.svelte';
 import { type PresetId, PRESETS } from '/@/stores/layout/layout-presets';
-import { closeAllTabsEverywhere, countLeaves, hasAnyTabs, layoutState } from '/@/stores/layout/layout-store.svelte';
+import {
+  closeAllTabsEverywhere,
+  countLeaves,
+  layoutState,
+  resourceTabCount,
+} from '/@/stores/layout/layout-store.svelte';
 
 import { autofocus } from './autofocus';
 import ManageLayoutsModal from './ManageLayoutsModal.svelte';
@@ -46,7 +51,7 @@ let { panelId, onAddTab }: Props = $props();
 
 const multiSection = $derived(countLeaves(layoutState.tree) > 1);
 const closeActionTitle = $derived(multiSection ? 'Close all sections' : 'Close all tabs');
-const hasTabs = $derived(hasAnyTabs());
+const hasTabs = $derived(resourceTabCount() > 0);
 
 let showMenu = $state(false);
 let menuAnchor = $state<HTMLButtonElement>();

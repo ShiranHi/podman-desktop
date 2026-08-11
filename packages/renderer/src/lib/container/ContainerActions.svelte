@@ -20,6 +20,7 @@ import type { Unsubscriber } from 'svelte/store';
 import ContributionActions from '/@/lib/actions/ContributionActions.svelte';
 import { ContextUI } from '/@/lib/context/context';
 import { withConfirmation } from '/@/lib/dialogs/messagebox-utils';
+import { withPrototypeActionDelay } from '/@/lib/layout/compact-nav-action-status.svelte';
 import FlatMenu from '/@/lib/ui/FlatMenu.svelte';
 import ListItemButtonIcon from '/@/lib/ui/ListItemButtonIcon.svelte';
 import { handleNavigation } from '/@/navigation';
@@ -29,6 +30,8 @@ import { ContainerGroupInfoTypeUI, type ContainerInfoUI } from './ContainerInfoU
 
 export let container: ContainerInfoUI;
 export let dropdownMenu = false;
+/** When true, all actions (including start/stop/delete) go in the kebab menu. */
+export let menuOnly = false;
 export let detailed = false;
 
 let globalContext: ContextUI;
@@ -75,48 +78,37 @@ function handleError(errorMessage: string): void {
   onUpdate(container);
 }
 
-async function startContainer(): Promise<void> {
-  inProgress(true, 'STARTING');
+async function runStatusAction(loadingStatus: string, finalStatus: string, action: () => Promise<void>): Promise<void> {
+  inProgress(true, loadingStatus);
   try {
-    await window.startContainer(container.engineId, container.id);
+    if (menuOnly) {
+      // Compact-nav prototype: keep loading visible, then land on the expected final status.
+      await withPrototypeActionDelay(action);
+      inProgress(false, finalStatus);
+    } else {
+      await action();
+      inProgress(false);
+    }
   } catch (error) {
     handleError(String(error));
-  } finally {
     inProgress(false);
   }
+}
+
+async function startContainer(): Promise<void> {
+  await runStatusAction('STARTING', 'RUNNING', () => window.startContainer(container.engineId, container.id));
 }
 
 async function unpauseContainer(): Promise<void> {
-  inProgress(true, 'STARTING');
-  try {
-    await window.unpauseContainer(container.engineId, container.id);
-  } catch (error) {
-    handleError(String(error));
-  } finally {
-    inProgress(false);
-  }
+  await runStatusAction('STARTING', 'RUNNING', () => window.unpauseContainer(container.engineId, container.id));
 }
 
 async function restartContainer(): Promise<void> {
-  inProgress(true, 'RESTARTING');
-  try {
-    await window.restartContainer(container.engineId, container.id);
-  } catch (error) {
-    handleError(String(error));
-  } finally {
-    inProgress(false);
-  }
+  await runStatusAction('RESTARTING', 'RUNNING', () => window.restartContainer(container.engineId, container.id));
 }
 
 async function stopContainer(): Promise<void> {
-  inProgress(true, 'STOPPING');
-  try {
-    await window.stopContainer(container.engineId, container.id);
-  } catch (error) {
-    handleError(String(error));
-  } finally {
-    inProgress(false);
-  }
+  await runStatusAction('STOPPING', 'EXITED', () => window.stopContainer(container.engineId, container.id));
 }
 
 function openBrowser(): void {
@@ -138,14 +130,7 @@ function openLogs(): void {
 }
 
 async function deleteContainer(): Promise<void> {
-  inProgress(true, 'DELETING');
-  try {
-    await window.deleteContainer(container.engineId, container.id);
-  } catch (error) {
-    handleError(String(error));
-  } finally {
-    inProgress(false);
-  }
+  await runStatusAction('DELETING', 'DELETING', () => window.deleteContainer(container.engineId, container.id));
 }
 
 async function exportContainer(): Promise<void> {
@@ -185,52 +170,79 @@ function deployToKubernetes(): void {
   });
 }
 
-// If dropdownMenu = true, we'll change style to the imported dropdownMenu style
-// otherwise, leave blank.
+// If dropdownMenu / menuOnly = true, use the kebab dropdown; otherwise flat icons.
+const asMenu = dropdownMenu || menuOnly;
 let actionsStyle: typeof DropdownMenu | typeof FlatMenu;
-if (dropdownMenu) {
+if (asMenu) {
   actionsStyle = DropdownMenu;
 } else {
   actionsStyle = FlatMenu;
 }
 </script>
 
-<ListItemButtonIcon
-  title="Start Container"
-  onClick={container.state === 'PAUSED' ? unpauseContainer : startContainer}
-  hidden={container.state === 'RUNNING' || container.state === 'STOPPING'}
-  detailed={detailed}
-  inProgress={container.actionInProgress && container.state === 'STARTING'}
-  icon={faPlay}/>
+{#if !menuOnly}
+  <ListItemButtonIcon
+    title="Start Container"
+    onClick={container.state === 'PAUSED' ? unpauseContainer : startContainer}
+    hidden={container.state === 'RUNNING' || container.state === 'STOPPING'}
+    detailed={detailed}
+    inProgress={container.actionInProgress && container.state === 'STARTING'}
+    icon={faPlay}/>
 
-<ListItemButtonIcon
-  title="Stop Container"
-  onClick={stopContainer}
-  hidden={!(container.state === 'RUNNING' || container.state === 'STOPPING')}
-  detailed={detailed}
-  inProgress={container.actionInProgress && container.state === 'STOPPING'}
-  icon={faStop} />
+  <ListItemButtonIcon
+    title="Stop Container"
+    onClick={stopContainer}
+    hidden={!(container.state === 'RUNNING' || container.state === 'STOPPING')}
+    detailed={detailed}
+    inProgress={container.actionInProgress && container.state === 'STOPPING'}
+    icon={faStop} />
 
-<ListItemButtonIcon
-  title="Delete Container"
-  onClick={(): void => withConfirmation(deleteContainer, `delete container ${container.name}`, { title: 'Delete Container?', variant: 'delete' })}
-  icon={faTrash}
-  detailed={detailed}
-  inProgress={container.actionInProgress && container.state === 'DELETING'} />
+  <ListItemButtonIcon
+    title="Delete Container"
+    onClick={(): void => withConfirmation(deleteContainer, `delete container ${container.name}`, { title: 'Delete Container?', variant: 'delete' })}
+    icon={faTrash}
+    detailed={detailed}
+    inProgress={container.actionInProgress && container.state === 'DELETING'} />
+{/if}
 
-<!-- If dropdownMenu is true, use it, otherwise just show the regular buttons -->
+<!-- If dropdownMenu / menuOnly is true, use kebab; otherwise just show the regular buttons -->
 <svelte:component this={actionsStyle}>
+  {#if menuOnly}
+    <ListItemButtonIcon
+      title="Start Container"
+      onClick={container.state === 'PAUSED' ? unpauseContainer : startContainer}
+      menu={true}
+      hidden={container.state === 'RUNNING' || container.state === 'STOPPING'}
+      detailed={detailed}
+      inProgress={container.actionInProgress && container.state === 'STARTING'}
+      icon={faPlay}/>
+    <ListItemButtonIcon
+      title="Stop Container"
+      onClick={stopContainer}
+      menu={true}
+      hidden={!(container.state === 'RUNNING' || container.state === 'STOPPING')}
+      detailed={detailed}
+      inProgress={container.actionInProgress && container.state === 'STOPPING'}
+      icon={faStop} />
+    <ListItemButtonIcon
+      title="Delete Container"
+      onClick={(): void => withConfirmation(deleteContainer, `delete container ${container.name}`, { title: 'Delete Container?', variant: 'delete' })}
+      menu={true}
+      icon={faTrash}
+      detailed={detailed}
+      inProgress={container.actionInProgress && container.state === 'DELETING'} />
+  {/if}
   {#if !detailed}
     <ListItemButtonIcon
       title="Open Logs"
       onClick={openLogs}
-      menu={dropdownMenu}
+      menu={asMenu}
       detailed={false}
       icon={faAlignLeft} />
     <ListItemButtonIcon
       title="Generate Kube"
       onClick={openGenerateKube}
-      menu={dropdownMenu}
+      menu={asMenu}
       hidden={!(container.engineType === 'podman' && container.groupInfo.type === ContainerGroupInfoTypeUI.STANDALONE)}
       detailed={detailed}
       icon={faFileCode} />
@@ -238,23 +250,28 @@ if (dropdownMenu) {
   <ListItemButtonIcon
     title="Deploy to Kubernetes"
     onClick={deployToKubernetes}
-    menu={dropdownMenu}
+    menu={asMenu}
     hidden={!(container.engineType === 'podman' && container.groupInfo.type === ContainerGroupInfoTypeUI.STANDALONE)}
     detailed={detailed}
     icon={faRocket} />
   <ListItemButtonIcon
     title="Open Browser"
+    tooltip={
+      container.state === 'RUNNING' && container.hasPublicPort
+        ? 'Open the published port in your browser'
+        : 'Requires a running container with at least one published port'
+    }
     onClick={openBrowser}
-    menu={dropdownMenu}
+    menu={asMenu}
     enabled={container.state === 'RUNNING' && container.hasPublicPort}
-    hidden={dropdownMenu && container.state !== 'RUNNING'}
+    hidden={asMenu && container.state !== 'RUNNING'}
     detailed={detailed}
     icon={faExternalLinkSquareAlt} />
   {#if !detailed}
     <ListItemButtonIcon
       title="Open Terminal"
       onClick={openTerminalContainer}
-      menu={dropdownMenu}
+      menu={asMenu}
       hidden={container.state !== 'RUNNING'}
       detailed={false}
       icon={faTerminal} />
@@ -262,20 +279,20 @@ if (dropdownMenu) {
   <ListItemButtonIcon
     title="Restart Container"
     onClick={restartContainer}
-    menu={dropdownMenu}
+    menu={asMenu}
     detailed={detailed}
     icon={faArrowsRotate} />
   <ListItemButtonIcon
     title="Export Container"
     tooltip="Exports container's filesystem contents as a tar archive and saves it on the local machine"
     onClick={exportContainer}
-    menu={dropdownMenu}
+    menu={asMenu}
     detailed={detailed}
     icon={faDownload} />
   <ContributionActions
     args={[container]}
     contextPrefix="containerItem"
-    dropdownMenu={dropdownMenu}
+    dropdownMenu={asMenu}
     contributions={contributions}
     detailed={detailed}
     onError={handleError}

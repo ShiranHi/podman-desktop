@@ -19,13 +19,22 @@ import NavItem from './lib/ui/NavItem.svelte';
 import NavRegistryEntry from './lib/ui/NavRegistryEntry.svelte';
 import { handleNavigation } from './navigation';
 import { onDidChangeConfiguration } from './stores/configurationProperties';
+import { navigateToAppPage } from './stores/layout/layout-store.svelte';
 import { navigationRegistry } from './stores/navigation/navigation-registry';
+import { currentScreen, isTabsLayoutScreen } from './stores/prototype';
 
 interface Props {
   exitSettingsCallback: () => void;
   meta: TinroRouteMeta;
 }
 let { exitSettingsCallback, meta = $bindable() }: Props = $props();
+
+const usePageTabNav = $derived(isTabsLayoutScreen($currentScreen));
+
+/** In tabs prototypes, focus the permanent primary tab when leaving a details tab. */
+function onDashboardClick(): void {
+  navigateToAppPage('/', 'Dashboard');
+}
 
 let authActions = $state<AuthActions>();
 let outsideWindow = $state<HTMLDivElement>();
@@ -208,7 +217,12 @@ function onDidChangeConfigurationCallback(e: Event): void {
   aria-label="AppNavigation"
   class:select-none={isDragging}
   style:width="{navWidth}px">
-  <NavItem href="/" tooltip="Dashboard" bind:meta={meta} {expanded}>
+  <NavItem
+    href="/"
+    tooltip="Dashboard"
+    bind:meta={meta}
+    {expanded}
+    onClick={usePageTabNav ? onDashboardClick : undefined}>
     <div class="flex items-center w-full">
       <div class="flex items-center justify-center flex-shrink-0 w-6 relative">
         <DashboardIcon size={iconSize} />

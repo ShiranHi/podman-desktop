@@ -71,6 +71,21 @@ interface PrototypeState {
 export const activePrototype = writable<PrototypeState | undefined>();
 export const currentScreen = writable<string>('');
 
+/** Screens that keep the tabs / flexible-layout chrome (V1 Integrated + V2 Compact nav). */
+export const TABS_LAYOUT_SCREENS = new Set(['tabs-layout', 'compact-nav']);
+
+export function isTabsLayoutScreen(screen: string): boolean {
+  return TABS_LAYOUT_SCREENS.has(screen);
+}
+
+/**
+ * Version 1 keeps a permanent list/dashboard tab in the first section.
+ * Version 2 (compact-nav) lists resources in the side panel, so that tab is omitted.
+ */
+export function usesPermanentPageTab(screen: string): boolean {
+  return screen !== 'compact-nav';
+}
+
 const currentPhase = writable<number>(0);
 let phaseTimers: ReturnType<typeof setTimeout>[] = [];
 let currentTimelines: Record<string, PhaseSchedule[]> = {};

@@ -18,7 +18,7 @@
 
 import '@testing-library/jest-dom/vitest';
 
-import { autoUpdate, computePosition } from '@floating-ui/dom';
+import { arrow, autoUpdate, computePosition } from '@floating-ui/dom';
 import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
@@ -30,7 +30,7 @@ vi.mock(import('@floating-ui/dom'));
 
 beforeEach(() => {
   vi.mocked(computePosition).mockResolvedValue({
-    middlewareData: {},
+    middlewareData: { arrow: { x: 40, y: null } },
     placement: 'bottom',
     strategy: 'absolute',
     x: 100,
@@ -40,6 +40,12 @@ beforeEach(() => {
   vi.mocked(autoUpdate).mockImplementation((_ref, _tooltip, update) => {
     update();
     return (): void => {};
+  });
+
+  vi.mocked(arrow).mockReturnValue({
+    name: 'arrow',
+    options: {},
+    fn: async (state): Promise<typeof state> => state,
   });
 });
 
@@ -372,6 +378,23 @@ describe('Tooltip', () => {
       expect(screen.getByRole('tooltip')).toBeInTheDocument();
       expect(screen.getByRole('tooltip')).toHaveTextContent('accessible tooltip');
     });
+  });
+
+  test('tooltip arrow sits behind the bubble (not painted over the border)', async () => {
+    render(TooltipTestComponent, { tip: 'arrow tooltip', bottom: true });
+
+    const slot = screen.getByTestId('tooltip-trigger');
+    await fireEvent.mouseEnter(slot);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('tooltip-arrow')).toBeInTheDocument();
+    });
+
+    const arrowEl = screen.getByTestId('tooltip-arrow');
+    expect(arrowEl).toHaveClass('tooltip-arrow');
+    // Bubble content must stack above the arrow so the caret never covers the border.
+    const bubble = screen.getByRole('tooltip');
+    expect(bubble).toHaveClass('tooltip-bubble');
   });
 
   test('trigger has aria-describedby matching tooltip id when visible', async () => {

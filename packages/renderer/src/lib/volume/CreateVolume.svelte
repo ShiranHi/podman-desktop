@@ -4,7 +4,7 @@
 import { faPlusCircle } from '@fortawesome/free-solid-svg-icons';
 /* eslint-enable import/no-duplicates */
 import type { ProviderContainerConnectionInfo } from '@podman-desktop/core-api';
-import { Button, ErrorMessage, Input } from '@podman-desktop/ui-svelte';
+import { Button, ErrorMessage, Input, StatusIcon } from '@podman-desktop/ui-svelte';
 import { router } from 'tinro';
 
 import VolumeIcon from '/@/lib/images/VolumeIcon.svelte';
@@ -84,7 +84,7 @@ function end(): void {
   inProgress={createVolumeInProgress}
   showEmptyScreen={providerConnections.length === 0}>
   {#snippet icon()}
-    <VolumeIcon />
+    <StatusIcon icon={VolumeIcon} size={18} />
   {/snippet}
   {#snippet content()}
   <div class="space-y-6">

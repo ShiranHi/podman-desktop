@@ -25,7 +25,9 @@ import NetworkDetailsInspect from '/@/lib/network/NetworkDetailsInspect.svelte';
 import type { NetworkInfoUI } from '/@/lib/network/NetworkInfoUI';
 import { networkKey } from '/@/stores/layout/layout-types';
 
+import EnvironmentField from './summary/EnvironmentField.svelte';
 import InspectCard from './summary/InspectCard.svelte';
+import OverviewField from './summary/OverviewField.svelte';
 import ResourceSummaryHeader from './summary/ResourceSummaryHeader.svelte';
 import SummaryCard from './summary/SummaryCard.svelte';
 
@@ -52,30 +54,14 @@ function openContainer(container: { id: string; name: string }): void {
     id={network.id}
     created={createdDate} />
 
-  <SummaryCard title="Details" icon="fas fa-circle-info">
+  <!-- Same columns as the production Networks table (minus Actions). -->
+  <SummaryCard title="Overview" icon="fas fa-table-list">
     <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 px-4 pb-3">
-      <div class="flex flex-col">
-        <span class="text-xs text-[var(--pd-content-text)] opacity-60">Driver</span>
-        <span class="text-sm font-medium text-[var(--pd-content-header)]">{network.driver}</span>
-      </div>
-      <div class="flex flex-col">
-        <span class="text-xs text-[var(--pd-content-text)] opacity-60">IPv6</span>
-        <span class="text-sm font-medium text-[var(--pd-content-header)]">
-          {network.ipv6_enabled ? 'Enabled' : 'Disabled'}
-        </span>
-      </div>
-      <div class="flex flex-col min-w-0">
-        <span class="text-xs text-[var(--pd-content-text)] opacity-60">Engine</span>
-        <span class="text-sm font-medium text-[var(--pd-content-header)] truncate" title={network.engineName}>
-          {network.engineName}
-        </span>
-      </div>
-      <div class="flex flex-col min-w-0 sm:col-span-2">
-        <span class="text-xs text-[var(--pd-content-text)] opacity-60">Network ID</span>
-        <span class="text-sm font-medium text-[var(--pd-content-header)] font-mono truncate" title={network.id}>
-          {network.shortId || network.id}
-        </span>
-      </div>
+      <OverviewField label="Id" value={network.shortId || network.id} title={network.id} />
+      <EnvironmentField engineId={network.engineId} />
+      <OverviewField label="Driver" value={network.driver} />
+      <OverviewField label="IPv6" value={network.ipv6_enabled ? 'Enabled' : 'Disabled'} />
+      <OverviewField label="Status" value={network.status.toLowerCase()} />
     </div>
   </SummaryCard>
 

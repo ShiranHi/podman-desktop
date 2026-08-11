@@ -26,10 +26,8 @@ import PodDetailsKube from '/@/lib/pod/PodDetailsKube.svelte';
 import PodDetailsLogs from '/@/lib/pod/PodDetailsLogs.svelte';
 import { markTabStale } from '/@/stores/layout/layout-store.svelte';
 import type { PodSubView } from '/@/stores/layout/layout-types';
-import { podKey } from '/@/stores/layout/layout-types';
 import { podsInfos } from '/@/stores/pods';
 
-import MockResourceStats from './MockResourceStats.svelte';
 import PodSummaryTabContent from './PodSummaryTabContent.svelte';
 import StaleTabPlaceholder from './StaleTabPlaceholder.svelte';
 
@@ -59,10 +57,6 @@ $effect(() => {
       {:else if subView === 'logs'}
         <PodDetailsLogs pod={pod} />
       {:else}
-        <MockResourceStats
-          resourceId={podKey(pod.name, pod.engineId)}
-          kind="pod"
-          running={pod.status.toUpperCase() === 'RUNNING'} />
         <PodSummaryTabContent {tabId} pod={pod} />
       {/if}
     </div>

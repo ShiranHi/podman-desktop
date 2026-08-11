@@ -78,11 +78,15 @@ function onButtonClick(e: MouseEvent): void {
         <Icon class="h-4 w-4" icon={icon}/>
       </button>
 
-    <!-- Dropdown menu for all other actions -->
+    <!-- Dropdown menu for all other actions.
+         Fixed anchor at the click point so overflow:hidden ancestors (e.g. compact
+         nav sidebar) do not clip the menu. -->
     {#if showMenu}
-      <DropDownMenuItems clientY={clientY} clientX={clientX}>
-        {@render children?.()}
-      </DropDownMenuItems>
+      <div class="fixed z-50 w-0 h-0" style:left="{clientX}px" style:top="{clientY}px">
+        <DropDownMenuItems clientY={clientY} clientX={clientX}>
+          {@render children?.()}
+        </DropDownMenuItems>
+      </div>
     {/if}
   </div>
 {/if}

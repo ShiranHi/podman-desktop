@@ -34,7 +34,10 @@ import { handleNavigation } from '/@/navigation';
 import { containersInfos } from '/@/stores/containers';
 import { podKey } from '/@/stores/layout/layout-types';
 
+import MockResourceStats from './MockResourceStats.svelte';
+import EnvironmentField from './summary/EnvironmentField.svelte';
 import InspectCard from './summary/InspectCard.svelte';
+import OverviewField from './summary/OverviewField.svelte';
 import ResourceSummaryHeader from './summary/ResourceSummaryHeader.svelte';
 import SummaryCard from './summary/SummaryCard.svelte';
 
@@ -88,6 +91,23 @@ function imageLabel(image: string | undefined): string {
     id={pod.id}
     created={creationTime}
     age={pod.age} />
+
+  <MockResourceStats
+    resourceId={podKey(pod.name, pod.engineId)}
+    kind="pod"
+    running={pod.status.toUpperCase() === 'RUNNING'} />
+
+  <!-- Same columns as the production Pods table (minus Actions). -->
+  <SummaryCard title="Overview" icon="fas fa-table-list">
+    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 px-4 pb-3">
+      <OverviewField label="Status" value={pod.status.toLowerCase()} />
+      <EnvironmentField engineId={pod.engineId} />
+      <OverviewField label="Age" value={pod.age || 'N/A'} />
+      <OverviewField
+        label="Containers"
+        value="{pod.containers.length} ({runningCount} running · {stoppedCount} stopped)" />
+    </div>
+  </SummaryCard>
 
   <SummaryCard title="Containers" icon="fas fa-cubes">
     {#snippet trailing()}

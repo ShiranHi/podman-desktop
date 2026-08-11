@@ -1,6 +1,6 @@
 <script lang="ts">
 import { faTrash } from '@fortawesome/free-solid-svg-icons';
-import { Button } from '@podman-desktop/ui-svelte';
+import { Button, DropdownMenu } from '@podman-desktop/ui-svelte';
 
 import type { EngineInfoUI } from './EngineInfoUI';
 
@@ -10,6 +10,9 @@ interface Props {
 }
 
 let { type, engines }: Props = $props();
+
+/** When true, render as a dropdown menu item instead of a header Button. */
+export let asMenuItem = false;
 
 const LABEL_IMAGE_UNUSED = 'All unused images';
 const LABEL_IMAGE_UNTAGGED = 'All untagged images';
@@ -96,4 +99,8 @@ async function prune(type: string, selectedItemLabel: string): Promise<void> {
 }
 </script>
 
-<Button type="secondary" on:click={openPruneDialog} title="Remove unused {type}" icon={faTrash}>Prune</Button>
+{#if asMenuItem}
+  <DropdownMenu.Item title="Prune" tooltip="Remove unused {type}" icon={faTrash} onClick={openPruneDialog} />
+{:else}
+  <Button type="secondary" on:click={openPruneDialog} title="Remove unused {type}" icon={faTrash}>Prune</Button>
+{/if}

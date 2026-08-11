@@ -24,7 +24,7 @@ import { compareResourcesWithTabs } from '/@/lib/layout/resource-open-actions';
 import ContainerEngineEnvironmentColumn from '/@/lib/table/columns/ContainerEngineEnvironmentColumn.svelte';
 import EnvironmentDropdown from '/@/lib/ui/EnvironmentDropdown.svelte';
 import { volumeKey } from '/@/stores/layout/layout-types';
-import { currentScreen } from '/@/stores/prototype';
+import { currentScreen, isTabsLayoutScreen } from '/@/stores/prototype';
 import { providerInfos } from '/@/stores/providers';
 import { fetchVolumesWithData, filtered, searchPattern, volumeListInfos } from '/@/stores/volumes';
 
@@ -251,7 +251,7 @@ function label(obj: VolumeInfoUI): string {
         title="Delete {selectedItemsNumber} selected items"
         inProgress={bulkDeleteInProgress}
         icon={faTrash} />
-      {#if $currentScreen === 'tabs-layout'}
+      {#if isTabsLayoutScreen($currentScreen)}
         <Button
           type="secondary"
           on:click={compareSelectedWithTabs}

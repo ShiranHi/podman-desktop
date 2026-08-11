@@ -4,7 +4,9 @@
 import { Icon } from '@podman-desktop/ui-svelte/icons';
 import type { TinroRouteMeta } from 'tinro';
 
+import { navigateToAppPage } from '/@/stores/layout/layout-store.svelte';
 import type { NavigationRegistryEntry } from '/@/stores/navigation/navigation-registry';
+import { currentScreen, isTabsLayoutScreen } from '/@/stores/prototype';
 
 import NavItem from './NavItem.svelte';
 
@@ -15,10 +17,24 @@ interface NavRegistryEntryProps {
 }
 
 let { entry, meta = $bindable(), expanded = false }: NavRegistryEntryProps = $props();
+
+const usePageTabNav = $derived(isTabsLayoutScreen($currentScreen));
+
+/** In tabs prototypes, focus the permanent primary tab when leaving a details tab. */
+function onNavClick(): void {
+  navigateToAppPage(entry.link, entry.name);
+}
 </script>
 
 {#if !entry.hidden}
-  <NavItem href={entry.link} counter={entry.counter} tooltip={entry.tooltip} ariaLabel={entry.name} bind:meta={meta} {expanded}>
+  <NavItem
+    href={entry.link}
+    counter={entry.counter}
+    tooltip={entry.tooltip}
+    ariaLabel={entry.name}
+    bind:meta={meta}
+    {expanded}
+    onClick={usePageTabNav ? onNavClick : undefined}>
     <div class="flex items-center w-full">
       <div class="flex-shrink-0 flex items-center justify-center w-6">
         {#if entry.icon === undefined}

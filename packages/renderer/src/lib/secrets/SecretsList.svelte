@@ -25,7 +25,7 @@ import type { SecretInfoUI } from '/@/lib/secrets/SecretInfoUI';
 import EnvironmentDropdown from '/@/lib/ui/EnvironmentDropdown.svelte';
 import { handleNavigation } from '/@/navigation';
 import { secretKey } from '/@/stores/layout/layout-types';
-import { currentScreen } from '/@/stores/prototype';
+import { currentScreen, isTabsLayoutScreen } from '/@/stores/prototype';
 import { providerInfos } from '/@/stores/providers';
 import { filtered, searchPattern } from '/@/stores/secrets';
 
@@ -131,7 +131,7 @@ function gotoCreateSecret(): void {
         title="Delete {selectedItemsNumber} selected items"
         inProgress={bulkDeleteInProgress}
         icon={faTrash} />
-      {#if $currentScreen === 'tabs-layout'}
+      {#if isTabsLayoutScreen($currentScreen)}
         <Button
           type="secondary"
           onclick={compareSelectedWithTabs}

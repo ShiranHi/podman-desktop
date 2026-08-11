@@ -2,7 +2,7 @@
 import { faArrowCircleDown, faBan, faCog, faTriangleExclamation } from '@fortawesome/free-solid-svg-icons';
 import type { ImageSearchOptions, ProviderContainerConnectionInfo, PullEvent } from '@podman-desktop/core-api';
 import { NavigationPage, PreferredRegistriesSettings } from '@podman-desktop/core-api';
-import { Button, Checkbox, ErrorMessage, Link, Tooltip } from '@podman-desktop/ui-svelte';
+import { Button, Checkbox, ErrorMessage, Link, StatusIcon, Tooltip } from '@podman-desktop/ui-svelte';
 import { Icon } from '@podman-desktop/ui-svelte/icons';
 import type { Terminal } from '@xterm/xterm';
 import { onMount, tick } from 'svelte';
@@ -11,6 +11,7 @@ import { router } from 'tinro';
 
 import ContainerConnectionDropdown from '/@/lib/forms/ContainerConnectionDropdown.svelte';
 import { ImageUtils } from '/@/lib/image/image-utils';
+import ImageIcon from '/@/lib/images/ImageIcon.svelte';
 import EngineFormPage from '/@/lib/ui/EngineFormPage.svelte';
 import TerminalWindow from '/@/lib/ui/TerminalWindow.svelte';
 import type { TypeaheadItem } from '/@/lib/ui/Typeahead';
@@ -432,7 +433,7 @@ async function searchFunction(value: string): Promise<void> {
   inProgress={pullInProgress}
   showEmptyScreen={providerConnections.length === 0}>
   {#snippet icon()}
-    <i class="fas fa-arrow-circle-down fa-2x" aria-hidden="true"></i>
+    <StatusIcon icon={ImageIcon} size={18} />
   {/snippet}
 
   {#snippet actions()}

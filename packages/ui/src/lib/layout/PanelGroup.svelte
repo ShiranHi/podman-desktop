@@ -58,7 +58,7 @@ interface Props {
   /** See Panel's `canOpenInNewSection`. */
   canOpenInNewSection?: (tabId: string) => boolean;
   /** See Panel's `trailing` — after maximize, before globalTrailing (e.g. close section). */
-  trailing?: Snippet<[string]>;
+  trailing?: Snippet<[string, TabDescriptor[]]>;
   /** See Panel's `globalTrailing` — far-right after trailing. */
   globalTrailing?: Snippet<[string]>;
   /** See Panel's `beforeAdd`. */

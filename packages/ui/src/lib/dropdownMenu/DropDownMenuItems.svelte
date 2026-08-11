@@ -18,23 +18,32 @@ let { clientY, clientX, children }: Props = $props();
 
 const STATUS_BAR_HEIGHT = 24;
 
-// When initializing the widget, set the placement on top or on bottom
-// depending on the clientY position (cursor position) and the height of the dropdown menu to display
-onMount(() => {
+function updatePlacement(height: number, width: number, x: number, y: number): void {
+  if (!dropDownElement) {
+    return;
+  }
+  // Place above the cursor when there is not enough room below (e.g. Accounts near the bottom).
   const innerHeight = window.innerHeight;
-  if (innerHeight - clientY - STATUS_BAR_HEIGHT < dropDownHeight) {
-    dropDownElement.style.top = `-${dropDownHeight}px`;
+  if (height > 0 && innerHeight - y - STATUS_BAR_HEIGHT < height) {
+    dropDownElement.style.top = `-${height}px`;
   } else {
     dropDownElement.style.top = '20px';
   }
 
-  // When initializing the widget, set the placement on left or right
-  // depending on the clientX position (cursor position) and the width of the dropdown menu to display
-  if (window.innerWidth - clientX < dropDownWidth) {
+  if (window.innerWidth - x < width) {
     sideAlign = 'right-0 origin-top-right';
   } else {
     sideAlign = 'left-0 origin-top-left';
   }
+}
+
+// Re-run when size is measured — bind:clientHeight is often still 0 during onMount.
+$effect(() => {
+  updatePlacement(dropDownHeight, dropDownWidth, clientX, clientY);
+});
+
+onMount(() => {
+  updatePlacement(dropDownHeight, dropDownWidth, clientX, clientY);
   window.dispatchEvent(new Event('tooltip-hide'));
 });
 

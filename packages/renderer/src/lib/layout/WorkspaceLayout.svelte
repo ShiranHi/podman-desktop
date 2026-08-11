@@ -65,7 +65,9 @@ import {
   parseSecretKey,
   parseVolumeKey,
 } from '/@/stores/layout/layout-types';
+import { currentScreen } from '/@/stores/prototype';
 
+import ActionTabContent from './ActionTabContent.svelte';
 import AgentLayoutBanner from './AgentLayoutBanner.svelte';
 import AppPageTabContent from './AppPageTabContent.svelte';
 import CloseSectionButton from './CloseSectionButton.svelte';
@@ -132,8 +134,8 @@ function openNewTabPalette(panelId: string, activeTab: TabDescriptor | undefined
 <svelte:window onkeydown={onWindowKeydown} />
 
 <div class="flex flex-col h-full min-h-0 w-full">
-  <!-- Each section has its own TabBar above its content. First section always
-       includes the permanent page tab (Containers / Pods / …). -->
+  <!-- Each section has its own TabBar. Version 1 also keeps a permanent list/dashboard
+       tab in the first section; Version 2 omits it (lists are in the compact sidebar). -->
   <AgentLayoutBanner />
   {#if !layoutState.maximizedPanelId}
     <SplitInsightBanner />
@@ -160,8 +162,8 @@ function openNewTabPalette(panelId: string, activeTab: TabDescriptor | undefined
       onResizeSplit={resizeSplit}
       onAddTab={openNewTabPalette}
       canOpenInNewSection={canMoveTabToNewSection}>
-      {#snippet trailing(panelId)}
-        <CloseSectionButton panelId={panelId} />
+      {#snippet trailing(panelId, tabs)}
+        <CloseSectionButton panelId={panelId} {tabs} />
       {/snippet}
       {#snippet globalTrailing(panelId)}
         <!-- Global settings once: far right of last section (or maximized section). -->
@@ -216,14 +218,23 @@ function openNewTabPalette(panelId: string, activeTab: TabDescriptor | undefined
             secretId={parsed.secretId}
             engineId={parsed.engineId}
             subView={tab.subView as SecretSubView} />
+        {:else if tab.resourceType === 'action'}
+          <ActionTabContent actionId={tab.resourceId} />
         {/if}
       {/snippet}
       {#snippet emptyState()}
         <div class="h-full flex items-center justify-center">
-          <EmptyScreen
-            icon="fas fa-table-cells"
-            title="No tabs open"
-            message="Open a container, pod, image, volume, network, or secret from its list to get started." />
+          {#if $currentScreen === 'compact-nav'}
+            <EmptyScreen
+              icon="fas fa-table-columns"
+              title="Open a resource from the sidebar"
+              message="Containers, pods, images, volumes, networks, and secrets are listed next to the activity bar. Click one to open it as a tab here — or use a section’s ⋮ menu for Load, Pull, Create, and similar actions." />
+          {:else}
+            <EmptyScreen
+              icon="fas fa-table-cells"
+              title="No tabs open"
+              message="Open a container, pod, image, volume, network, or secret from its list to get started." />
+          {/if}
         </div>
       {/snippet}
     </PanelGroup>

@@ -11,12 +11,13 @@ import {
 import type { Menu } from '@podman-desktop/core-api';
 import { MenuContext } from '@podman-desktop/core-api';
 import { DropdownMenu } from '@podman-desktop/ui-svelte';
-import { onMount } from 'svelte';
+import { createEventDispatcher, onMount } from 'svelte';
 import { router } from 'tinro';
 
 import ContributionActions from '/@/lib/actions/ContributionActions.svelte';
 import { ContainerUtils } from '/@/lib/container/container-utils';
 import { withConfirmation } from '/@/lib/dialogs/messagebox-utils';
+import { withPrototypeActionDelay } from '/@/lib/layout/compact-nav-action-status.svelte';
 import FlatMenu from '/@/lib/ui/FlatMenu.svelte';
 import ListItemButtonIcon from '/@/lib/ui/ListItemButtonIcon.svelte';
 import { clearPodActionInProgress, setPodActionError, setPodStatus } from '/@/stores/pods';
@@ -26,10 +27,23 @@ import type { PodInfoUI } from './PodInfoUI';
 interface Props {
   pod: PodInfoUI;
   dropdownMenu?: boolean;
+  /** When true, all actions (including start/stop/delete) go in the kebab menu. */
+  menuOnly?: boolean;
   detailed?: boolean;
+  onUpdate?: (update: PodInfoUI) => void;
 }
 
-let { pod, dropdownMenu = false, detailed = false }: Props = $props();
+const dispatch = createEventDispatcher<{ update: PodInfoUI }>();
+
+let {
+  pod = $bindable(),
+  dropdownMenu = false,
+  menuOnly = false,
+  detailed = false,
+  onUpdate = (update): void => {
+    dispatch('update', update);
+  },
+}: Props = $props();
 
 let contributions = $state<Menu[]>([]);
 onMount(async () => {
@@ -72,57 +86,46 @@ function handleError(errorMessage: string): void {
   setPodActionError(pod.engineId, pod.id, errorMessage);
 }
 
-async function startPod(): Promise<void> {
-  inProgress(true, 'STARTING');
+async function runStatusAction(loadingStatus: string, finalStatus: string, action: () => Promise<void>): Promise<void> {
+  inProgress(true, loadingStatus);
+  try {
+    if (menuOnly) {
+      await withPrototypeActionDelay(action);
+      inProgress(false, finalStatus);
+    } else {
+      await action();
+      inProgress(false);
+    }
+  } catch (error) {
+    handleError(String(error));
+    inProgress(false);
+  }
+}
 
+async function startPod(): Promise<void> {
   const hasPaused = pod.containers.some(c => c.Status === 'paused');
   const hasExited = pod.containers.some(c => c.Status === 'exited');
 
-  try {
+  await runStatusAction('STARTING', 'RUNNING', async () => {
     if (hasPaused) {
       await window.unpausePod(pod.engineId, pod.id);
     }
     if (hasExited) {
       await window.startPod(pod.engineId, pod.id);
     }
-  } catch (error) {
-    handleError(String(error));
-  } finally {
-    inProgress(false);
-  }
+  });
 }
 
 async function restartPod(): Promise<void> {
-  inProgress(false, 'RESTARTING');
-  try {
-    await window.restartPod(pod.engineId, pod.id);
-  } catch (error) {
-    handleError(String(error));
-  } finally {
-    inProgress(false);
-  }
+  await runStatusAction('RESTARTING', 'RUNNING', () => window.restartPod(pod.engineId, pod.id));
 }
 
 async function stopPod(): Promise<void> {
-  inProgress(false, 'STOPPING');
-  try {
-    await window.stopPod(pod.engineId, pod.id);
-  } catch (error) {
-    handleError(String(error));
-  } finally {
-    inProgress(false);
-  }
+  await runStatusAction('STOPPING', 'EXITED', () => window.stopPod(pod.engineId, pod.id));
 }
 
 async function deletePod(): Promise<void> {
-  inProgress(false, 'DELETING');
-  try {
-    await window.removePod(pod.engineId, pod.id);
-  } catch (error) {
-    handleError(String(error));
-  } finally {
-    inProgress(false);
-  }
+  await runStatusAction('DELETING', 'DELETING', () => window.removePod(pod.engineId, pod.id));
 }
 
 function openGenerateKube(): void {
@@ -132,74 +135,101 @@ function openGenerateKube(): void {
 function deployToKubernetes(): void {
   router.goto(`/deploy-to-kube/${pod.id}/${pod.engineId}`);
 }
-// If dropdownMenu = true, we'll change style to the imported dropdownMenu style
-// otherwise, leave blank.
-const MenuComponent = $derived(dropdownMenu ? DropdownMenu : FlatMenu);
+// If dropdownMenu / menuOnly = true, use kebab; otherwise flat icons.
+const asMenu = $derived(dropdownMenu || menuOnly);
+const MenuComponent = $derived(asMenu ? DropdownMenu : FlatMenu);
 </script>
 
-<ListItemButtonIcon
-  title="Start Pod"
-  onClick={startPod}
-  hidden={pod.status === 'RUNNING' || pod.status === 'STOPPING'}
-  detailed={detailed}
-  inProgress={pod.actionInProgress && pod.status === 'STARTING'}
-  icon={faPlay} />
-<ListItemButtonIcon
-  title="Stop Pod"
-  onClick={stopPod}
-  hidden={!(pod.status === 'RUNNING' || pod.status === 'STOPPING')}
-  detailed={detailed}
-  inProgress={pod.actionInProgress && pod.status === 'STOPPING'}
-  icon={faStop} />
-<ListItemButtonIcon
-  title="Delete Pod"
-  onClick={(): void => withConfirmation(deletePod, `delete pod ${pod.name}`, { title: 'Delete Pod?', variant: 'delete' })}
-  icon={faTrash}
-  detailed={detailed}
-  inProgress={pod.actionInProgress && pod.status === 'DELETING'} />
+{#if !menuOnly}
+  <ListItemButtonIcon
+    title="Start Pod"
+    onClick={startPod}
+    hidden={pod.status === 'RUNNING' || pod.status === 'STOPPING'}
+    detailed={detailed}
+    inProgress={pod.actionInProgress && pod.status === 'STARTING'}
+    icon={faPlay} />
+  <ListItemButtonIcon
+    title="Stop Pod"
+    onClick={stopPod}
+    hidden={!(pod.status === 'RUNNING' || pod.status === 'STOPPING')}
+    detailed={detailed}
+    inProgress={pod.actionInProgress && pod.status === 'STOPPING'}
+    icon={faStop} />
+  <ListItemButtonIcon
+    title="Delete Pod"
+    onClick={(): void => withConfirmation(deletePod, `delete pod ${pod.name}`, { title: 'Delete Pod?', variant: 'delete' })}
+    icon={faTrash}
+    detailed={detailed}
+    inProgress={pod.actionInProgress && pod.status === 'DELETING'} />
+{/if}
 
-<!-- If dropdownMenu is true, use it, otherwise just show the regular buttons -->
+<!-- If dropdownMenu / menuOnly is true, use kebab; otherwise just show the regular buttons -->
 <MenuComponent>
+  {#if menuOnly}
+    <ListItemButtonIcon
+      title="Start Pod"
+      onClick={startPod}
+      menu={true}
+      hidden={pod.status === 'RUNNING' || pod.status === 'STOPPING'}
+      detailed={detailed}
+      inProgress={pod.actionInProgress && pod.status === 'STARTING'}
+      icon={faPlay} />
+    <ListItemButtonIcon
+      title="Stop Pod"
+      onClick={stopPod}
+      menu={true}
+      hidden={!(pod.status === 'RUNNING' || pod.status === 'STOPPING')}
+      detailed={detailed}
+      inProgress={pod.actionInProgress && pod.status === 'STOPPING'}
+      icon={faStop} />
+    <ListItemButtonIcon
+      title="Delete Pod"
+      onClick={(): void => withConfirmation(deletePod, `delete pod ${pod.name}`, { title: 'Delete Pod?', variant: 'delete' })}
+      menu={true}
+      icon={faTrash}
+      detailed={detailed}
+      inProgress={pod.actionInProgress && pod.status === 'DELETING'} />
+  {/if}
   {#if !detailed}
     <ListItemButtonIcon
       title="Generate Kube"
       onClick={openGenerateKube}
-      menu={dropdownMenu}
+      menu={asMenu}
       detailed={detailed}
       icon={faFileCode} />
   {/if}
   <ListItemButtonIcon
     title="Deploy to Kubernetes"
     onClick={deployToKubernetes}
-    menu={dropdownMenu}
+    menu={asMenu}
     detailed={detailed}
     icon={faRocket} />
   {#if openingUrls.length === 0}
     <ListItemButtonIcon
       title="Open Exposed Port"
-      menu={dropdownMenu}
+      menu={asMenu}
       enabled={false}
-      hidden={dropdownMenu}
+      hidden={asMenu}
       detailed={detailed}
       icon={faExternalLinkSquareAlt} />
   {:else if openingUrls.length === 1}
     <ListItemButtonIcon
       title="Open {extractPort(openingUrls[0])}"
       onClick={(): Promise<void> => window.openExternal(openingUrls[0])}
-      menu={dropdownMenu}
+      menu={asMenu}
       enabled={pod.status === 'RUNNING'}
-      hidden={dropdownMenu}
+      hidden={asMenu}
       detailed={detailed}
       icon={faExternalLinkSquareAlt} />
   {:else if openingUrls.length > 1}
-    <DropdownMenu icon={faExternalLinkSquareAlt} hidden={dropdownMenu} shownAsMenuActionItem={true}>
+    <DropdownMenu icon={faExternalLinkSquareAlt} hidden={asMenu} shownAsMenuActionItem={true}>
       {#each openingUrls as url, index (index)}
         <ListItemButtonIcon
           title="Open {extractPort(url)}"
           onClick={(): Promise<void> => window.openExternal(url)}
-          menu={!dropdownMenu}
+          menu={!asMenu}
           enabled={pod.status === 'RUNNING'}
-          hidden={dropdownMenu}
+          hidden={asMenu}
           detailed={detailed}
           icon={faExternalLinkSquareAlt} />
       {/each}
@@ -208,13 +238,13 @@ const MenuComponent = $derived(dropdownMenu ? DropdownMenu : FlatMenu);
   <ListItemButtonIcon
     title="Restart Pod"
     onClick={restartPod}
-    menu={dropdownMenu}
+    menu={asMenu}
     detailed={detailed}
     icon={faArrowsRotate} />
   <ContributionActions
     args={[pod]}
     contextPrefix="podItem"
-    dropdownMenu={dropdownMenu}
+    dropdownMenu={asMenu}
     contributions={contributions}
     detailed={detailed}
     onError={handleError} />

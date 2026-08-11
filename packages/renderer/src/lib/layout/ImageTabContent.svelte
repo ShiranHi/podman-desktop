@@ -37,11 +37,9 @@ import { context } from '/@/stores/context';
 import { imagesInfos } from '/@/stores/images';
 import { markTabStale } from '/@/stores/layout/layout-store.svelte';
 import type { ImageSubView } from '/@/stores/layout/layout-types';
-import { imageKey } from '/@/stores/layout/layout-types';
 import { viewsContributions } from '/@/stores/views';
 
 import ImageSummaryTabContent from './ImageSummaryTabContent.svelte';
-import MockResourceStats from './MockResourceStats.svelte';
 import StaleTabPlaceholder from './StaleTabPlaceholder.svelte';
 
 interface Props {
@@ -86,11 +84,6 @@ $effect(() => {
       {:else if subView === 'inspect'}
         <ImageDetailsInspect image={image} />
       {:else}
-        <MockResourceStats
-          resourceId={imageKey(image.id, image.engineId, base64RepoTag)}
-          kind="image"
-          imageName={image.name}
-          imageDigest={image.id} />
         <ImageSummaryTabContent {tabId} image={image} />
       {/if}
     </div>

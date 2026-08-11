@@ -32,7 +32,6 @@ import { markTabStale } from '/@/stores/layout/layout-store.svelte';
 import type { ContainerSubView } from '/@/stores/layout/layout-types';
 
 import ContainerSummaryTabContent from './ContainerSummaryTabContent.svelte';
-import MockResourceStats from './MockResourceStats.svelte';
 import StaleTabPlaceholder from './StaleTabPlaceholder.svelte';
 
 interface Props {
@@ -59,7 +58,6 @@ $effect(() => {
   <div class="flex flex-col h-full min-h-0">
     <div class="grow min-h-0 overflow-auto">
       {#if subView === 'summary'}
-        <MockResourceStats resourceId={container.id} kind="container" running={container.state === 'RUNNING'} />
         <ContainerSummaryTabContent {tabId} container={container} />
       {:else if subView === 'inspect'}
         <ContainerDetailsInspect container={container} />

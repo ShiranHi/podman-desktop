@@ -25,7 +25,9 @@ import VolumeDetailsInspect from '/@/lib/volume/VolumeDetailsInspect.svelte';
 import type { VolumeInfoUI } from '/@/lib/volume/VolumeInfoUI';
 import { volumeKey } from '/@/stores/layout/layout-types';
 
+import EnvironmentField from './summary/EnvironmentField.svelte';
 import InspectCard from './summary/InspectCard.svelte';
+import OverviewField from './summary/OverviewField.svelte';
 import ResourceSummaryHeader from './summary/ResourceSummaryHeader.svelte';
 import SummaryCard from './summary/SummaryCard.svelte';
 
@@ -60,32 +62,16 @@ function openContainer(container: { id: string; names: string[] }): void {
     created={createdDate}
     age={volume.age} />
 
-  <SummaryCard title="Details" icon="fas fa-circle-info">
+  <!-- Same columns as the production Volumes table (minus Actions). -->
+  <SummaryCard title="Overview" icon="fas fa-table-list">
     <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 px-4 pb-3">
-      <div class="flex flex-col">
-        <span class="text-xs text-[var(--pd-content-text)] opacity-60">Size</span>
-        <span class="text-sm font-medium text-[var(--pd-content-header)]">{volume.humanSize}</span>
-      </div>
-      <div class="flex flex-col">
-        <span class="text-xs text-[var(--pd-content-text)] opacity-60">Driver</span>
-        <span class="text-sm font-medium text-[var(--pd-content-header)]">{volume.driver}</span>
-      </div>
-      <div class="flex flex-col">
-        <span class="text-xs text-[var(--pd-content-text)] opacity-60">Scope</span>
-        <span class="text-sm font-medium text-[var(--pd-content-header)]">{volume.scope}</span>
-      </div>
-      <div class="flex flex-col min-w-0 sm:col-span-2">
-        <span class="text-xs text-[var(--pd-content-text)] opacity-60">Mount point</span>
-        <span class="text-sm font-medium text-[var(--pd-content-header)] font-mono truncate" title={volume.mountPoint}>
-          {volume.mountPoint}
-        </span>
-      </div>
-      <div class="flex flex-col min-w-0">
-        <span class="text-xs text-[var(--pd-content-text)] opacity-60">Engine</span>
-        <span class="text-sm font-medium text-[var(--pd-content-header)] truncate" title={volume.engineName}>
-          {volume.engineName}
-        </span>
-      </div>
+      <OverviewField label="Status" value={STATUS_LABEL[volume.status]} />
+      <EnvironmentField engineId={volume.engineId} />
+      <OverviewField label="Age" value={volume.age || 'N/A'} />
+      <OverviewField label="Size" value={volume.humanSize} />
+      <OverviewField label="Driver" value={volume.driver} />
+      <OverviewField label="Scope" value={volume.scope} />
+      <OverviewField label="Mount point" value={volume.mountPoint} title={volume.mountPoint} />
     </div>
   </SummaryCard>
 

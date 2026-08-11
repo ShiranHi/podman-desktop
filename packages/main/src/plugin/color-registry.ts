@@ -1800,15 +1800,16 @@ export class ColorRegistry {
     });
 
     this.registerColor(`${dropdown}item-hover-bg`, {
-      dark: transparent,
-      light: transparent,
+      // Visible hover fill — was transparent, so kebab/dropdown rows had no hover state.
+      dark: charcoal[500],
+      light: gray[200],
       hcDark: accent1[800],
       hcLight: accent1[200],
     });
 
     this.registerColor(`${dropdown}item-hover-text`, {
-      dark: gray[400],
-      light: charcoal[250],
+      dark: white,
+      light: charcoal[900],
       hcDark: white,
       hcLight: black,
     });

@@ -8,6 +8,7 @@ import { router } from 'tinro';
 import ContributionActions from '/@/lib/actions/ContributionActions.svelte';
 import { ContextUI } from '/@/lib/context/context';
 import { withConfirmation } from '/@/lib/dialogs/messagebox-utils';
+import { withPrototypeActionDelay } from '/@/lib/layout/compact-nav-action-status.svelte';
 import ListItemButtonIcon from '/@/lib/ui/ListItemButtonIcon.svelte';
 import { handleNavigation } from '/@/navigation';
 import { context } from '/@/stores/context';
@@ -22,6 +23,8 @@ interface Props {
   onRenameImage: (imageInfo: ImageInfoUI) => void;
   image: ImageInfoUI;
   dropdownMenu?: boolean;
+  /** When true, all actions (including run/delete) go in the kebab menu. */
+  menuOnly?: boolean;
   detailed?: boolean;
   groupContributions?: boolean;
 }
@@ -31,15 +34,18 @@ let {
   onRenameImage,
   image = $bindable(),
   dropdownMenu = false,
+  menuOnly = false,
   detailed = false,
   groupContributions = false,
 }: Props = $props();
+
+const asMenu = $derived(dropdownMenu || menuOnly);
 
 const imageUtils = new ImageUtils();
 
 let contributions: Menu[] = $state([]);
 
-let groupingContributions = $derived(groupContributions && !dropdownMenu && contributions.length > 1);
+let groupingContributions = $derived(groupContributions && !asMenu && contributions.length > 1);
 let globalContext: ContextUI = $derived.by(() => {
   const ctx = new ContextUI();
   const allValues = $context.collectAllValues();
@@ -74,7 +80,11 @@ async function deleteImage(): Promise<void> {
   dispatch('update', image);
 
   try {
-    await imageUtils.deleteImage(image);
+    if (menuOnly) {
+      await withPrototypeActionDelay(() => imageUtils.deleteImage(image));
+    } else {
+      await imageUtils.deleteImage(image);
+    }
   } catch (error) {
     await onError(
       `Error while deleting image: ${error instanceof Error ? error.message : String(error)}`,
@@ -110,32 +120,44 @@ function saveImage(): void {
 }
 </script>
 
-<ListItemButtonIcon title="Run Image" onClick={runImage} detailed={detailed} icon={faPlay} />
+{#if !menuOnly}
+  <ListItemButtonIcon title="Run Image" onClick={runImage} detailed={detailed} icon={faPlay} />
 
-<ListItemButtonIcon
-  title="Delete Image"
-  onClick={(): void => withConfirmation(deleteImage, `delete image ${image.name}:${image.tag}`, { title: 'Delete Image?', variant: 'delete' })}
-  detailed={detailed}
-  icon={faTrash}
-  enabled={image.status === 'UNUSED'} />
+  <ListItemButtonIcon
+    title="Delete Image"
+    onClick={(): void => withConfirmation(deleteImage, `delete image ${image.name}:${image.tag}`, { title: 'Delete Image?', variant: 'delete' })}
+    detailed={detailed}
+    icon={faTrash}
+    enabled={image.status === 'UNUSED'} />
+{/if}
 
-<!-- If dropdownMenu is true, use it, otherwise just show the regular buttons -->
+<!-- If dropdownMenu / menuOnly is true, use kebab; otherwise just show the regular buttons -->
 <ActionsWrapper
-  dropdownMenu={dropdownMenu}
+  dropdownMenu={asMenu}
   onBeforeToggle={(): void => {
     globalContext?.setValue('selectedImageId', image.id);
   }}>
+  {#if menuOnly}
+    <ListItemButtonIcon title="Run Image" onClick={runImage} menu={true} detailed={detailed} icon={faPlay} />
+    <ListItemButtonIcon
+      title="Delete Image"
+      onClick={(): void => withConfirmation(deleteImage, `delete image ${image.name}:${image.tag}`, { title: 'Delete Image?', variant: 'delete' })}
+      menu={true}
+      detailed={detailed}
+      icon={faTrash}
+      enabled={image.status === 'UNUSED'} />
+  {/if}
   <ListItemButtonIcon
     title="Push Image"
     onClick={(): Promise<void> => pushImage(image)}
-    menu={dropdownMenu}
+    menu={asMenu}
     detailed={detailed}
     icon={faArrowUp} />
 
   <ListItemButtonIcon
     title="Edit Image"
     onClick={(): Promise<void> => renameImage(image)}
-    menu={dropdownMenu}
+    menu={asMenu}
     detailed={detailed}
     icon={faEdit} />
 
@@ -143,7 +165,7 @@ function saveImage(): void {
     <ListItemButtonIcon
       title="Show History"
       onClick={showLayersImage}
-      menu={dropdownMenu}
+      menu={asMenu}
       detailed={detailed}
       icon={faLayerGroup} />
   {/if}
@@ -151,14 +173,14 @@ function saveImage(): void {
     title="Save Image"
     tooltip="Save image to a local directory"
     onClick={saveImage}
-    menu={dropdownMenu}
+    menu={asMenu}
     detailed={detailed}
     icon={faDownload} />
 
   <ActionsWrapper dropdownMenu={groupingContributions} dropdownMenuAsMenuActionItem={groupingContributions}>
     <ContributionActions
       args={[image]}
-      dropdownMenu={groupingContributions ? true : dropdownMenu}
+      dropdownMenu={groupingContributions ? true : asMenu}
       contributions={contributions}
       contextPrefix="imageItem"
       detailed={detailed}

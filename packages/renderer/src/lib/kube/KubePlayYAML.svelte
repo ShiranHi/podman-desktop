@@ -4,7 +4,7 @@ import type { OpenDialogOptions } from '@podman-desktop/api';
 import type { ProviderContainerConnectionInfo } from '@podman-desktop/core-api';
 import { NavigationPage } from '@podman-desktop/core-api';
 import type { PlayKubeInput } from '@podman-desktop/core-api/libpod';
-import { Button, Checkbox, ErrorMessage } from '@podman-desktop/ui-svelte';
+import { Button, Checkbox, ErrorMessage, StatusIcon } from '@podman-desktop/ui-svelte';
 import { Icon } from '@podman-desktop/ui-svelte/icons';
 
 import MonacoEditor from '/@/lib/editor/MonacoEditor.svelte';
@@ -175,7 +175,7 @@ function toggle(choice: 'podman' | 'custom'): void {
 {#if providerConnections.length > 0}
   <EngineFormPage title="Create pods from a Kubernetes YAML file" inProgress={runStarted && !runFinished}>
     {#snippet icon()}
-    <KubePlayIcon size="30px" />
+      <StatusIcon icon={KubePlayIcon} size={18} />
     {/snippet}
 
     {#snippet content()}

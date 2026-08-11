@@ -53,8 +53,9 @@ interface Props {
   onAddTab?: (panelId: string, activeTab: TabDescriptor | undefined) => void;
   /** See TabBar's `canOpenInNewSection`. */
   canOpenInNewSection?: (tabId: string) => boolean;
-  /** Per-section actions after maximize (e.g. close section) — not inside the tab strip. */
-  trailing?: Snippet<[string]>;
+  /** Per-section actions after maximize (e.g. close section) — not inside the tab strip.
+   *  Called with panelId and the panel's current tabs so chrome stays in sync with the strip. */
+  trailing?: Snippet<[string, TabDescriptor[]]>;
   /** Far-right chrome after trailing (e.g. global layout settings). */
   globalTrailing?: Snippet<[string]>;
   /** See TabBar's `beforeAdd` — called with this panel's id. */
@@ -145,7 +146,7 @@ const maximizeTip = $derived(maximized ? 'Exit full width' : 'Expand section');
       {/if}
       {#if trailing}
         <div class="flex items-stretch border-b border-l border-[var(--pd-content-divider)] bg-[var(--pd-content-card-bg)]">
-          {@render trailing(panelId)}
+          {@render trailing(panelId, tabs)}
         </div>
       {/if}
       {#if globalTrailing}
@@ -171,7 +172,7 @@ const maximizeTip = $derived(maximized ? 'Exit full width' : 'Expand section');
       {/if}
       {#if trailing}
         <div class="flex items-stretch border-b border-l border-[var(--pd-content-divider)] bg-[var(--pd-content-card-bg)]">
-          {@render trailing(panelId)}
+          {@render trailing(panelId, tabs)}
         </div>
       {/if}
       {#if globalTrailing}

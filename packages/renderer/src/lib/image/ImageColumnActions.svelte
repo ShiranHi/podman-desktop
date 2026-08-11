@@ -8,9 +8,15 @@ import RenameImageModal from './RenameImageModal.svelte';
 
 interface Props {
   object: ImageInfoUI;
+  menuOnly?: boolean;
+  onUpdate?: (image: ImageInfoUI) => void;
 }
 
-let { object }: Props = $props();
+let { object, menuOnly = false, onUpdate }: Props = $props();
+
+function forwardUpdate(event: { detail: ImageInfoUI }): void {
+  onUpdate?.(event.detail);
+}
 
 let pushImageModal = $state(false);
 let pushImageModalImageInfo: ImageInfoUI | undefined = $state(undefined);
@@ -43,7 +49,12 @@ function closeModals(): void {
 <!-- There is no support for interacting with manifests yet, so do not show any manifest-related-image-actions. -->
 
 {#if object.isManifest}
-  <ManifestActions manifest={object} onPushManifest={handlePushManifestModal} dropdownMenu={true} on:update />
+  <ManifestActions
+    manifest={object}
+    onPushManifest={handlePushManifestModal}
+    dropdownMenu={true}
+    menuOnly={menuOnly}
+    on:update={forwardUpdate} />
 
   {#if pushManifestModal && pushManifestModalInfo}
     <PushManifestModal
@@ -56,7 +67,8 @@ function closeModals(): void {
     onPushImage={handlePushImageModal}
     onRenameImage={handleRenameImageModal}
     dropdownMenu={true}
-    on:update />
+    menuOnly={menuOnly}
+    on:update={forwardUpdate} />
 
   {#if pushImageModal && pushImageModalImageInfo}
     <PushImageModal

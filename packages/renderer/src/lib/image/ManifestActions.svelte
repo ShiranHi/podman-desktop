@@ -12,10 +12,20 @@ interface Props {
   onPushManifest: (manifestInfo: ImageInfoUI) => void;
   manifest: ImageInfoUI;
   dropdownMenu?: boolean;
+  /** When true, all actions (including delete) go in the kebab menu. */
+  menuOnly?: boolean;
   detailed?: boolean;
 }
 
-let { onPushManifest, manifest = $bindable(), dropdownMenu = false, detailed = false }: Props = $props();
+let {
+  onPushManifest,
+  manifest = $bindable(),
+  dropdownMenu = false,
+  menuOnly = false,
+  detailed = false,
+}: Props = $props();
+
+const asMenu = $derived(dropdownMenu || menuOnly);
 
 const dispatch = createEventDispatcher<{ update: ImageInfoUI }>();
 
@@ -43,19 +53,30 @@ async function onError(error: string): Promise<void> {
 }
 </script>
 
-<ListItemButtonIcon
-  title="Delete Manifest"
-  onClick={(): void => withConfirmation(deleteManifest, `delete manifest ${manifest.name}`, { title: 'Delete Manifest?', variant: 'delete' })}
-  detailed={detailed}
-  icon={faTrash}
-  enabled={manifest.status === 'UNUSED'} />
+{#if !menuOnly}
+  <ListItemButtonIcon
+    title="Delete Manifest"
+    onClick={(): void => withConfirmation(deleteManifest, `delete manifest ${manifest.name}`, { title: 'Delete Manifest?', variant: 'delete' })}
+    detailed={detailed}
+    icon={faTrash}
+    enabled={manifest.status === 'UNUSED'} />
+{/if}
 
-<!-- If dropdownMenu is true, use it, otherwise just show the regular buttons -->
-<ActionsWrapper dropdownMenu={dropdownMenu}>
+<!-- If dropdownMenu / menuOnly is true, use kebab; otherwise just show the regular buttons -->
+<ActionsWrapper dropdownMenu={asMenu}>
+  {#if menuOnly}
+    <ListItemButtonIcon
+      title="Delete Manifest"
+      onClick={(): void => withConfirmation(deleteManifest, `delete manifest ${manifest.name}`, { title: 'Delete Manifest?', variant: 'delete' })}
+      menu={true}
+      detailed={detailed}
+      icon={faTrash}
+      enabled={manifest.status === 'UNUSED'} />
+  {/if}
   <ListItemButtonIcon
     title="Push Manifest"
     onClick={pushManifest}
-    menu={dropdownMenu}
+    menu={asMenu}
     detailed={detailed}
     icon={faArrowUp} />
 </ActionsWrapper>

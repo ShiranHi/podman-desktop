@@ -4,8 +4,7 @@ import {
   type ProviderContainerConnectionInfo,
   type SecretCreateOptions,
 } from '@podman-desktop/core-api';
-import { Button, ErrorMessage, Input } from '@podman-desktop/ui-svelte';
-import { Icon } from '@podman-desktop/ui-svelte/icons';
+import { Button, ErrorMessage, Input, StatusIcon } from '@podman-desktop/ui-svelte';
 
 import ContainerConnectionDropdown from '/@/lib/forms/ContainerConnectionDropdown.svelte';
 import SecretIcon from '/@/lib/images/SecretIcon.svelte';
@@ -63,7 +62,7 @@ function close(): void {
 
 <EngineFormPage title="Create a secret" showEmptyScreen={providerConnections.length === 0}>
   {#snippet icon()}
-    <Icon icon={SecretIcon} size={27} />
+    <StatusIcon icon={SecretIcon} size={18} />
   {/snippet}
   {#snippet content()}
     <div class="space-y-6">

@@ -43,29 +43,33 @@ export function onButtonClick(e: MouseEvent): void {
 <svelte:window onkeyup={handleEscape} onclick={onWindowClick} />
 
 {#if showMenu}
-  <DropdownMenu.Items clientY={clientY} clientX={clientX}>
-    <DropdownMenu.Item
-      title="Manage authentication"
-      icon={faKey}
-      onClick={(): void => handleNavigation({ page: NavigationPage.AUTHENTICATION })} />
+  <!-- Fixed anchor at the click point so the menu is not clipped by overflow:hidden ancestors
+       (e.g. compact nav) and does not jump to the top of a distant relative parent. -->
+  <div class="fixed z-50 w-0 h-0" style:left="{clientX}px" style:top="{clientY}px">
+    <DropdownMenu.Items clientY={clientY} clientX={clientX}>
+      <DropdownMenu.Item
+        title="Manage authentication"
+        icon={faKey}
+        onClick={(): void => handleNavigation({ page: NavigationPage.AUTHENTICATION })} />
 
-    {#each $authenticationProviders as provider (provider.id)}
-      {@const sessionRequests = provider.sessionRequests ?? []}
-      {#if provider?.accounts?.length > 0}
-        {#each provider.accounts as account (account.id)}
+      {#each $authenticationProviders as provider (provider.id)}
+        {@const sessionRequests = provider.sessionRequests ?? []}
+        {#if provider?.accounts?.length > 0}
+          {#each provider.accounts as account (account.id)}
+            <DropdownMenu.Item
+              title="Sign out of {provider.displayName} ({account.label})"
+              onClick={(): Promise<void> => window.requestAuthenticationProviderSignOut(provider.id, account.id)}
+              icon={faSignOut} />
+          {/each}
+        {/if}
+
+        {#each sessionRequests as request (request.id)}
           <DropdownMenu.Item
-            title="Sign out of {provider.displayName} ({account.label})"
-            onClick={(): Promise<void> => window.requestAuthenticationProviderSignOut(provider.id, account.id)}
-            icon={faSignOut} />
+            title="Sign in with {provider.displayName} to use {request.extensionLabel}"
+            onClick={(): Promise<void> => window.requestAuthenticationProviderSignIn(request.id)}
+            icon={faSignIn} />
         {/each}
-      {/if}
-
-      {#each sessionRequests as request (request.id)}
-        <DropdownMenu.Item
-          title="Sign in with {provider.displayName} to use {request.extensionLabel}"
-          onClick={(): Promise<void> => window.requestAuthenticationProviderSignIn(request.id)}
-          icon={faSignIn} />
       {/each}
-    {/each}
-  </DropdownMenu.Items>
+    </DropdownMenu.Items>
+  </div>
 {/if}
