@@ -7,12 +7,11 @@ import type { EngineInfoUI } from './EngineInfoUI';
 interface Props {
   type: 'containers' | 'images' | 'pods' | 'volumes'; // Imported type for prune (containers, images, pods, volumes)
   engines: EngineInfoUI[]; // List of engines that the prune will work on
+  /** When true, render as a dropdown menu item instead of a header Button. */
+  asMenuItem?: boolean;
 }
 
-let { type, engines }: Props = $props();
-
-/** When true, render as a dropdown menu item instead of a header Button. */
-export let asMenuItem = false;
+let { type, engines, asMenuItem = false }: Props = $props();
 
 const LABEL_IMAGE_UNUSED = 'All unused images';
 const LABEL_IMAGE_UNTAGGED = 'All untagged images';
