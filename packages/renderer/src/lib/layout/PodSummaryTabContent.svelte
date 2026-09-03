@@ -25,7 +25,7 @@
 // actually running in the pod that the old view never showed at all.
 import type { Port } from '@podman-desktop/api';
 import { NavigationPage } from '@podman-desktop/core-api';
-import { Link, StatusIcon } from '@podman-desktop/ui-svelte';
+import { Button, Link, StatusIcon } from '@podman-desktop/ui-svelte';
 
 import PodIcon from '/@/lib/images/PodIcon.svelte';
 import PodDetailsInspect from '/@/lib/pod/PodDetailsInspect.svelte';
@@ -35,6 +35,7 @@ import { containersInfos } from '/@/stores/containers';
 import { podKey } from '/@/stores/layout/layout-types';
 
 import MockResourceStats from './MockResourceStats.svelte';
+import { openContainerInWorkspace } from './resource-open-actions';
 import EnvironmentField from './summary/EnvironmentField.svelte';
 import InspectCard from './summary/InspectCard.svelte';
 import OverviewField from './summary/OverviewField.svelte';
@@ -71,6 +72,10 @@ const allPorts = $derived(enrichedContainers.flatMap(c => c.ports.map(port => ({
 
 function navigateToLogs(container: PodInfoContainerUI): void {
   return handleNavigation({ page: NavigationPage.CONTAINER_LOGS, parameters: { id: container.Id } });
+}
+
+function openContainerTab(container: PodInfoContainerUI): void {
+  openContainerInWorkspace({ id: container.Id, name: container.Names }, 'newTab');
 }
 
 // Podman's own infra/pause container legitimately reports an empty Image (it has none to
@@ -125,6 +130,12 @@ function imageLabel(image: string | undefined): string {
               </span>
             </div>
             <span class="text-xs text-[var(--pd-content-text)] opacity-70 lowercase shrink-0">{container.Status}</span>
+            <Button
+              type="secondary"
+              on:click={openContainerTab.bind(undefined, container)}
+              title="Open {container.Names} in a new tab">
+              Open in new tab
+            </Button>
           </div>
         {/each}
       </div>

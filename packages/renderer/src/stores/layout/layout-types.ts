@@ -24,6 +24,7 @@ import type { TabDescriptor } from '@podman-desktop/ui-svelte';
 
 export type WorkspaceResourceType =
   | 'app-page'
+  | 'app-preview'
   | 'container'
   | 'pod'
   | 'image'
@@ -93,6 +94,7 @@ export interface WorkspaceTab extends TabDescriptor {
 export function subViewsForResourceType(resourceType: WorkspaceResourceType): readonly SubView[] {
   switch (resourceType) {
     case 'app-page':
+    case 'app-preview':
       return [];
     case 'container':
       // 'tty' is an auto-detected special case (see ContainerTabContent), not something to offer manually.

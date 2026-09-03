@@ -68,6 +68,23 @@ export function openContainerInWorkspace(container: { id: string; name: string }
   gotoWorkspace();
 }
 
+export function openContainerPreviewInWorkspace(
+  container: { name: string; openingUrl: string },
+  mode: OpenMode = 'newTab',
+): void {
+  openTab(
+    {
+      resourceType: 'app-preview',
+      resourceId: container.openingUrl,
+      title: `${container.name} · Preview`,
+      subtitle: container.openingUrl,
+      iconClass: 'fas fa-globe',
+    },
+    mode,
+  );
+  gotoWorkspace();
+}
+
 export function openPodInWorkspace(pod: { name: string; engineId: string }, mode: OpenMode): void {
   openTab(
     {

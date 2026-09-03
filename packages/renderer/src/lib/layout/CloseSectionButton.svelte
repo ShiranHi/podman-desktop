@@ -25,7 +25,7 @@ import type { TabDescriptor } from '@podman-desktop/ui-svelte';
 import { Tooltip } from '@podman-desktop/ui-svelte';
 import { Icon } from '@podman-desktop/ui-svelte/icons';
 
-import { closeAllInPanel } from '/@/stores/layout/layout-store.svelte';
+import { closeSection } from '/@/stores/layout/layout-store.svelte';
 import { PAGE_TAB_ID } from '/@/stores/layout/page-tab.svelte';
 
 interface Props {
@@ -36,12 +36,12 @@ interface Props {
 
 let { panelId, tabs }: Props = $props();
 
-const canClose = $derived(tabs.some(tab => tab.id !== PAGE_TAB_ID && !tab.permanent && !tab.pinned));
+const canClose = $derived(tabs.some(tab => tab.id !== PAGE_TAB_ID && !tab.permanent));
 const tip = $derived(canClose ? 'Close section' : 'No tabs to close in this section');
 
 function onClose(): void {
   if (!canClose) return;
-  closeAllInPanel(panelId);
+  closeSection(panelId);
 }
 </script>
 

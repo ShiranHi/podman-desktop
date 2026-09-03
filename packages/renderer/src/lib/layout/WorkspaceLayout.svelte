@@ -28,19 +28,18 @@ import { EmptyScreen, PanelGroup } from '@podman-desktop/ui-svelte';
 
 import {
   canMoveTabToNewSection,
+  canMoveTabUp,
   closeActiveTab,
-  closeAllInPanel,
-  closeOthers,
   closeTab,
   cycleActiveTab,
   ensurePageTab,
+  findFirstLeaf,
   findLeaf,
   focusPanel,
-  getLastLeafId,
   getTabsForPanel,
   layoutState,
   moveTabFromOtherPanel,
-  moveToNewPanel,
+  moveTabUp,
   pinToggle,
   reorderTab,
   resizeSplit,
@@ -74,6 +73,7 @@ import { currentScreen } from '/@/stores/prototype';
 import ActionTabContent from './ActionTabContent.svelte';
 import AgentLayoutBanner from './AgentLayoutBanner.svelte';
 import AppPageTabContent from './AppPageTabContent.svelte';
+import AppPreviewTabContent from './AppPreviewTabContent.svelte';
 import CloseSectionButton from './CloseSectionButton.svelte';
 import ComposeTabContent from './ComposeTabContent.svelte';
 import ContainerTabContent from './ContainerTabContent.svelte';
@@ -156,14 +156,13 @@ function openNewTabPalette(panelId: string, activeTab: TabDescriptor | undefined
       onFocusPanel={focusPanel}
       onSelectTab={selectTab}
       onCloseTab={closeTab}
-      onCloseOthers={closeOthers}
-      onCloseAllInPanel={closeAllInPanel}
       onPinToggle={pinToggle}
       onReorder={reorderTab}
       onMoveFromOtherPanel={moveTabFromOtherPanel}
       onSplitRight={splitRight}
       onSplitDown={splitDown}
-      onMoveToNewPanel={moveToNewPanel}
+      onMoveUp={moveTabUp}
+      canMoveUp={canMoveTabUp}
       onToggleMaximize={toggleMaximize}
       onResizeSplit={resizeSplit}
       onAddTab={openNewTabPalette}
@@ -172,8 +171,9 @@ function openNewTabPalette(panelId: string, activeTab: TabDescriptor | undefined
         <CloseSectionButton panelId={panelId} {tabs} />
       {/snippet}
       {#snippet globalTrailing(panelId)}
-        <!-- Global settings once: far right of last section (or maximized section). -->
-        {#if panelId === (layoutState.maximizedPanelId ?? getLastLeafId())}
+        <!-- Global settings once: keep it in the topmost section even when users build
+             deeply nested rows and columns. A maximized section temporarily owns it. -->
+        {#if panelId === (layoutState.maximizedPanelId ?? findFirstLeaf(layoutState.tree).id)}
           <LayoutToolbar panelId={panelId} />
         {/if}
       {/snippet}
@@ -186,6 +186,8 @@ function openNewTabPalette(panelId: string, activeTab: TabDescriptor | undefined
         {@const tab = tabDescriptor as WorkspaceTab}
         {#if tab.resourceType === 'app-page'}
           <AppPageTabContent />
+        {:else if tab.resourceType === 'app-preview'}
+          <AppPreviewTabContent url={tab.resourceId} title={tab.title} />
         {:else if tab.resourceType === 'container'}
           <ContainerTabContent tabId={tab.id} containerId={tab.resourceId} subView={tab.subView as ContainerSubView} />
         {:else if tab.resourceType === 'pod'}

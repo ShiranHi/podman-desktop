@@ -21,13 +21,14 @@
 // applied to pods. Keeps every fact the old ContainerDetailsSummary table showed (image, ports,
 // labels, pod/compose group) but groups them into scannable cards instead of one long table.
 import { faExternalLink } from '@fortawesome/free-solid-svg-icons';
-import { Link, Tooltip } from '@podman-desktop/ui-svelte';
+import { Button, Link, Tooltip } from '@podman-desktop/ui-svelte';
 import { ContainerIcon, Icon } from '@podman-desktop/ui-svelte/icons';
 import { router } from 'tinro';
 
 import ContainerDetailsInspect from '/@/lib/container/ContainerDetailsInspect.svelte';
 import type { ContainerInfoUI } from '/@/lib/container/ContainerInfoUI';
 import { ContainerGroupInfoTypeUI } from '/@/lib/container/ContainerInfoUI';
+import { openContainerPreviewInWorkspace } from '/@/lib/layout/resource-open-actions';
 
 import MockResourceStats from './MockResourceStats.svelte';
 import EnvironmentField from './summary/EnvironmentField.svelte';
@@ -53,6 +54,11 @@ function portUrl(port: number): string {
 
 function openPort(port: number): void {
   window.openExternal(portUrl(port)).catch((err: unknown) => console.error(`Error opening port ${port}`, err));
+}
+
+function openPreview(): void {
+  if (!container.openingUrl) return;
+  openContainerPreviewInWorkspace({ name: container.name, openingUrl: container.openingUrl });
 }
 </script>
 
@@ -93,6 +99,13 @@ function openPort(port: number): void {
 
   {#if container.hasPublicPort}
     <SummaryCard title="Network" icon="fas fa-network-wired">
+      {#snippet trailing()}
+        {#if container.openingUrl}
+          <Button type="secondary" on:click={openPreview} title="Open running app preview in a tab">
+            Open preview in tab
+          </Button>
+        {/if}
+      {/snippet}
       <div class="flex flex-col gap-2 px-4 pb-3 text-sm">
         {#each container.ports as port, i (`${port.IP ?? ''}-${port.PublicPort}-${port.Type}-${i}`)}
           <div class="flex items-baseline gap-3">

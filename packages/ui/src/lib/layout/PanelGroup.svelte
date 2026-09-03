@@ -38,8 +38,6 @@ interface Props {
   onFocusPanel: (panelId: string) => void;
   onSelectTab: (panelId: string, tabId: string) => void;
   onCloseTab: (panelId: string, tabId: string) => void;
-  onCloseOthers: (panelId: string, tabId: string) => void;
-  onCloseAllInPanel: (panelId: string) => void;
   onPinToggle: (panelId: string, tabId: string) => void;
   onReorder: (panelId: string, tabId: string, beforeTabId: string | undefined) => void;
   onMoveFromOtherPanel: (
@@ -50,7 +48,8 @@ interface Props {
   ) => void;
   onSplitRight: (panelId: string, tabId: string) => void;
   onSplitDown: (panelId: string, tabId: string) => void;
-  onMoveToNewPanel: (panelId: string, tabId: string) => void;
+  onMoveUp?: (panelId: string, tabId: string) => void;
+  canMoveUp?: (tabId: string) => boolean;
   onToggleMaximize: (panelId: string) => void;
   onResizeSplit: (splitId: string, sizes: number[]) => void;
   /** See Panel's `onAddTab`. */
@@ -136,15 +135,14 @@ function equalize(_index: number): void {
     onFocus={(): void => props.onFocusPanel(leaf.id)}
     onSelect={(tabId): void => props.onSelectTab(leaf.id, tabId)}
     onClose={(tabId): void => props.onCloseTab(leaf.id, tabId)}
-    onCloseOthers={(tabId): void => props.onCloseOthers(leaf.id, tabId)}
-    onCloseAllInPanel={(): void => props.onCloseAllInPanel(leaf.id)}
     onPinToggle={(tabId): void => props.onPinToggle(leaf.id, tabId)}
     onReorder={(tabId, beforeTabId): void => props.onReorder(leaf.id, tabId, beforeTabId)}
     onMoveFromOtherPanel={(sourcePanelId, tabId, beforeTabId): void =>
       props.onMoveFromOtherPanel(leaf.id, sourcePanelId, tabId, beforeTabId)}
     onSplitRight={(tabId): void => props.onSplitRight(leaf.id, tabId)}
     onSplitDown={(tabId): void => props.onSplitDown(leaf.id, tabId)}
-    onMoveToNewPanel={(tabId): void => props.onMoveToNewPanel(leaf.id, tabId)}
+    onMoveUp={props.onMoveUp ? (tabId): void => props.onMoveUp?.(leaf.id, tabId) : undefined}
+    canMoveUp={props.canMoveUp}
     onToggleMaximize={(): void => props.onToggleMaximize(leaf.id)}
     onAddTab={props.onAddTab}
     canOpenInNewSection={props.canOpenInNewSection}
@@ -174,14 +172,13 @@ function equalize(_index: number): void {
           onFocusPanel={props.onFocusPanel}
           onSelectTab={props.onSelectTab}
           onCloseTab={props.onCloseTab}
-          onCloseOthers={props.onCloseOthers}
-          onCloseAllInPanel={props.onCloseAllInPanel}
           onPinToggle={props.onPinToggle}
           onReorder={props.onReorder}
           onMoveFromOtherPanel={props.onMoveFromOtherPanel}
           onSplitRight={props.onSplitRight}
           onSplitDown={props.onSplitDown}
-          onMoveToNewPanel={props.onMoveToNewPanel}
+          onMoveUp={props.onMoveUp}
+          canMoveUp={props.canMoveUp}
           onToggleMaximize={props.onToggleMaximize}
           onResizeSplit={props.onResizeSplit}
           onAddTab={props.onAddTab}

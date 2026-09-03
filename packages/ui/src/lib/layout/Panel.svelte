@@ -40,14 +40,13 @@ interface Props {
   onFocus: () => void;
   onSelect: (tabId: string) => void;
   onClose: (tabId: string) => void;
-  onCloseOthers: (tabId: string) => void;
-  onCloseAllInPanel: () => void;
   onPinToggle: (tabId: string) => void;
   onReorder: (tabId: string, beforeTabId: string | undefined) => void;
   onMoveFromOtherPanel: (sourcePanelId: string, tabId: string, beforeTabId: string | undefined) => void;
   onSplitRight: (tabId: string) => void;
   onSplitDown: (tabId: string) => void;
-  onMoveToNewPanel: (tabId: string) => void;
+  onMoveUp?: (tabId: string) => void;
+  canMoveUp?: (tabId: string) => boolean;
   onToggleMaximize: () => void;
   /** See TabBar's `onAddTab` - resolved here against this panel's own active tab. */
   onAddTab?: (panelId: string, activeTab: TabDescriptor | undefined) => void;
@@ -76,14 +75,13 @@ let {
   onFocus,
   onSelect,
   onClose,
-  onCloseOthers,
-  onCloseAllInPanel,
   onPinToggle,
   onReorder,
   onMoveFromOtherPanel,
   onSplitRight,
   onSplitDown,
-  onMoveToNewPanel,
+  onMoveUp,
+  canMoveUp,
   onToggleMaximize,
   onAddTab,
   canOpenInNewSection,
@@ -115,14 +113,13 @@ const maximizeTip = $derived(maximized ? 'Exit full width' : 'Expand section');
           {activeTabId}
           {onSelect}
           {onClose}
-          {onCloseOthers}
-          {onCloseAllInPanel}
           {onPinToggle}
           {onReorder}
           {onMoveFromOtherPanel}
           {onSplitRight}
           {onSplitDown}
-          {onMoveToNewPanel}
+          {onMoveUp}
+          {canMoveUp}
           {canOpenInNewSection}
           onAddTab={onAddTab ? (): void => onAddTab(panelId, activeTab) : undefined}>
           {#snippet beforeAdd()}

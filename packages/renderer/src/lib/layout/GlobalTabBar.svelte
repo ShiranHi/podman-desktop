@@ -26,14 +26,13 @@ import { router } from 'tinro';
 
 import {
   canMoveTabToNewSection,
-  closeAllTabsEverywhere,
-  closeAllTabsExcept,
+  canMoveTabUp,
   closeTabById,
   findLeaf,
   findLeafContainingTab,
   getAllTabsOrdered,
   layoutState,
-  moveToNewPanelAnyPanel,
+  moveTabUpAnyPanel,
   pinToggle,
   reorderTabGlobal,
   selectTabAnyPanel,
@@ -79,32 +78,18 @@ function onClose(tabId: string): void {
   closeTabById(tabId);
 }
 
-function onCloseOthers(tabId: string): void {
-  if (isPageTabId(tabId)) {
-    closeAllTabsEverywhere();
-    selectPageTab();
-    return;
-  }
-  closeAllTabsExcept(tabId);
-}
-
-function onCloseAll(): void {
-  closeAllTabsEverywhere();
-  selectPageTab();
-}
-
 function onPin(tabId: string): void {
   if (isPageTabId(tabId)) return;
   pinToggle('global-tab-bar', tabId);
 }
 
 function onReorder(tabId: string, beforeTabId: string | undefined): void {
-  if (isPageTabId(tabId) || isPageTabId(beforeTabId)) return;
+  if (isPageTabId(tabId)) return;
   reorderTabGlobal(tabId, beforeTabId);
 }
 
 function onMoveFromOther(_sourcePanelId: string, tabId: string, beforeTabId: string | undefined): void {
-  if (isPageTabId(tabId) || isPageTabId(beforeTabId)) return;
+  if (isPageTabId(tabId)) return;
   reorderTabGlobal(tabId, beforeTabId);
 }
 
@@ -122,9 +107,9 @@ function onSplitDown(tabId: string): void {
   router.goto('/workspace');
 }
 
-function onMoveToNewPanel(tabId: string): void {
+function onMoveUp(tabId: string): void {
   if (isPageTabId(tabId)) return;
-  moveToNewPanelAnyPanel(tabId);
+  moveTabUpAnyPanel(tabId);
   markResourceTabActive();
   router.goto('/workspace');
 }
@@ -153,14 +138,13 @@ function closeNewTabPalette(opened?: boolean): void {
   {activeTabId}
   {onSelect}
   onClose={onClose}
-  onCloseOthers={onCloseOthers}
-  onCloseAllInPanel={onCloseAll}
   onPinToggle={onPin}
   onReorder={onReorder}
   onMoveFromOtherPanel={onMoveFromOther}
   onSplitRight={onSplitRight}
   onSplitDown={onSplitDown}
-  onMoveToNewPanel={onMoveToNewPanel}
+  {onMoveUp}
+  canMoveUp={canMoveTabUp}
   canOpenInNewSection={canMoveTabToNewSection}
   onAddTab={openNewTabPalette}>
   {#snippet trailing()}

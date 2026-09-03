@@ -486,6 +486,19 @@ export function closeAllInPanel(panelId: string): void {
   }
 }
 
+/** Explicit section close removes every non-permanent tab, including pinned tabs. */
+export function closeSection(panelId: string): void {
+  const leaf = findLeaf(layoutState.tree, panelId);
+  if (!leaf) return;
+  for (const tabId of [...leaf.tabIds]) {
+    if (tabId === PAGE_TAB_ID || layoutState.tabs[tabId]?.permanent) continue;
+    removeTabFromLeaf(leaf, tabId);
+    delete layoutState.tabs[tabId];
+  }
+  if (leaf.tabIds.length === 0) pruneEmptyLeaf(leaf.id);
+  if (resourceTabCount() === 0 && usesPermanentPageTab(get(currentScreen))) activatePageTab();
+}
+
 export function pinToggle(_panelId: string, tabId: string): void {
   if (tabId === PAGE_TAB_ID) return;
   const tab = layoutState.tabs[tabId];
@@ -499,7 +512,7 @@ export function reorderTab(panelId: string, tabId: string, beforeTabId: string |
   const from = leaf.tabIds.indexOf(tabId);
   if (from === -1) return;
   leaf.tabIds.splice(from, 1);
-  const to = beforeTabId ? leaf.tabIds.indexOf(beforeTabId) : leaf.tabIds.length;
+  const to = beforeTabId === PAGE_TAB_ID ? 1 : beforeTabId ? leaf.tabIds.indexOf(beforeTabId) : leaf.tabIds.length;
   leaf.tabIds.splice(to === -1 ? leaf.tabIds.length : to, 0, tabId);
 }
 
@@ -514,7 +527,8 @@ export function moveTabFromOtherPanel(
   const targetLeaf = findLeaf(layoutState.tree, targetPanelId);
   if (!sourceLeaf || !targetLeaf || sourceLeaf.id === targetLeaf.id) return;
   removeTabFromLeaf(sourceLeaf, tabId);
-  const to = beforeTabId ? targetLeaf.tabIds.indexOf(beforeTabId) : targetLeaf.tabIds.length;
+  const to =
+    beforeTabId === PAGE_TAB_ID ? 1 : beforeTabId ? targetLeaf.tabIds.indexOf(beforeTabId) : targetLeaf.tabIds.length;
   targetLeaf.tabIds.splice(to === -1 ? targetLeaf.tabIds.length : to, 0, tabId);
   targetLeaf.activeTabId = tabId;
   layoutState.focusedPanelId = targetLeaf.id;
@@ -529,6 +543,34 @@ export function splitRight(panelId: string, tabId: string): void {
 export function splitDown(panelId: string, tabId: string): void {
   if (tabId === PAGE_TAB_ID) return;
   moveTabToNewLeaf(panelId, tabId, splitLeaf(panelId, 'column', 'after'));
+}
+
+function findMoveUpContext(node: PanelNode, leafId: string): { parent: SplitPanelNode; index: number } | undefined {
+  if (node.kind === 'leaf') return undefined;
+  for (const child of node.children) {
+    const nested = findMoveUpContext(child, leafId);
+    if (nested) return nested;
+  }
+  if (node.direction !== 'column') return undefined;
+  const index = node.children.findIndex(child => !!findLeaf(child, leafId));
+  return index > 0 ? { parent: node, index } : undefined;
+}
+
+export function canMoveTabUp(tabId: string): boolean {
+  const leaf = findLeafContainingTab(layoutState.tree, tabId);
+  return !!leaf && !!findMoveUpContext(layoutState.tree, leaf.id);
+}
+
+export function moveTabUp(panelId: string, tabId: string): void {
+  const sourceLeaf = findLeaf(layoutState.tree, panelId);
+  const context = sourceLeaf ? findMoveUpContext(layoutState.tree, sourceLeaf.id) : undefined;
+  if (!sourceLeaf || !context) return;
+  const destinationLeaf = findLastLeaf(context.parent.children[context.index - 1]);
+  removeTabFromLeaf(sourceLeaf, tabId);
+  destinationLeaf.tabIds.push(tabId);
+  destinationLeaf.activeTabId = tabId;
+  layoutState.focusedPanelId = destinationLeaf.id;
+  if (sourceLeaf.tabIds.length === 0) pruneEmptyLeaf(sourceLeaf.id);
 }
 
 export function moveToNewPanel(panelId: string, tabId: string): void {
@@ -719,7 +761,12 @@ export function closeAllTabsEverywhere(): void {
 export function reorderTabGlobal(tabId: string, beforeTabId: string | undefined): void {
   const sourceLeaf = findLeafContainingTab(layoutState.tree, tabId);
   if (!sourceLeaf) return;
-  const targetLeaf = beforeTabId ? findLeafContainingTab(layoutState.tree, beforeTabId) : sourceLeaf;
+  const targetLeaf =
+    beforeTabId === PAGE_TAB_ID
+      ? findFirstLeaf(layoutState.tree)
+      : beforeTabId
+        ? findLeafContainingTab(layoutState.tree, beforeTabId)
+        : sourceLeaf;
   if (!targetLeaf) return;
   if (targetLeaf.id === sourceLeaf.id) {
     reorderTab(sourceLeaf.id, tabId, beforeTabId);
@@ -737,6 +784,11 @@ export function splitRightAnyPanel(tabId: string): void {
 export function splitDownAnyPanel(tabId: string): void {
   const leaf = findLeafContainingTab(layoutState.tree, tabId);
   if (leaf) splitDown(leaf.id, tabId);
+}
+
+export function moveTabUpAnyPanel(tabId: string): void {
+  const leaf = findLeafContainingTab(layoutState.tree, tabId);
+  if (leaf) moveTabUp(leaf.id, tabId);
 }
 
 export function moveToNewPanelAnyPanel(tabId: string): void {

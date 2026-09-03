@@ -53,6 +53,7 @@ interface Props {
 let { searchTerm = '' }: Props = $props();
 
 let selectedEnvironment = $state('');
+let selectedContainerLabel = $state('');
 
 function fromExistingImage(): void {
   openChoiceModal = false;
@@ -252,6 +253,14 @@ let enginesList = $derived.by(() => {
   return engines.filter((engine, index, self) => index === self.findIndex(t => t.name === engine.name));
 });
 
+let containerLabels = $derived.by(() => {
+  const labels = new Set<string>();
+  for (const container of currentContainers) {
+    for (const [key, value] of Object.entries(container.labels)) labels.add(`${key}=${value}`);
+  }
+  return [...labels].toSorted();
+});
+
 // groups of containers that will be displayed
 let containerGroups = $derived.by(() => {
   let computedContainerGroups = containerUtils.getContainerGroups(currentContainers);
@@ -274,6 +283,12 @@ let containerGroups = $derived.by(() => {
       .filter(containerInfo => {
         if (!selectedEnvironment) return true;
         return containerInfo.engineId === selectedEnvironment;
+      })
+      .filter(containerInfo => {
+        if (!selectedContainerLabel) return true;
+        return Object.entries(containerInfo.labels).some(
+          ([key, value]) => `${key}=${value}` === selectedContainerLabel,
+        );
       });
   });
   // Remove groups with all containers filtered
@@ -472,6 +487,19 @@ function label(item: ContainerGroupInfoUI | ContainerInfoUI): string {
       >Running</Button>
     <Button type="tab" on:click={setStoppedFilter} selected={containerUtils.filterIsStopped(searchTerm)}
       >Stopped</Button>
+    {#if isTabsLayoutScreen($currentScreen) && containerLabels.length > 0}
+      <label class="self-center ml-3 flex items-center gap-2 text-xs whitespace-nowrap">
+        <span class="opacity-70">Group by label</span>
+        <select
+          class="max-w-64 rounded border border-[var(--pd-content-divider)] bg-[var(--pd-content-card-bg)] px-2 py-1 text-[var(--pd-content-text)]"
+          bind:value={selectedContainerLabel}>
+          <option value="">All labels</option>
+          {#each containerLabels as containerLabel (containerLabel)}
+            <option value={containerLabel}>{containerLabel}</option>
+          {/each}
+        </select>
+      </label>
+    {/if}
   {/snippet}
 
   {#snippet content()}
