@@ -1,10 +1,12 @@
 <script lang="ts">
 import { CloseButton, NavPage } from '@podman-desktop/ui-svelte';
 
+import { currentScreen } from '/@/stores/prototype';
 import { filtered, searchPattern } from '/@/stores/tasks';
 
 import TaskManagerBulkDeleteButton from './button/TaskManagerBulkDeleteButton.svelte';
 import TaskManagerClearAllButton from './button/TaskManagerClearAllButton.svelte';
+import RedHatSupportNotificationPrototype from './RedHatSupportNotificationPrototype.svelte';
 import TaskManagerNoFilteredTasks from './screen/TaskManagerNoFilteredTasks.svelte';
 import TaskManagerTable from './table/TaskManagerTable.svelte';
 import TaskManagerBottomArrow from './TaskManagerBottomArrow.svelte';
@@ -33,6 +35,12 @@ function hide(): void {
 // update the search pattern store when the variable is updated
 $effect(() => {
   searchPattern.set(searchTerm);
+});
+
+$effect(() => {
+  if ($currentScreen === 'notifications') {
+    showTaskManager = true;
+  }
 });
 
 // task or tasks depending on the number of selected items
@@ -65,11 +73,14 @@ const taskWordPlural = $derived(selectedItemsNumber > 1 ? 'tasks' : 'task');
       {/snippet}
 
       {#snippet content()}
-      <div class="flex min-w-full grow">
-        <TaskManagerTable bind:selectedItemsNumber={selectedItemsNumber} tasks={$filtered} />
-        {#if $filtered.length === 0}
-          <TaskManagerNoFilteredTasks bind:searchTerm={searchTerm} />
-        {/if}
+      <div class="flex min-w-full grow flex-col">
+        <RedHatSupportNotificationPrototype />
+        <div class="flex min-w-full grow">
+          <TaskManagerTable bind:selectedItemsNumber={selectedItemsNumber} tasks={$filtered} />
+          {#if $filtered.length === 0}
+            <TaskManagerNoFilteredTasks bind:searchTerm={searchTerm} />
+          {/if}
+        </div>
       </div>
       {/snippet}
     </NavPage>

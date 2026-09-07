@@ -3,6 +3,7 @@ import type { StatusBarEntry } from '@podman-desktop/core-api';
 import { ExperimentalTasksSettings } from '@podman-desktop/core-api';
 import { onDestroy, onMount } from 'svelte';
 
+import RedHatSupportPrototype from '/@/lib/statusbar/RedHatSupportPrototype.svelte';
 import TaskIndicator from '/@/lib/statusbar/TaskIndicator.svelte';
 import { isHighContrast } from '/@/stores/appearance';
 import { onDidChangeConfiguration } from '/@/stores/configurationProperties';
@@ -96,6 +97,7 @@ onDestroy(() => {
     {#each rightEntries as entry, index (index)}
       <StatusBarItem entry={entry} />
     {/each}
+    <RedHatSupportPrototype />
     {#if experimentalTaskStatusBar}
       <TaskIndicator />
     {/if}

@@ -81,6 +81,7 @@ import TaskManager from './lib/task-manager/TaskManager.svelte';
 import ToastHandler from './lib/toast/ToastHandler.svelte';
 import ToastTaskNotifications from './lib/toast/ToastTaskNotifications.svelte';
 import TroubleshootingPage from './lib/troubleshooting/TroubleshootingPage.svelte';
+import PrototypeRegistration from './lib/ui/PrototypeRegistration.svelte';
 import TitleBar from './lib/ui/TitleBar.svelte';
 import CreateVolume from './lib/volume/CreateVolume.svelte';
 import VolumeDetails from './lib/volume/VolumeDetails.svelte';
@@ -170,6 +171,7 @@ tablePersistence.storage = new PodmanDesktopStoragePersist();
     <IconsStyle />
     <Appearance />
     <TitleBar />
+    <PrototypeRegistration />
     <ContextKey />
 
     <WelcomePage />
