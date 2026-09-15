@@ -297,7 +297,7 @@ function contextMenuActions(tabId: string): ContextMenuAction[] {
   const tab = tabs.find(t => t.id === tabId);
   const canSplit = sectionOpenAllowed(tabId);
   const moveUpAllowed = canMoveUp?.(tabId) ?? false;
-  const pinnedReason = tab?.pinned ? 'Tab is pinned' : undefined;
+  const splitReason = tab?.pinned ? 'Tab is pinned' : !canSplit ? 'Keep at least one tab in this section' : undefined;
   if (tab?.permanent) return [];
   return [
     { id: 'close', title: 'Close Tab', iconClass: 'fas fa-xmark', onSelect: (): void => onClose(tabId) },
@@ -311,7 +311,7 @@ function contextMenuActions(tabId: string): ContextMenuAction[] {
     {
       id: 'split-right',
       title: 'Split Right',
-      tooltip: !canSplit ? pinnedReason : undefined,
+      tooltip: !canSplit ? splitReason : undefined,
       iconClass: 'fas fa-table-columns',
       disabled: !canSplit,
       separatorBefore: true,
@@ -320,7 +320,7 @@ function contextMenuActions(tabId: string): ContextMenuAction[] {
     {
       id: 'split-down',
       title: moveUpAllowed ? 'Move Up' : 'Split Down',
-      tooltip: !moveUpAllowed && !canSplit ? pinnedReason : undefined,
+      tooltip: !moveUpAllowed && !canSplit ? splitReason : undefined,
       iconClass: moveUpAllowed ? 'fas fa-arrow-up' : 'fas fa-grip-lines',
       disabled: !moveUpAllowed && !canSplit,
       onSelect: (): void => (moveUpAllowed ? onMoveUp?.(tabId) : onSplitDown(tabId)),
