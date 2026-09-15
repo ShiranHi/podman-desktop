@@ -91,6 +91,7 @@ function select(action: ContextMenuAction): void {
       class:hover:bg-[var(--pd-dropdown-item-hover-bg)]={!action.disabled}
       class:text-[var(--pd-dropdown-item-text)]={!action.danger}
       class:text-[var(--pd-danger-text)]={!!action.danger && !action.disabled}
+      title={action.tooltip}
       onclick={(): void => select(action)}
       onkeydown={(e: KeyboardEvent): void => {
         if (e.key === 'Enter' || e.key === ' ') select(action);

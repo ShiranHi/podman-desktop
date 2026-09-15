@@ -66,6 +66,7 @@ export type OpenMode = 'replace' | 'newTab' | 'splitRight' | 'splitDown';
 export interface ContextMenuAction {
   id: string;
   title: string;
+  tooltip?: string;
   iconClass?: string;
   disabled?: boolean;
   danger?: boolean;
