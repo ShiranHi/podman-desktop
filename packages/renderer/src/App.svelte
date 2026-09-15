@@ -17,7 +17,8 @@ import SecretsList from '/@/lib/secrets/SecretsList.svelte';
 import PinActions from '/@/lib/statusbar/PinActions.svelte';
 import { handleNavigation } from '/@/navigation';
 import { kubernetesNoCurrentContext } from '/@/stores/kubernetes-no-current-context';
-import { initSessionAutosave, restoreSession } from '/@/stores/layout/layout-persistence.svelte';
+import { initSessionAutosave } from '/@/stores/layout/layout-persistence.svelte';
+import { resetLayout } from '/@/stores/layout/layout-store.svelte';
 
 import AppNavigation from './AppNavigation.svelte';
 import { navigateTo } from './kubernetesNavigation';
@@ -188,11 +189,10 @@ window.events?.receive('kubernetes-navigation', (args: unknown) => {
 // Initialize table persistence callbacks immediately
 tablePersistence.storage = new PodmanDesktopStoragePersist();
 
-// Tabs & Flexible Layout prototype: restore any tabs/panels left open from the last
-// session immediately at app startup, not lazily when the user first visits /workspace.
-// Otherwise the global tab strip (rendered on every non-workspace page, see below) would
-// stay empty until that first visit, even though a session exists in storage.
-restoreSession();
+// Tabs & Flexible Layout prototype: always start from a clean workspace so each
+// launch is a fresh prototype session. This intentionally ignores the autosaved
+// session layout; users can still build tabs and split sections during the run.
+resetLayout();
 initSessionAutosave();
 </script>
 

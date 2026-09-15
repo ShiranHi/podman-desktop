@@ -74,6 +74,32 @@ function genId(prefix: string): string {
   return `${prefix}-${Date.now().toString(36)}-${idCounter}`;
 }
 
+export function defaultTabIcon(resourceType: WorkspaceResourceType): string {
+  switch (resourceType) {
+    case 'pod':
+      return 'fas fa-cubes';
+    case 'container':
+      return 'fas fa-cube';
+    case 'image':
+    case 'manifest':
+      return 'fas fa-box';
+    case 'volume':
+      return 'fas fa-database';
+    case 'network':
+      return 'fas fa-network-wired';
+    case 'secret':
+      return 'fas fa-key';
+    case 'compose':
+      return 'fas fa-layer-group';
+    case 'action':
+      return 'fas fa-wand-magic-sparkles';
+    case 'app-page':
+      return 'fas fa-house';
+    case 'app-preview':
+      return 'fas fa-window-maximize';
+  }
+}
+
 function createLeaf(): LeafPanelNode {
   return { kind: 'leaf', id: genId('panel'), tabIds: [], activeTabId: undefined };
 }
@@ -404,7 +430,7 @@ export function openTab(input: OpenTabInput, mode: OpenMode = 'replace', targetP
     key,
     title: input.title,
     subtitle: input.subtitle,
-    iconClass: input.iconClass,
+    iconClass: input.iconClass ?? defaultTabIcon(input.resourceType),
     resourceType: input.resourceType,
     resourceId: input.resourceId,
     subView: input.subView,
@@ -506,7 +532,7 @@ export function pinToggle(_panelId: string, tabId: string): void {
 }
 
 export function reorderTab(panelId: string, tabId: string, beforeTabId: string | undefined): void {
-  if (tabId === PAGE_TAB_ID) return;
+  if (tabId === PAGE_TAB_ID || layoutState.tabs[tabId]?.pinned) return;
   const leaf = findLeaf(layoutState.tree, panelId);
   if (!leaf) return;
   const from = leaf.tabIds.indexOf(tabId);
@@ -522,7 +548,7 @@ export function moveTabFromOtherPanel(
   tabId: string,
   beforeTabId: string | undefined,
 ): void {
-  if (tabId === PAGE_TAB_ID) return;
+  if (tabId === PAGE_TAB_ID || layoutState.tabs[tabId]?.pinned) return;
   const sourceLeaf = findLeaf(layoutState.tree, sourcePanelId);
   const targetLeaf = findLeaf(layoutState.tree, targetPanelId);
   if (!sourceLeaf || !targetLeaf || sourceLeaf.id === targetLeaf.id) return;
@@ -536,12 +562,12 @@ export function moveTabFromOtherPanel(
 }
 
 export function splitRight(panelId: string, tabId: string): void {
-  if (tabId === PAGE_TAB_ID) return;
+  if (tabId === PAGE_TAB_ID || layoutState.tabs[tabId]?.pinned) return;
   moveTabToNewLeaf(panelId, tabId, splitLeaf(panelId, 'row', 'after'));
 }
 
 export function splitDown(panelId: string, tabId: string): void {
-  if (tabId === PAGE_TAB_ID) return;
+  if (tabId === PAGE_TAB_ID || layoutState.tabs[tabId]?.pinned) return;
   moveTabToNewLeaf(panelId, tabId, splitLeaf(panelId, 'column', 'after'));
 }
 
@@ -557,11 +583,13 @@ function findMoveUpContext(node: PanelNode, leafId: string): { parent: SplitPane
 }
 
 export function canMoveTabUp(tabId: string): boolean {
+  if (layoutState.tabs[tabId]?.pinned) return false;
   const leaf = findLeafContainingTab(layoutState.tree, tabId);
   return !!leaf && !!findMoveUpContext(layoutState.tree, leaf.id);
 }
 
 export function moveTabUp(panelId: string, tabId: string): void {
+  if (layoutState.tabs[tabId]?.pinned) return;
   const sourceLeaf = findLeaf(layoutState.tree, panelId);
   const context = sourceLeaf ? findMoveUpContext(layoutState.tree, sourceLeaf.id) : undefined;
   if (!sourceLeaf || !context) return;
@@ -574,7 +602,7 @@ export function moveTabUp(panelId: string, tabId: string): void {
 }
 
 export function moveToNewPanel(panelId: string, tabId: string): void {
-  if (tabId === PAGE_TAB_ID) return;
+  if (tabId === PAGE_TAB_ID || layoutState.tabs[tabId]?.pinned) return;
   const root = layoutState.tree;
   const direction: SplitDirection = root.kind === 'split' ? root.direction : 'row';
   moveTabToNewLeaf(panelId, tabId, splitLeaf(panelId, direction, 'after'));
@@ -759,6 +787,7 @@ export function closeAllTabsEverywhere(): void {
 
 /** Reordering in the flat bar can also move a tab between panels, resolved via the same primitives the per-panel drag-and-drop uses. */
 export function reorderTabGlobal(tabId: string, beforeTabId: string | undefined): void {
+  if (layoutState.tabs[tabId]?.pinned) return;
   const sourceLeaf = findLeafContainingTab(layoutState.tree, tabId);
   if (!sourceLeaf) return;
   const targetLeaf =
@@ -798,11 +827,11 @@ export function moveToNewPanelAnyPanel(tabId: string): void {
 
 /**
  * True when this tab can leave its section for a new one. The permanent page tab
- * never moves; any other tab can move as long as at least one tab remains
- * (typically the page tab in the home section).
+ * never moves; any other tab can move only when another tab remains in its
+ * current section.
  */
 export function canMoveTabToNewSection(tabId: string): boolean {
-  if (tabId === PAGE_TAB_ID) return false;
+  if (tabId === PAGE_TAB_ID || layoutState.tabs[tabId]?.pinned) return false;
   const leaf = findLeafContainingTab(layoutState.tree, tabId);
   if (!leaf) return false;
   return leaf.tabIds.some(id => id !== tabId);

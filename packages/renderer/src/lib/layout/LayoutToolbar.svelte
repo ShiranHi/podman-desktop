@@ -156,7 +156,7 @@ function openManageModal(): void {
 
 <!-- Distinct fill so the global layout control reads separately from per-section chrome. -->
 <div
-  class="relative flex items-stretch self-stretch text-left border-b border-l border-[var(--pd-content-divider)] bg-[var(--pd-button-secondary-bg)]">
+  class="relative flex items-stretch self-stretch text-left border-b border-l border-[var(--pd-content-divider)] bg-[var(--pd-content-card-bg)]">
   {#if onAddTab && !hasTabs}
     <button
       type="button"
@@ -174,8 +174,8 @@ function openManageModal(): void {
     title="Layout options"
     aria-haspopup="menu"
     aria-expanded={showMenu}
-    class="flex items-center self-stretch gap-1.5 px-2.5 hover:bg-[var(--pd-button-secondary-hover-bg)] text-[var(--pd-button-secondary-text)]"
-    class:bg-[var(--pd-button-secondary-hover-bg)]={showMenu}
+    class="flex items-center self-stretch gap-1.5 px-2.5 hover:bg-[var(--pd-action-button-details-bg)] text-[var(--pd-button-secondary-text)]"
+    class:bg-[var(--pd-action-button-details-bg)]={showMenu}
     onclick={toggleMenu}>
     <Icon class="w-3 text-xs" icon={faGear} />
     {#if !hasTabs}

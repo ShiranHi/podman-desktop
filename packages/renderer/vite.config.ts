@@ -33,6 +33,9 @@ export default defineConfig({
   mode: process.env['MODE'],
   root: PACKAGE_ROOT,
   resolve: {
+    // @podman-desktop/ui-svelte intentionally publishes its Svelte entrypoints
+    // under the `svelte` export condition.
+    conditions: ['svelte', 'browser', 'development|production'],
     alias: {
       '/@/': join(PACKAGE_ROOT, 'src') + '/',
     },

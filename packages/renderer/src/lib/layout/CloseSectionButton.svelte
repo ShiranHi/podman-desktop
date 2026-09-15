@@ -45,6 +45,7 @@ function onClose(): void {
 }
 </script>
 
+{#if canClose}
 <!-- Match TabBar's "+" Tooltip stretch so the X centers with tabs (and gear when present). -->
 <Tooltip bottom tip={tip} containerClass="flex items-stretch self-stretch" class="flex items-stretch">
   <button
@@ -56,3 +57,4 @@ function onClose(): void {
     <Icon class="w-3 text-xs" icon={faXmark} />
   </button>
 </Tooltip>
+{/if}

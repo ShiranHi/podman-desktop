@@ -157,9 +157,9 @@ const showStatusLabel = $derived(sidebarWidth >= SIDEBAR_STATUS_LABEL_MIN_W);
 
 let activity = $state<ActivityId>('resources');
 let expanded = $state<Record<SectionId, boolean>>({
-  containers: true,
-  pods: true,
-  images: true,
+  containers: false,
+  pods: false,
+  images: false,
   volumes: false,
   networks: false,
   secrets: false,

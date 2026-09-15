@@ -48,7 +48,11 @@ const maxWidth = 240;
 const expandedThreshold = 70;
 
 let navWidth = $state(160);
-let expanded = $derived(navWidth > expandedThreshold);
+// DTUX-3171: the integrated first scope keeps the primary navigation icon-only.
+// Version 2 owns its labeled resource navigation in CompactNavigation instead.
+const iconOnlyScope = $derived($currentScreen === 'tabs-layout');
+const displayedNavWidth = $derived(iconOnlyScope ? minWidth : navWidth);
+let expanded = $derived(!iconOnlyScope && navWidth > expandedThreshold);
 let isDragging = $state(false);
 
 $effect(() => {
@@ -216,7 +220,7 @@ function onDidChangeConfigurationCallback(e: Event): void {
   class="group w-leftnavbar relative h-full flex-shrink-0 flex flex-col bg-[var(--pd-global-nav-bg)] border-[var(--pd-global-nav-bg-border)] border-r-[1px]"
   aria-label="AppNavigation"
   class:select-none={isDragging}
-  style:width="{navWidth}px">
+  style:width="{displayedNavWidth}px">
   <NavItem
     href="/"
     tooltip="Dashboard"

@@ -26,7 +26,7 @@
 // migrations and isn't subject to localStorage size limits.
 import type { PanelNode } from '@podman-desktop/ui-svelte';
 
-import { ensurePageTab, layoutState } from './layout-store.svelte';
+import { defaultTabIcon, ensurePageTab, layoutState } from './layout-store.svelte';
 import type { WorkspaceTab } from './layout-types';
 
 const SESSION_KEY = 'podman-desktop.workspace.session.v1';
@@ -55,6 +55,9 @@ export function serializeCurrentLayout(): SerializedLayout {
 export function applySerializedLayout(serialized: SerializedLayout): void {
   layoutState.tree = serialized.tree;
   layoutState.tabs = serialized.tabs;
+  for (const tab of Object.values(layoutState.tabs)) {
+    tab.iconClass ??= defaultTabIcon(tab.resourceType);
+  }
   layoutState.focusedPanelId = serialized.focusedPanelId;
   layoutState.maximizedPanelId = undefined;
   // Permanent page tab must always exist in the first section after restore.

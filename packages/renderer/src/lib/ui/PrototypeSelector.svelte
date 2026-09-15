@@ -1,5 +1,6 @@
 <script lang="ts">
 import { Dropdown } from '@podman-desktop/ui-svelte';
+import { router } from 'tinro';
 
 import { activePrototype, currentScreen } from '/@/stores/prototype';
 
@@ -9,6 +10,9 @@ let selectedScreen = $derived($currentScreen);
 
 function handleChange(value: string): void {
   currentScreen.set(value);
+  // Switching prototype scopes changes the chrome and content model. Start at
+  // the shared dashboard so the route and highlighted navigation stay aligned.
+  router.goto('/');
 }
 </script>
 

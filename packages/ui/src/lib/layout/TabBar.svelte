@@ -30,6 +30,7 @@ import ContextMenu from './ContextMenu.svelte';
 import type { ContextMenuAction, TabDescriptor } from './types';
 
 export const TAB_DRAG_MIME = 'application/x-podman-desktop-tab';
+const TAB_DRAG_PURPLE = '#a56bff';
 
 interface DragPayload {
   panelId: string;
@@ -94,10 +95,10 @@ let {
 
 function sectionOpenAllowed(tabId: string): boolean {
   if (canOpenInNewSection) return canOpenInNewSection(tabId);
-  // Default: leave at least one tab behind (permanent page tab counts).
+  // Keep at least one tab in the source section. Permanent page tabs count as
+  // the tab that remains behind.
   const tab = tabs.find(t => t.id === tabId);
-  if (tab?.permanent) return false;
-  return tabs.some(t => t.id !== tabId);
+  return !!tab && !tab.permanent && !tab.pinned && tabs.some(t => t.id !== tabId);
 }
 
 let scrollEl: HTMLDivElement | undefined = $state();
@@ -105,7 +106,7 @@ let overflowing = $state(false);
 let showOverflowMenu = $state(false);
 let dragTarget: { tabId: string; edge: 'before' | 'after' } | undefined = $state();
 let draggingTabId: string | undefined = $state();
-let draggedTabWidth = $state(120);
+let dragImage: HTMLDivElement | undefined = $state();
 let contextMenu: { x: number; y: number; tabId: string } | undefined = $state();
 
 function checkOverflow(_tabCount: number): void {
@@ -113,10 +114,30 @@ function checkOverflow(_tabCount: number): void {
   overflowing = scrollEl.scrollWidth > scrollEl.clientWidth + 1;
 }
 
+function revealActiveTab(): void {
+  if (!scrollEl || !activeTabId) return;
+  const activeElement = [...scrollEl.querySelectorAll<HTMLElement>('[role="tab"]')].find(
+    element => element.getAttribute('aria-selected') === 'true',
+  );
+  if (!activeElement) return;
+  const containerRect = scrollEl.getBoundingClientRect();
+  const tabRect = activeElement.getBoundingClientRect();
+  if (tabRect.left < containerRect.left) {
+    scrollEl.scrollLeft -= containerRect.left - tabRect.left;
+  } else if (tabRect.right > containerRect.right) {
+    scrollEl.scrollLeft += tabRect.right - containerRect.right;
+  }
+}
+
 $effect(() => {
   // reading tabs.length here makes this effect re-run whenever the tab list changes
   const tabCount = tabs.length;
+  const selectedTabId = activeTabId;
   requestAnimationFrame(() => checkOverflow(tabCount));
+  requestAnimationFrame(() => {
+    // Wait for the new tab DOM node before adjusting the horizontal scroll.
+    if (selectedTabId) revealActiveTab();
+  });
 });
 
 function onWheel(event: WheelEvent): void {
@@ -128,15 +149,45 @@ function onWheel(event: WheelEvent): void {
 
 function onDragStart(event: DragEvent, tabId: string): void {
   const tab = tabs.find(t => t.id === tabId);
-  if (tab?.permanent) {
+  if (tab?.permanent || tab?.pinned) {
     event.preventDefault();
     return;
   }
   const payload: DragPayload = { panelId, tabId };
   draggingTabId = tabId;
-  draggedTabWidth = Math.max(96, (event.currentTarget as HTMLElement).getBoundingClientRect().width);
   event.dataTransfer?.setData(TAB_DRAG_MIME, JSON.stringify(payload));
-  if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move';
+
+    // Match PR #18433: use a lightweight icon-only drag preview instead of the
+    // browser's large, opaque snapshot of the whole tab.
+    const preview = document.createElement('div');
+    preview.setAttribute('aria-hidden', 'true');
+    preview.style.cssText = [
+      'position: fixed',
+      'top: -1000px',
+      'left: -1000px',
+      'width: 40px',
+      'height: 36px',
+      'display: flex',
+      'align-items: center',
+      'justify-content: center',
+      'background: var(--pd-global-nav-bg, var(--pd-content-bg))',
+      'border: 1px solid var(--pd-global-nav-bg-border, var(--pd-content-divider))',
+      'box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.25)',
+      `color: var(--pd-global-nav-icon-selected, ${TAB_DRAG_PURPLE})`,
+      'opacity: 0.9',
+      'pointer-events: none',
+      'font-size: 24px',
+    ].join(';');
+    const icon = document.createElement('i');
+    icon.className = tab?.iconClass ?? 'fas fa-window-maximize';
+    icon.setAttribute('aria-hidden', 'true');
+    preview.append(icon);
+    document.body.append(preview);
+    dragImage = preview;
+    event.dataTransfer.setDragImage(preview, 20, 18);
+  }
 }
 
 function onDragOverTab(event: DragEvent, tabId: string, forcedEdge?: 'before' | 'after'): void {
@@ -149,9 +200,33 @@ function onDragOverTab(event: DragEvent, tabId: string, forcedEdge?: 'before' | 
   if (scrollEl && event.clientX > scrollEl.getBoundingClientRect().right - 32) scrollEl.scrollLeft += 12;
 }
 
+// Keep the whole strip as a drop target, including the gaps between tabs and
+// the empty space after the last tab. This makes the insertion line much easier
+// to acquire than requiring the pointer to be over a specific tab element.
+function onDragOverBar(event: DragEvent): void {
+  event.preventDefault();
+  event.stopPropagation();
+  if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+  const tabElements = [...(scrollEl?.querySelectorAll<HTMLElement>('[role="tab"]') ?? [])];
+  if (tabElements.length === 0) return;
+  const insertionIndex = tabElements.findIndex(element => {
+    const rect = element.getBoundingClientRect();
+    return event.clientX < rect.left + rect.width / 2;
+  });
+  const tabIndex = insertionIndex === -1 ? tabElements.length - 1 : insertionIndex;
+  const targetTab = tabs[tabIndex];
+  if (!targetTab) return;
+  dragTarget = {
+    tabId: targetTab.id,
+    edge: insertionIndex === -1 ? 'after' : 'before',
+  };
+}
+
 function onDragEnd(): void {
   dragTarget = undefined;
   draggingTabId = undefined;
+  dragImage?.remove();
+  dragImage = undefined;
 }
 
 function onDragLeaveBar(event: DragEvent): void {
@@ -206,6 +281,9 @@ function onDropOnEnd(event: DragEvent): void {
 
 function openContextMenu(event: MouseEvent, tabId: string): void {
   event.preventDefault();
+  // ContextMenu listens for window-level contextmenu events to dismiss itself.
+  // Stop this originating tab event so the newly opened menu is not immediately closed.
+  event.stopPropagation();
   contextMenu = { x: event.clientX, y: event.clientY, tabId };
 }
 
@@ -260,27 +338,27 @@ function contextMenuActions(tabId: string): ContextMenuAction[] {
       class="flex flex-row items-stretch overflow-x-auto min-w-0 shrink scrollbar-hide"
       role="tablist"
       tabindex="-1"
-      ondragover={(e: DragEvent): void => e.preventDefault()}
+      ondragover={onDragOverBar}
       ondragleave={onDragLeaveBar}
       ondrop={onDropOnEnd}>
       {#each tabs as tab (tab.id)}
         {#if dragTarget?.tabId === tab.id && dragTarget.edge === 'before'}
           <div
-            class="shrink-0 flex items-center justify-center border-2 border-dashed border-[var(--pd-tab-highlight)] bg-[var(--pd-content-bg)] text-[10px] text-[var(--pd-tab-text-highlight)]"
-            style:width="{draggedTabWidth}px"
+            aria-hidden="true"
+            class="shrink-0 self-stretch w-1 rounded-full"
+            style:background-color={TAB_DRAG_PURPLE}
             ondragover={(event: DragEvent): void => {
               event.preventDefault();
               event.stopPropagation();
             }}
             ondrop={(event: DragEvent): void => onDropOnTab(event, tab.id)}>
-            Drop here
           </div>
         {/if}
         <div
           role="tab"
           tabindex="0"
           aria-selected={tab.id === activeTabId}
-          draggable={!tab.permanent}
+          draggable={!tab.permanent && !tab.pinned}
           ondragstart={(e: DragEvent): void => onDragStart(e, tab.id)}
           ondragend={onDragEnd}
           ondragover={(e: DragEvent): void => onDragOverTab(e, tab.id, tab.permanent ? 'after' : undefined)}
@@ -291,15 +369,13 @@ function contextMenuActions(tabId: string): ContextMenuAction[] {
             if (e.key === 'Enter' || e.key === ' ') onSelect(tab.id);
           }}
           class="group flex items-center gap-2 px-3 py-1 border-r border-[var(--pd-content-divider)] whitespace-nowrap cursor-pointer select-none max-w-[220px]"
+          class:border-transparent={!!dragTarget}
+          style:border-right-color={dragTarget ? 'transparent' : undefined}
           class:bg-[var(--pd-content-bg)]={tab.id === activeTabId}
-          class:border-l-2={dragTarget?.tabId === tab.id && dragTarget.edge === 'before'}
-          class:border-l-[var(--pd-tab-highlight)]={dragTarget?.tabId === tab.id && dragTarget.edge === 'before'}
-          class:border-r-2={dragTarget?.tabId === tab.id && dragTarget.edge === 'after'}
-          class:border-r-[var(--pd-tab-highlight)]={dragTarget?.tabId === tab.id && dragTarget.edge === 'after'}
           class:text-[var(--pd-tab-text-highlight)]={tab.id === activeTabId}
           class:text-[var(--pd-tab-text)]={tab.id !== activeTabId}
           class:opacity-70={!!tab.stale}
-          class:opacity-40={draggingTabId === tab.id}
+          class:opacity-50={draggingTabId === tab.id}
           title={tab.subtitle ? `${tab.title} — ${tab.subtitle}` : tab.title}>
           {#if tab.pinned && !tab.permanent}
             <Icon class="w-3 text-xs opacity-70" icon={faThumbtack} />
@@ -318,8 +394,7 @@ function contextMenuActions(tabId: string): ContextMenuAction[] {
               <button
                 type="button"
                 aria-label="Actions for {tab.title}"
-                class="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 hover:bg-[var(--pd-action-button-details-bg)] rounded-sm p-0.5"
-                class:opacity-100={tab.id === activeTabId}
+                class="opacity-70 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 hover:bg-[var(--pd-action-button-details-bg)] rounded-sm p-0.5"
                 onclick={(event: MouseEvent): void => openActionsMenu(event, tab.id)}>
                 <Icon class="w-3 text-xs" icon={faEllipsisVertical} />
               </button>
@@ -328,14 +403,14 @@ function contextMenuActions(tabId: string): ContextMenuAction[] {
         </div>
         {#if dragTarget?.tabId === tab.id && dragTarget.edge === 'after'}
           <div
-            class="shrink-0 flex items-center justify-center border-2 border-dashed border-[var(--pd-tab-highlight)] bg-[var(--pd-content-bg)] text-[10px] text-[var(--pd-tab-text-highlight)]"
-            style:width="{draggedTabWidth}px"
+            aria-hidden="true"
+            class="shrink-0 self-stretch w-1 rounded-full"
+            style:background-color={TAB_DRAG_PURPLE}
             ondragover={(event: DragEvent): void => {
               event.preventDefault();
               event.stopPropagation();
             }}
             ondrop={(event: DragEvent): void => onDropOnTab(event, tab.id)}>
-            Drop here
           </div>
         {/if}
       {/each}

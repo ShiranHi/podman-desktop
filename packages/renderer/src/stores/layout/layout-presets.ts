@@ -21,8 +21,9 @@
 // takes plain identifiers (rather than full store objects) so this module
 // stays decoupled from the container/pod/image UI-model types.
 //
-// Every preset opens two new side-by-side sections (splitRight × 2). Existing
-// tabs in the source section stay put — presets append sections to the right.
+// Presets keep the layout intentionally lightweight: the first view stays in
+// the current section and only the comparison view opens in one adjacent
+// section.
 import { layoutState, openTab } from './layout-store.svelte';
 import { imageKey, podKey } from './layout-types';
 
@@ -107,18 +108,21 @@ export function applyPodInspectorPreset(
   container?: { id: string; name: string },
   targetPanelId?: string,
 ): void {
-  const firstPanel = openInNewSection(
+  const firstPanel = targetPanelId ?? layoutState.focusedPanelId;
+  openTab(
     {
       resourceType: 'pod',
       resourceId: podKey(pod.name, pod.engineId),
       subView: 'summary',
       title: `${pod.name} · Summary`,
     },
-    targetPanelId,
+    'newTab',
+    firstPanel,
   );
   if (container) {
-    openInNewSection(
+    openTab(
       { resourceType: 'container', resourceId: container.id, subView: 'logs', title: `${container.name} · Logs` },
+      'splitRight',
       firstPanel,
     );
   }
@@ -146,17 +150,13 @@ export function applyImageDiffPreset(
   );
 }
 
-/** Open both tabs each in their own new section, side by side to the right of target. */
+/** Keep the first tab in the current section and place the second one beside it. */
 function openSideBySide(
   first: Parameters<typeof openTab>[0],
   second: Parameters<typeof openTab>[0],
   targetPanelId?: string,
 ): void {
-  const firstPanel = openInNewSection(first, targetPanelId);
-  openInNewSection(second, firstPanel);
-}
-
-function openInNewSection(input: Parameters<typeof openTab>[0], targetPanelId?: string): string {
-  openTab(input, 'splitRight', targetPanelId);
-  return layoutState.focusedPanelId;
+  const firstPanel = targetPanelId ?? layoutState.focusedPanelId;
+  openTab(first, 'newTab', firstPanel);
+  openTab(second, 'splitRight', firstPanel);
 }

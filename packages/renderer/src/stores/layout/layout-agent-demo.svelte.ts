@@ -193,7 +193,7 @@ function buildImageCompareInsight(prompt: string, aName: string, aId: string, bN
   if (dimension.label === 'Vulnerabilities') {
     const [worse, worseMetrics, other, otherMetrics] =
       severity(a) > severity(b) ? [aName, a, bName, b] : [bName, b, aName, a];
-    return `Vulnerabilities: "${worse}" ${formatVulnBreakdown(worseMetrics)} vs "${other}" ${formatVulnBreakdown(otherMetrics)} - start there.`;
+    return `Security check: ${worse} has ${formatVulnBreakdown(worseMetrics)} vulnerabilities; ${other} has ${formatVulnBreakdown(otherMetrics)}. Review ${worse} first.`;
   }
 
   const [worseName, worseVal, otherName, otherVal] =
@@ -231,6 +231,11 @@ function tabDisplayName(tab: WorkspaceTab): string {
   return tab.title.split(' · ')[0];
 }
 
+function comparisonDisplayName(name: string, resourceType: WorkspaceTab['resourceType']): string {
+  if (resourceType !== 'image') return name;
+  return name.split('/').at(-1) ?? name;
+}
+
 function splitPairKey(a: WorkspaceTab, b: WorkspaceTab): string {
   return [a.id, b.id].toSorted().join('|');
 }
@@ -256,8 +261,8 @@ const splitComparisonInsight: SplitComparisonInsight | undefined = $derived.by((
   const key = splitPairKey(a, b);
   if (key === dismissedSplitInsightKey) return undefined;
 
-  const aName = tabDisplayName(a);
-  const bName = tabDisplayName(b);
+  const aName = comparisonDisplayName(tabDisplayName(a), a.resourceType);
+  const bName = comparisonDisplayName(tabDisplayName(b), b.resourceType);
   let comparison: string | undefined;
   if (a.resourceType === 'pod') {
     comparison = buildPodCompareInsight('', aName, a.resourceId, bName, b.resourceId);
@@ -266,7 +271,7 @@ const splitComparisonInsight: SplitComparisonInsight | undefined = $derived.by((
   }
   if (!comparison) return undefined;
 
-  return { key, message: `Comparing "${aName}" and "${bName}": ${comparison}` };
+  return { key, message: comparison };
 });
 
 /** Called from a component's own `$derived(getSplitComparisonInsight())` so it stays reactive

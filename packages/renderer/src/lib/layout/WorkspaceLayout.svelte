@@ -33,7 +33,7 @@ import {
   closeTab,
   cycleActiveTab,
   ensurePageTab,
-  findFirstLeaf,
+  findLastLeaf,
   findLeaf,
   focusPanel,
   getTabsForPanel,
@@ -171,9 +171,9 @@ function openNewTabPalette(panelId: string, activeTab: TabDescriptor | undefined
         <CloseSectionButton panelId={panelId} {tabs} />
       {/snippet}
       {#snippet globalTrailing(panelId)}
-        <!-- Global settings once: keep it in the topmost section even when users build
-             deeply nested rows and columns. A maximized section temporarily owns it. -->
-        {#if panelId === (layoutState.maximizedPanelId ?? findFirstLeaf(layoutState.tree).id)}
+        <!-- Global settings once: keep it anchored to the rightmost section. A maximized
+             section temporarily owns it so the control remains visible in the active view. -->
+        {#if panelId === (layoutState.maximizedPanelId ?? findLastLeaf(layoutState.tree).id)}
           <LayoutToolbar panelId={panelId} />
         {/if}
       {/snippet}
