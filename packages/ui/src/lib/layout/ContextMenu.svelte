@@ -84,7 +84,7 @@ function select(action: ContextMenuAction): void {
     <div
       role="menuitem"
       tabindex="-1"
-      class="px-3 py-2 flex items-center gap-2 whitespace-nowrap text-sm"
+      class="px-3 py-2 flex items-start gap-2 whitespace-nowrap text-sm"
       class:opacity-50={action.disabled}
       class:cursor-not-allowed={action.disabled}
       class:cursor-pointer={!action.disabled}
@@ -99,7 +99,12 @@ function select(action: ContextMenuAction): void {
       {#if action.iconClass}
         <Icon class="w-4 text-md" icon={action.iconClass} />
       {/if}
-      <span>{action.title}</span>
+      <span class="flex flex-col min-w-0">
+        <span>{action.title}</span>
+        {#if action.disabled && action.tooltip}
+          <span class="text-xs opacity-70 whitespace-normal">{action.tooltip}</span>
+        {/if}
+      </span>
     </div>
   {/each}
 </div>
