@@ -27,6 +27,7 @@ import { router } from 'tinro';
 import {
   canMoveTabToNewSection,
   canMoveTabUp,
+  closeAllTabsExcept,
   closeTabById,
   findLeaf,
   findLeafContainingTab,
@@ -76,6 +77,11 @@ function onSelect(tabId: string): void {
 function onClose(tabId: string): void {
   if (isPageTabId(tabId)) return;
   closeTabById(tabId);
+}
+
+function onCloseOthers(tabId: string): void {
+  if (isPageTabId(tabId)) return;
+  closeAllTabsExcept(tabId);
 }
 
 function onPin(tabId: string): void {
@@ -138,6 +144,7 @@ function closeNewTabPalette(opened?: boolean): void {
   {activeTabId}
   {onSelect}
   onClose={onClose}
+  {onCloseOthers}
   onPinToggle={onPin}
   onReorder={onReorder}
   onMoveFromOtherPanel={onMoveFromOther}

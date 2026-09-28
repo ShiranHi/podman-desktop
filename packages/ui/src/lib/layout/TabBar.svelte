@@ -43,6 +43,7 @@ interface Props {
   activeTabId?: string;
   onSelect: (tabId: string) => void;
   onClose: (tabId: string) => void;
+  onCloseOthers: (tabId: string) => void;
   onPinToggle: (tabId: string) => void;
   onReorder: (tabId: string, beforeTabId: string | undefined) => void;
   onMoveFromOtherPanel: (sourcePanelId: string, tabId: string, beforeTabId: string | undefined) => void;
@@ -79,6 +80,7 @@ let {
   activeTabId,
   onSelect,
   onClose,
+  onCloseOthers,
   onPinToggle,
   onReorder,
   onMoveFromOtherPanel,
@@ -296,11 +298,20 @@ function openActionsMenu(event: MouseEvent, tabId: string): void {
 function contextMenuActions(tabId: string): ContextMenuAction[] {
   const tab = tabs.find(t => t.id === tabId);
   const canSplit = sectionOpenAllowed(tabId);
+  const hasOtherClosableTabs = tabs.some(other => other.id !== tabId && !other.pinned && !other.permanent);
   const moveUpAllowed = canMoveUp?.(tabId) ?? false;
   const splitReason = tab?.pinned ? 'Tab is pinned' : !canSplit ? 'Keep at least one tab in this section' : undefined;
   if (tab?.permanent) return [];
   return [
     { id: 'close', title: 'Close Tab', iconClass: 'fas fa-xmark', onSelect: (): void => onClose(tabId) },
+    {
+      id: 'close-others',
+      title: 'Close Other Tabs',
+      iconClass: 'fas fa-xmark',
+      disabled: !hasOtherClosableTabs,
+      tooltip: hasOtherClosableTabs ? undefined : 'No other tabs to close',
+      onSelect: (): void => onCloseOthers(tabId),
+    },
     {
       id: 'pin',
       title: tab?.pinned ? 'Unpin Tab' : 'Pin Tab',

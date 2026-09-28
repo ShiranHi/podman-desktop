@@ -30,6 +30,7 @@ import {
   canMoveTabToNewSection,
   canMoveTabUp,
   closeActiveTab,
+  closeOthers,
   closeTab,
   cycleActiveTab,
   ensurePageTab,
@@ -135,6 +136,10 @@ let newTabPaletteFor: { panelId: string; activeTab: WorkspaceTab | undefined } |
 function openNewTabPalette(panelId: string, activeTab: TabDescriptor | undefined): void {
   newTabPaletteFor = { panelId, activeTab: activeTab as WorkspaceTab | undefined };
 }
+
+function closeOtherTabs(panelId: string, tabId: string): void {
+  closeOthers(panelId, tabId);
+}
 </script>
 
 <svelte:window onkeydown={onWindowKeydown} />
@@ -156,6 +161,7 @@ function openNewTabPalette(panelId: string, activeTab: TabDescriptor | undefined
       onFocusPanel={focusPanel}
       onSelectTab={selectTab}
       onCloseTab={closeTab}
+      onCloseOthers={closeOtherTabs}
       onPinToggle={pinToggle}
       onReorder={reorderTab}
       onMoveFromOtherPanel={moveTabFromOtherPanel}

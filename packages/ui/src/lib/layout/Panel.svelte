@@ -40,6 +40,7 @@ interface Props {
   onFocus: () => void;
   onSelect: (tabId: string) => void;
   onClose: (tabId: string) => void;
+  onCloseOthers: (tabId: string) => void;
   onPinToggle: (tabId: string) => void;
   onReorder: (tabId: string, beforeTabId: string | undefined) => void;
   onMoveFromOtherPanel: (sourcePanelId: string, tabId: string, beforeTabId: string | undefined) => void;
@@ -75,6 +76,7 @@ let {
   onFocus,
   onSelect,
   onClose,
+  onCloseOthers,
   onPinToggle,
   onReorder,
   onMoveFromOtherPanel,
@@ -113,6 +115,7 @@ const maximizeTip = $derived(maximized ? 'Exit full width' : 'Expand section');
           {activeTabId}
           {onSelect}
           {onClose}
+          {onCloseOthers}
           {onPinToggle}
           {onReorder}
           {onMoveFromOtherPanel}

@@ -38,6 +38,7 @@ interface Props {
   onFocusPanel: (panelId: string) => void;
   onSelectTab: (panelId: string, tabId: string) => void;
   onCloseTab: (panelId: string, tabId: string) => void;
+  onCloseOthers: (panelId: string, tabId: string) => void;
   onPinToggle: (panelId: string, tabId: string) => void;
   onReorder: (panelId: string, tabId: string, beforeTabId: string | undefined) => void;
   onMoveFromOtherPanel: (
@@ -135,6 +136,7 @@ function equalize(_index: number): void {
     onFocus={(): void => props.onFocusPanel(leaf.id)}
     onSelect={(tabId): void => props.onSelectTab(leaf.id, tabId)}
     onClose={(tabId): void => props.onCloseTab(leaf.id, tabId)}
+    onCloseOthers={(tabId): void => props.onCloseOthers(leaf.id, tabId)}
     onPinToggle={(tabId): void => props.onPinToggle(leaf.id, tabId)}
     onReorder={(tabId, beforeTabId): void => props.onReorder(leaf.id, tabId, beforeTabId)}
     onMoveFromOtherPanel={(sourcePanelId, tabId, beforeTabId): void =>
@@ -172,6 +174,7 @@ function equalize(_index: number): void {
           onFocusPanel={props.onFocusPanel}
           onSelectTab={props.onSelectTab}
           onCloseTab={props.onCloseTab}
+          onCloseOthers={props.onCloseOthers}
           onPinToggle={props.onPinToggle}
           onReorder={props.onReorder}
           onMoveFromOtherPanel={props.onMoveFromOtherPanel}
