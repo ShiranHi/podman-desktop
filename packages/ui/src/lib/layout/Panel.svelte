@@ -26,6 +26,7 @@ import { faCompress, faExpand } from '@fortawesome/free-solid-svg-icons';
 import type { Snippet } from 'svelte';
 
 import Icon from '../icons/Icon.svelte';
+import Tooltip from '../tooltip/Tooltip.svelte';
 import TabBar from './TabBar.svelte';
 import type { TabDescriptor } from './types';
 
@@ -40,16 +41,27 @@ interface Props {
   onSelect: (tabId: string) => void;
   onClose: (tabId: string) => void;
   onCloseOthers: (tabId: string) => void;
-  onCloseAllInPanel: () => void;
   onPinToggle: (tabId: string) => void;
   onReorder: (tabId: string, beforeTabId: string | undefined) => void;
   onMoveFromOtherPanel: (sourcePanelId: string, tabId: string, beforeTabId: string | undefined) => void;
   onSplitRight: (tabId: string) => void;
   onSplitDown: (tabId: string) => void;
-  onMoveToNewPanel: (tabId: string) => void;
+  onMoveUp?: (tabId: string) => void;
+  canMoveUp?: (tabId: string) => boolean;
   onToggleMaximize: () => void;
   /** See TabBar's `onAddTab` - resolved here against this panel's own active tab. */
   onAddTab?: (panelId: string, activeTab: TabDescriptor | undefined) => void;
+  /** See TabBar's `canOpenInNewSection`. */
+  canOpenInNewSection?: (tabId: string) => boolean;
+  /** Per-section actions after maximize (e.g. close section) — not inside the tab strip.
+   *  Called with panelId and the panel's current tabs so chrome stays in sync with the strip. */
+  trailing?: Snippet<[string, TabDescriptor[]]>;
+  /** Far-right chrome after trailing (e.g. global layout settings). */
+  globalTrailing?: Snippet<[string]>;
+  /** See TabBar's `beforeAdd` — called with this panel's id. */
+  beforeAdd?: Snippet<[string]>;
+  /** When false, skip this panel's TabBar (global strip owns chrome — e.g. single-panel workspace). */
+  showTabBar?: boolean;
   tabContent: Snippet<[TabDescriptor]>;
   emptyState?: Snippet;
 }
@@ -65,58 +77,111 @@ let {
   onSelect,
   onClose,
   onCloseOthers,
-  onCloseAllInPanel,
   onPinToggle,
   onReorder,
   onMoveFromOtherPanel,
   onSplitRight,
   onSplitDown,
-  onMoveToNewPanel,
+  onMoveUp,
+  canMoveUp,
   onToggleMaximize,
   onAddTab,
+  canOpenInNewSection,
+  trailing,
+  globalTrailing,
+  beforeAdd: beforeAddForPanel,
+  showTabBar = true,
   tabContent,
   emptyState,
 }: Props = $props();
 
 const activeTab = $derived(tabs.find(t => t.id === activeTabId));
+const maximizeTip = $derived(maximized ? 'Exit full width' : 'Expand section');
 </script>
 
 <div
   class="flex flex-col min-w-0 min-h-0 h-full w-full overflow-hidden"
   class:ring-1={focused}
   class:ring-[var(--pd-content-divider)]={focused}
+  data-panel-id={panelId}
+  onpointerdown={onFocus}
   onclick={onFocus}
   onfocus={onFocus}
   role="presentation">
-  <div class="flex items-stretch min-w-0">
-    <div class="grow min-w-0">
-      <TabBar
-        {panelId}
-        {tabs}
-        {activeTabId}
-        {onSelect}
-        {onClose}
-        {onCloseOthers}
-        {onCloseAllInPanel}
-        {onPinToggle}
-        {onReorder}
-        {onMoveFromOtherPanel}
-        {onSplitRight}
-        {onSplitDown}
-        {onMoveToNewPanel}
-        onAddTab={onAddTab ? (): void => onAddTab(panelId, activeTab) : undefined} />
+  {#if showTabBar}
+    <div class="flex h-8 max-h-8 shrink-0 items-stretch min-w-0">
+      <div class="grow min-w-0">
+        <TabBar
+          {panelId}
+          {tabs}
+          {activeTabId}
+          {onSelect}
+          {onClose}
+          {onCloseOthers}
+          {onPinToggle}
+          {onReorder}
+          {onMoveFromOtherPanel}
+          {onSplitRight}
+          {onSplitDown}
+          {onMoveUp}
+          {canMoveUp}
+          {canOpenInNewSection}
+          onAddTab={onAddTab ? (): void => onAddTab(panelId, activeTab) : undefined}>
+          {#snippet beforeAdd()}
+            {#if beforeAddForPanel}
+              {@render beforeAddForPanel(panelId)}
+            {/if}
+          {/snippet}
+        </TabBar>
+      </div>
+      <!-- Order: expand → close section → global settings (far right). -->
+      {#if canMaximize}
+        <Tooltip bottom tip={maximizeTip} containerClass="flex items-stretch self-stretch" class="flex items-stretch">
+          <button
+            type="button"
+            aria-label={maximizeTip}
+            class="flex items-center self-stretch px-2 border-b border-l border-[var(--pd-content-divider)] bg-[var(--pd-content-card-bg)] hover:bg-[var(--pd-action-button-details-bg)]"
+            onclick={onToggleMaximize}>
+            <Icon class="w-3 text-xs" icon={maximized ? faCompress : faExpand} />
+          </button>
+        </Tooltip>
+      {/if}
+      {#if trailing}
+        <div class="flex h-8 max-h-8 shrink-0 items-stretch border-b border-l border-[var(--pd-content-divider)] bg-[var(--pd-content-card-bg)]">
+          {@render trailing(panelId, tabs)}
+        </div>
+      {/if}
+      {#if globalTrailing}
+        {@render globalTrailing(panelId)}
+      {/if}
     </div>
-    {#if canMaximize}
-      <button
-        type="button"
-        aria-label={maximized ? 'Restore panel' : 'Maximize panel'}
-        title={maximized ? 'Restore panel' : 'Maximize panel'}
-        class="px-2 border-b border-l border-[var(--pd-content-divider)] bg-[var(--pd-content-card-bg)] hover:bg-[var(--pd-action-button-details-bg)]"
-        onclick={onToggleMaximize}>
-        <Icon class="w-3 text-xs" icon={maximized ? faCompress : faExpand} />
-      </button>
-    {/if}
-  </div>
+  {:else if canMaximize || trailing !== undefined || globalTrailing !== undefined}
+    <!-- Section / global chrome only — never a second tab strip. -->
+    <div class="flex h-8 max-h-8 items-stretch justify-end min-w-0 shrink-0">
+      {#if canMaximize}
+        <Tooltip bottom tip={maximizeTip}>
+          <button
+            type="button"
+            aria-label={maximizeTip}
+            class="flex items-center px-2 py-1 border-b border-[var(--pd-content-divider)] bg-[var(--pd-content-card-bg)] hover:bg-[var(--pd-action-button-details-bg)]"
+            onclick={(e: MouseEvent): void => {
+              e.stopPropagation();
+              onToggleMaximize();
+            }}>
+            <Icon class="w-3 text-xs" icon={maximized ? faCompress : faExpand} />
+          </button>
+        </Tooltip>
+      {/if}
+      {#if trailing}
+        <div class="flex h-8 max-h-8 shrink-0 items-stretch border-b border-l border-[var(--pd-content-divider)] bg-[var(--pd-content-card-bg)]">
+          {@render trailing(panelId, tabs)}
+        </div>
+      {/if}
+      {#if globalTrailing}
+        {@render globalTrailing(panelId)}
+      {/if}
+    </div>
+  {/if}
   <div class="grow min-h-0 overflow-auto bg-[var(--pd-content-bg)]">
     {#if activeTab}
       {@render tabContent(activeTab)}

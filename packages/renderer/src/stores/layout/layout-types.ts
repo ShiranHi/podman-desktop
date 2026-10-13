@@ -21,8 +21,25 @@
 // `TabDescriptor` from `@podman-desktop/ui-svelte`.
 
 import type { TabDescriptor } from '@podman-desktop/ui-svelte';
+import { ContainerIcon } from '@podman-desktop/ui-svelte/icons';
 
-export type WorkspaceResourceType = 'container' | 'pod' | 'image' | 'kube-play';
+import ImageIcon from '/@/lib/images/ImageIcon.svelte';
+import NetworkIcon from '/@/lib/images/NetworkIcon.svelte';
+import PodIcon from '/@/lib/images/PodIcon.svelte';
+import SecretIcon from '/@/lib/images/SecretIcon.svelte';
+import VolumeIcon from '/@/lib/images/VolumeIcon.svelte';
+
+export type WorkspaceResourceType =
+  | 'app-page'
+  | 'container'
+  | 'pod'
+  | 'image'
+  | 'volume'
+  | 'network'
+  | 'secret'
+  | 'compose'
+  | 'manifest'
+  | 'kube-play';
 
 export const CONTAINER_SUB_VIEWS = ['summary', 'logs', 'inspect', 'terminal', 'tty', 'kube'] as const;
 export type ContainerSubView = (typeof CONTAINER_SUB_VIEWS)[number];
@@ -33,7 +50,30 @@ export type PodSubView = (typeof POD_SUB_VIEWS)[number];
 export const IMAGE_SUB_VIEWS = ['summary', 'history', 'inspect'] as const;
 export type ImageSubView = (typeof IMAGE_SUB_VIEWS)[number];
 
-export type SubView = ContainerSubView | PodSubView | ImageSubView;
+export const VOLUME_SUB_VIEWS = ['summary', 'inspect'] as const;
+export type VolumeSubView = (typeof VOLUME_SUB_VIEWS)[number];
+
+export const NETWORK_SUB_VIEWS = ['summary', 'inspect'] as const;
+export type NetworkSubView = (typeof NETWORK_SUB_VIEWS)[number];
+
+export const SECRET_SUB_VIEWS = ['summary', 'inspect'] as const;
+export type SecretSubView = (typeof SECRET_SUB_VIEWS)[number];
+
+export const COMPOSE_SUB_VIEWS = ['summary', 'logs', 'inspect', 'kube'] as const;
+export type ComposeSubView = (typeof COMPOSE_SUB_VIEWS)[number];
+
+export const MANIFEST_SUB_VIEWS = ['summary'] as const;
+export type ManifestSubView = (typeof MANIFEST_SUB_VIEWS)[number];
+
+export type SubView =
+  | ContainerSubView
+  | PodSubView
+  | ImageSubView
+  | VolumeSubView
+  | NetworkSubView
+  | SecretSubView
+  | ComposeSubView
+  | ManifestSubView;
 
 /** A workspace tab is a TabDescriptor plus enough identity to resolve + re-resolve its resource and content. */
 export interface WorkspaceTab extends TabDescriptor {
@@ -53,6 +93,16 @@ export function subViewsForResourceType(resourceType: WorkspaceResourceType): re
       return POD_SUB_VIEWS;
     case 'image':
       return IMAGE_SUB_VIEWS;
+    case 'volume':
+      return VOLUME_SUB_VIEWS;
+    case 'network':
+      return NETWORK_SUB_VIEWS;
+    case 'secret':
+      return SECRET_SUB_VIEWS;
+    case 'compose':
+      return COMPOSE_SUB_VIEWS;
+    case 'manifest':
+      return MANIFEST_SUB_VIEWS;
     default:
       return [];
   }
@@ -92,6 +142,50 @@ export function imageKey(imageId: string, engineId: string, base64RepoTag: strin
   return `${imageId}::${engineId}::${base64RepoTag}`;
 }
 
+export function volumeKey(name: string, engineId: string): string {
+  return `${name}::${engineId}`;
+}
+
+export function networkKey(name: string, engineId: string): string {
+  return `${name}::${engineId}`;
+}
+
+export function secretKey(secretId: string, engineId: string): string {
+  return `${secretId}::${engineId}`;
+}
+
+export function composeKey(name: string, engineId: string): string {
+  return `${name}::${engineId}`;
+}
+
+export function manifestKey(imageId: string, engineId: string, base64RepoTag: string): string {
+  return imageKey(imageId, engineId, base64RepoTag);
+}
+
+export function parseVolumeKey(resourceId: string): { name: string; engineId: string } {
+  const [name, engineId] = resourceId.split('::');
+  return { name, engineId };
+}
+
+export function parseNetworkKey(resourceId: string): { name: string; engineId: string } {
+  const [name, engineId] = resourceId.split('::');
+  return { name, engineId };
+}
+
+export function parseSecretKey(resourceId: string): { secretId: string; engineId: string } {
+  const [secretId, engineId] = resourceId.split('::');
+  return { secretId, engineId };
+}
+
+export function parseComposeKey(resourceId: string): { name: string; engineId: string } {
+  const [name, engineId] = resourceId.split('::');
+  return { name, engineId };
+}
+
+export function parseManifestKey(resourceId: string): { imageId: string; engineId: string; base64RepoTag: string } {
+  return parseImageKey(resourceId);
+}
+
 export function parseImageKey(resourceId: string): { imageId: string; engineId: string; base64RepoTag: string } {
   const [imageId, engineId, base64RepoTag] = resourceId.split('::');
   return { imageId, engineId, base64RepoTag };
@@ -99,4 +193,36 @@ export function parseImageKey(resourceId: string): { imageId: string; engineId: 
 
 export function tabKey(resourceType: WorkspaceResourceType, resourceId: string, subView: SubView | undefined): string {
   return `${resourceType}:${resourceId}:${subView ?? ''}`;
+}
+
+/** Font Awesome fallback icon for a resource; internal view never changes it. */
+export function workspaceTabIcon(type: WorkspaceResourceType, _view?: SubView): string {
+  return {
+    'app-page': 'fas fa-house',
+    container: 'fas fa-cube',
+    pod: 'fas fa-cubes',
+    image: 'fas fa-image',
+    volume: 'fas fa-database',
+    network: 'fas fa-network-wired',
+    secret: 'fas fa-key',
+    compose: 'fas fa-layer-group',
+    manifest: 'fas fa-file-code',
+    'kube-play': 'fas fa-file-code',
+  }[type];
+}
+
+/** Navigation icon for a resource tab; stays the same across its internal views. */
+export function workspaceTabNavigationIcon(type: WorkspaceResourceType): NonNullable<TabDescriptor['tabIcon']> | undefined {
+  return {
+    'app-page': undefined,
+    container: ContainerIcon,
+    pod: PodIcon,
+    image: ImageIcon,
+    volume: VolumeIcon,
+    network: NetworkIcon,
+    secret: SecretIcon,
+    compose: undefined,
+    manifest: undefined,
+    'kube-play': undefined,
+  }[type];
 }

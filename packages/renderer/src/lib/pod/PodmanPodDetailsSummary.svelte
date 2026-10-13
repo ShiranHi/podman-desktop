@@ -1,14 +1,13 @@
 <script lang="ts">
-import { NavigationPage } from '@desktop-framework/api';
 import { Link } from '@podman-desktop/ui-svelte';
 
 import DetailsCell from '/@/lib/details/DetailsCell.svelte';
 import DetailsSubtitle from '/@/lib/details/DetailsSubtitle.svelte';
 import DetailsTable from '/@/lib/details/DetailsTable.svelte';
 import DetailsTitle from '/@/lib/details/DetailsTitle.svelte';
-import { handleNavigation } from '/@/navigation';
+import { openSummaryLink } from '/@/lib/layout/open-summary-link';
 
-import type { PodInfoContainerUI, PodInfoUI } from './PodInfoUI';
+import type { PodInfoUI } from './PodInfoUI';
 
 interface Props {
   pod: PodInfoUI;
@@ -17,10 +16,6 @@ interface Props {
 let { pod }: Props = $props();
 
 let creationTime: Date = $derived(new Date(pod.created));
-
-function navigateToLogs(container: PodInfoContainerUI): void {
-  return handleNavigation({ page: NavigationPage.CONTAINER_LOGS, parameters: { id: container.Id } });
-}
 </script>
 
 <DetailsTable>
@@ -58,7 +53,14 @@ function navigateToLogs(container: PodInfoContainerUI): void {
       {#each pod.containers as container (container.Id)}
         <tr>
           <DetailsSubtitle>
-            <Link on:click={(): void => navigateToLogs(container)}>
+            <Link
+              onclick={(event: MouseEvent): void =>
+                openSummaryLink(event, {
+                  resourceType: 'container',
+                  resourceId: container.Id,
+                  subView: 'logs',
+                  title: `${container.Names} · Logs`,
+                })}>
               {container.Names}
             </Link>
           </DetailsSubtitle>

@@ -21,13 +21,16 @@
 // Multi-tab strip: reorder by drag, close, pin, overflow, and drop targets for
 // moving a tab in from another panel. Resource-agnostic - operates purely on
 // TabDescriptor[].
-import { faChevronDown, faPlus, faThumbtack, faXmark } from '@fortawesome/free-solid-svg-icons';
+import { faChevronDown, faEllipsisVertical, faPlus, faThumbtack, faXmark } from '@fortawesome/free-solid-svg-icons';
+import type { Snippet } from 'svelte';
 
 import Icon from '../icons/Icon.svelte';
+import Tooltip from '../tooltip/Tooltip.svelte';
 import ContextMenu from './ContextMenu.svelte';
 import type { ContextMenuAction, TabDescriptor } from './types';
 
 export const TAB_DRAG_MIME = 'application/x-podman-desktop-tab';
+const TAB_DRAG_PURPLE = '#a56bff';
 
 interface DragPayload {
   panelId: string;
@@ -41,17 +44,33 @@ interface Props {
   onSelect: (tabId: string) => void;
   onClose: (tabId: string) => void;
   onCloseOthers: (tabId: string) => void;
-  onCloseAllInPanel: () => void;
   onPinToggle: (tabId: string) => void;
   onReorder: (tabId: string, beforeTabId: string | undefined) => void;
   onMoveFromOtherPanel: (sourcePanelId: string, tabId: string, beforeTabId: string | undefined) => void;
   onSplitRight: (tabId: string) => void;
   onSplitDown: (tabId: string) => void;
-  onMoveToNewPanel: (tabId: string) => void;
-  /** When provided, renders a "+" button after the tabs that opens a new-tab picker (other
-   * views of the active resource, any pod/container/image, or a free-text ask-the-agent
-   * entry) - instead of cluttering every tab's content with a static row of sub-views. */
+  onMoveUp?: (tabId: string) => void;
+  canMoveUp?: (tabId: string) => boolean;
+  /** When set, controls whether "Open in a new section" is enabled for a tab. Defaults to
+   * "at least two non-permanent tabs in this bar" (fine for a per-panel bar; global bars
+   * should pass a per-section check so a lone tab in its section cannot be moved out). */
+  canOpenInNewSection?: (tabId: string) => boolean;
+  /** When provided, renders a "+" button after the tab scroller (always visible — does not
+   * scroll away with overflow) that opens a new-tab picker. */
   onAddTab?: () => void;
+  /** Rendered pinned to the far right of the bar, regardless of tab count - e.g. a settings
+   * button - so the bar itself doubles as the app's persistent toolbar instead of needing a
+   * separate full-width row above it. Called with this bar's own `panelId`, so a "close all"
+   * style action in there can be scoped to just this panel instead of every panel. */
+  trailing?: Snippet<[string]>;
+  /** Rendered after the last tab inside the scrollable row (before the pinned "+") —
+   * e.g. a compact "+N hidden sections" chip. */
+  beforeAdd?: Snippet;
+  /** Rendered in place of the tab list only while `tabs` is empty - a first-run hint like "Open
+   * a resource to start a tab here", so an empty bar isn't just an unlabeled strip with no clue
+   * what it's for. Callers are expected to only pass this once (e.g. gated on a "has the user
+   * ever opened a tab" flag) so it doesn't reappear every time the bar happens to be empty again. */
+  emptyHint?: Snippet;
 }
 
 let {
@@ -61,20 +80,36 @@ let {
   onSelect,
   onClose,
   onCloseOthers,
-  onCloseAllInPanel,
   onPinToggle,
   onReorder,
   onMoveFromOtherPanel,
   onSplitRight,
   onSplitDown,
-  onMoveToNewPanel,
+  onMoveUp,
+  canMoveUp,
+  canOpenInNewSection,
   onAddTab,
+  trailing,
+  beforeAdd,
+  emptyHint,
 }: Props = $props();
+
+function sectionOpenAllowed(tabId: string): boolean {
+  if (canOpenInNewSection) return canOpenInNewSection(tabId);
+  // Keep at least one tab in the source section. Permanent page tabs count as
+  // the tab that remains behind.
+  const tab = tabs.find(t => t.id === tabId);
+  return !!tab && !tab.permanent && !tab.pinned && tabs.some(t => t.id !== tabId);
+}
 
 let scrollEl: HTMLDivElement | undefined = $state();
 let overflowing = $state(false);
 let showOverflowMenu = $state(false);
-let dragOverTabId: string | undefined = $state();
+let dragTarget: { tabId: string; edge: 'before' | 'after' } | undefined = $state();
+let isDraggingTab = $state(false);
+let suppressClickAfterDrag = false;
+let clearSuppressedClick: ReturnType<typeof setTimeout> | undefined;
+let dragImage: HTMLDivElement | undefined = $state();
 let contextMenu: { x: number; y: number; tabId: string } | undefined = $state();
 
 function checkOverflow(_tabCount: number): void {
@@ -82,13 +117,38 @@ function checkOverflow(_tabCount: number): void {
   overflowing = scrollEl.scrollWidth > scrollEl.clientWidth + 1;
 }
 
+function revealActiveTab(): void {
+  if (!scrollEl || !activeTabId) return;
+  const activeElement = [...scrollEl.querySelectorAll<HTMLElement>('[role="tab"]')].find(
+    element => element.getAttribute('aria-selected') === 'true',
+  );
+  if (!activeElement) return;
+  const containerRect = scrollEl.getBoundingClientRect();
+  const tabRect = activeElement.getBoundingClientRect();
+  if (tabRect.left < containerRect.left) {
+    scrollEl.scrollLeft -= containerRect.left - tabRect.left;
+  } else if (tabRect.right > containerRect.right) {
+    scrollEl.scrollLeft += tabRect.right - containerRect.right;
+  }
+}
+
 $effect(() => {
   // reading tabs.length here makes this effect re-run whenever the tab list changes
   const tabCount = tabs.length;
+  const selectedTabId = activeTabId;
   requestAnimationFrame(() => checkOverflow(tabCount));
+  requestAnimationFrame(() => {
+    // Wait for the new tab DOM node before adjusting the horizontal scroll.
+    if (selectedTabId) revealActiveTab();
+  });
 });
 
 function onWheel(event: WheelEvent): void {
+  if (isDraggingTab || dragTarget) {
+    event.preventDefault();
+    event.stopPropagation();
+    return;
+  }
   if (!scrollEl) return;
   if (event.deltaY === 0) return;
   scrollEl.scrollLeft += event.deltaY;
@@ -96,18 +156,106 @@ function onWheel(event: WheelEvent): void {
 }
 
 function onDragStart(event: DragEvent, tabId: string): void {
+  const tab = tabs.find(t => t.id === tabId);
+  if (tab?.permanent || tab?.pinned) {
+    event.preventDefault();
+    return;
+  }
   const payload: DragPayload = { panelId, tabId };
+  suppressClickAfterDrag = true;
+  isDraggingTab = true;
+  if (clearSuppressedClick) clearTimeout(clearSuppressedClick);
   event.dataTransfer?.setData(TAB_DRAG_MIME, JSON.stringify(payload));
-  if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move';
+
+    // Match PR #18433: use a lightweight icon-only drag preview instead of the
+    // browser's large, opaque snapshot of the whole tab.
+    const preview = document.createElement('div');
+    preview.setAttribute('aria-hidden', 'true');
+    preview.style.cssText = [
+      'position: fixed',
+      'top: -1000px',
+      'left: -1000px',
+      'width: 40px',
+      'height: 36px',
+      'display: flex',
+      'align-items: center',
+      'justify-content: center',
+      'background: var(--pd-global-nav-bg, var(--pd-content-bg))',
+      'border: 1px solid var(--pd-global-nav-bg-border, var(--pd-content-divider))',
+      'box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.25)',
+      `color: var(--pd-global-nav-icon-selected, ${TAB_DRAG_PURPLE})`,
+      'opacity: 0.9',
+      'pointer-events: none',
+      'font-size: 24px',
+    ].join(';');
+    const icon = document.createElement('i');
+    icon.className = tab?.iconClass ?? 'fas fa-window-maximize';
+    icon.setAttribute('aria-hidden', 'true');
+    preview.append(icon);
+    document.body.append(preview);
+    dragImage = preview;
+    // Keep the pointer near the lower edge so the preview floats above it,
+    // clear of the tab row and its labels.
+    event.dataTransfer.setDragImage(preview, 20, 30);
+  }
 }
 
-function onDragOverTab(event: DragEvent, tabId: string): void {
+function onDragOverTab(event: DragEvent, tabId: string, forcedEdge?: 'before' | 'after'): void {
   event.preventDefault();
-  dragOverTabId = tabId;
+  event.stopPropagation();
+  if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+  const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+  dragTarget = { tabId, edge: forcedEdge ?? (event.clientX < rect.left + rect.width / 2 ? 'before' : 'after') };
 }
 
-function onDragLeaveTab(): void {
-  dragOverTabId = undefined;
+// Keep the whole strip as a drop target, including the gaps between tabs and
+// the empty space after the last tab. This makes the insertion line much easier
+// to acquire than requiring the pointer to be over a specific tab element.
+function onDragOverBar(event: DragEvent): void {
+  event.preventDefault();
+  event.stopPropagation();
+  if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+  const tabElements = [...(scrollEl?.querySelectorAll<HTMLElement>('[role="tab"]') ?? [])];
+  if (tabElements.length === 0) return;
+  const insertionIndex = tabElements.findIndex(element => {
+    const rect = element.getBoundingClientRect();
+    return event.clientX < rect.left + rect.width / 2;
+  });
+  const tabIndex = insertionIndex === -1 ? tabElements.length - 1 : insertionIndex;
+  const targetTab = tabs[tabIndex];
+  if (!targetTab) return;
+  dragTarget = {
+    tabId: targetTab.id,
+    edge: insertionIndex === -1 ? 'after' : 'before',
+  };
+}
+
+function onDragEnd(): void {
+  dragTarget = undefined;
+  isDraggingTab = false;
+  dragImage?.remove();
+  dragImage = undefined;
+  clearSuppressedClick = setTimeout(() => {
+    suppressClickAfterDrag = false;
+    clearSuppressedClick = undefined;
+  }, 250);
+}
+
+function selectTab(tabId: string): void {
+  if (suppressClickAfterDrag) {
+    suppressClickAfterDrag = false;
+    if (clearSuppressedClick) clearTimeout(clearSuppressedClick);
+    clearSuppressedClick = undefined;
+    return;
+  }
+  onSelect(tabId);
+}
+
+function onDragLeaveBar(event: DragEvent): void {
+  if ((event.currentTarget as HTMLElement).contains(event.relatedTarget as Node | null)) return;
+  dragTarget = undefined;
 }
 
 function readPayload(event: DragEvent): DragPayload | undefined {
@@ -120,13 +268,24 @@ function readPayload(event: DragEvent): DragPayload | undefined {
   }
 }
 
-function onDropOnTab(event: DragEvent, beforeTabId: string): void {
+function onDropOnTab(event: DragEvent, targetTabId: string): void {
   event.preventDefault();
-  dragOverTabId = undefined;
+  event.stopPropagation();
   const payload = readPayload(event);
+  const edge = dragTarget?.tabId === targetTabId ? dragTarget.edge : 'before';
+  dragTarget = undefined;
   if (!payload) return;
+  if (payload.panelId === panelId && payload.tabId === targetTabId) return;
+  const orderedIds = tabs.map(tab => tab.id).filter(id => id !== payload.tabId);
+  const targetIndex = orderedIds.indexOf(targetTabId);
+  const targetTab = tabs.find(tab => tab.id === targetTabId);
+  const beforeTabId = targetTab?.permanent
+    ? targetTabId
+    : edge === 'before'
+      ? targetTabId
+      : orderedIds[targetIndex + 1];
   if (payload.panelId === panelId) {
-    if (payload.tabId !== beforeTabId) onReorder(payload.tabId, beforeTabId);
+    onReorder(payload.tabId, beforeTabId);
   } else {
     onMoveFromOtherPanel(payload.panelId, payload.tabId, beforeTabId);
   }
@@ -134,7 +293,7 @@ function onDropOnTab(event: DragEvent, beforeTabId: string): void {
 
 function onDropOnEnd(event: DragEvent): void {
   event.preventDefault();
-  dragOverTabId = undefined;
+  dragTarget = undefined;
   const payload = readPayload(event);
   if (!payload) return;
   if (payload.panelId === panelId) {
@@ -146,24 +305,33 @@ function onDropOnEnd(event: DragEvent): void {
 
 function openContextMenu(event: MouseEvent, tabId: string): void {
   event.preventDefault();
+  // ContextMenu listens for window-level contextmenu events to dismiss itself.
+  // Stop this originating tab event so the newly opened menu is not immediately closed.
+  event.stopPropagation();
   contextMenu = { x: event.clientX, y: event.clientY, tabId };
+}
+
+function openActionsMenu(event: MouseEvent, tabId: string): void {
+  event.stopPropagation();
+  const rect = (event.currentTarget as HTMLButtonElement).getBoundingClientRect();
+  contextMenu = { x: rect.right - 190, y: rect.bottom + 4, tabId };
 }
 
 function contextMenuActions(tabId: string): ContextMenuAction[] {
   const tab = tabs.find(t => t.id === tabId);
+  const canSplit = sectionOpenAllowed(tabId);
+  const hasOtherClosableTabs = tabs.some(other => other.id !== tabId && !other.pinned && !other.permanent);
+  const moveUpAllowed = canMoveUp?.(tabId) ?? false;
+  const splitReason = tab?.pinned ? 'Tab is pinned' : !canSplit ? 'Keep at least one tab in this section' : undefined;
+  if (tab?.permanent) return [];
   return [
-    { id: 'close', title: 'Close', iconClass: 'fas fa-xmark', onSelect: (): void => onClose(tabId) },
     {
       id: 'close-others',
-      title: 'Close Others',
+      title: 'Close Other Tabs',
       iconClass: 'fas fa-xmark',
+      disabled: !hasOtherClosableTabs,
+      tooltip: hasOtherClosableTabs ? undefined : 'No other tabs to close',
       onSelect: (): void => onCloseOthers(tabId),
-    },
-    {
-      id: 'close-all',
-      title: 'Close All in Panel',
-      iconClass: 'fas fa-xmark',
-      onSelect: (): void => onCloseAllInPanel(),
     },
     {
       id: 'pin',
@@ -175,100 +343,120 @@ function contextMenuActions(tabId: string): ContextMenuAction[] {
     {
       id: 'split-right',
       title: 'Split Right',
+      tooltip: !canSplit ? splitReason : undefined,
       iconClass: 'fas fa-table-columns',
+      disabled: !canSplit,
       separatorBefore: true,
       onSelect: (): void => onSplitRight(tabId),
     },
     {
       id: 'split-down',
-      title: 'Split Down',
-      iconClass: 'fas fa-table-columns',
-      onSelect: (): void => onSplitDown(tabId),
-    },
-    {
-      id: 'move-new-panel',
-      title: 'Move to New Panel',
-      iconClass: 'fas fa-up-right-from-square',
-      onSelect: (): void => onMoveToNewPanel(tabId),
+      title: moveUpAllowed ? 'Move Up' : 'Split Down',
+      tooltip: !moveUpAllowed && !canSplit ? splitReason : undefined,
+      iconClass: moveUpAllowed ? 'fas fa-arrow-up' : 'fas fa-grip-lines',
+      disabled: !moveUpAllowed && !canSplit,
+      onSelect: (): void => (moveUpAllowed ? onMoveUp?.(tabId) : onSplitDown(tabId)),
     },
   ];
 }
 </script>
 
-<div class="flex items-stretch border-b border-[var(--pd-content-divider)] bg-[var(--pd-content-card-bg)] min-w-0">
-  <div
-    bind:this={scrollEl}
-    onwheel={onWheel}
-    class="flex flex-row overflow-x-auto min-w-0 grow scrollbar-hide"
-    role="tablist"
-    tabindex="-1"
-    ondragover={(e: DragEvent): void => e.preventDefault()}
-    ondrop={onDropOnEnd}>
-    {#each tabs as tab (tab.id)}
-      <div
-        role="tab"
-        tabindex="0"
-        aria-selected={tab.id === activeTabId}
-        draggable="true"
-        ondragstart={(e: DragEvent): void => onDragStart(e, tab.id)}
-        ondragover={(e: DragEvent): void => onDragOverTab(e, tab.id)}
-        ondragleave={onDragLeaveTab}
-        ondrop={(e: DragEvent): void => onDropOnTab(e, tab.id)}
-        oncontextmenu={(e: MouseEvent): void => openContextMenu(e, tab.id)}
-        onclick={(): void => onSelect(tab.id)}
-        onkeydown={(e: KeyboardEvent): void => {
-          if (e.key === 'Enter' || e.key === ' ') onSelect(tab.id);
-        }}
-        class="group flex items-center gap-2 px-3 py-1.5 border-r border-[var(--pd-content-divider)] whitespace-nowrap cursor-pointer select-none max-w-[220px]"
-        class:bg-[var(--pd-content-bg)]={tab.id === activeTabId}
-        class:border-l-2={dragOverTabId === tab.id}
-        class:border-l-[var(--pd-tab-highlight)]={dragOverTabId === tab.id}
-        class:text-[var(--pd-tab-text-highlight)]={tab.id === activeTabId}
-        class:text-[var(--pd-tab-text)]={tab.id !== activeTabId}
-        class:opacity-70={!!tab.stale}
-        title={tab.subtitle ? `${tab.title} — ${tab.subtitle}` : tab.title}>
-        {#if tab.pinned}
-          <Icon class="w-3 text-xs opacity-70" icon={faThumbtack} />
-        {/if}
-        {#if tab.agentCreated}
-          <span
-            class="w-1.5 h-1.5 rounded-full bg-[var(--pd-status-running)] shrink-0"
-            title="Opened by an agent"></span>
-        {/if}
-        <span class="overflow-hidden text-ellipsis">{tab.title}</span>
-        {#if tab.stale}
-          <span class="text-[10px] uppercase tracking-wide text-[var(--pd-status-degraded)]">missing</span>
-        {/if}
-        {#if !tab.pinned}
-          <button
-            type="button"
-            aria-label="Close tab {tab.title}"
-            class="ml-1 opacity-0 group-hover:opacity-100 hover:bg-[var(--pd-action-button-details-bg)] rounded-sm p-0.5"
-            class:opacity-100={tab.id === activeTabId}
-            onclick={(e: MouseEvent): void => {
-              e.stopPropagation();
-              onClose(tab.id);
-            }}>
-            <Icon class="w-3 text-xs" icon={faXmark} />
-          </button>
-        {/if}
-      </div>
-    {/each}
-  </div>
+<div
+  class="flex items-stretch h-8 max-h-8 border-b border-[var(--pd-content-divider)] bg-[var(--pd-content-card-bg)] text-xs min-w-0">
+  <!-- Tabs + "+" share a grow group: scroller sizes to content when it fits (so "+" sits
+       right after the last tab), and shrinks with overflow-x when it doesn't — "+" stays
+       pinned outside the scroller so it never scrolls away. -->
+  <div class="flex items-stretch min-w-0 grow h-8">
+    <div
+      bind:this={scrollEl}
+      onwheel={onWheel}
+      class="flex h-8 max-h-8 min-h-0 flex-row items-stretch overflow-x-auto overflow-y-hidden min-w-0 shrink scrollbar-hide"
+      style:overflow-x={isDraggingTab || dragTarget ? 'hidden' : 'auto'}
+      role="tablist"
+      tabindex="-1"
+      ondragover={onDragOverBar}
+      ondragleave={onDragLeaveBar}
+      ondrop={onDropOnEnd}>
+      {#each tabs as tab (tab.id)}
+        <div
+          role="tab"
+          tabindex="0"
+          aria-selected={tab.id === activeTabId}
+          draggable={!tab.permanent && !tab.pinned}
+          ondragstart={(e: DragEvent): void => onDragStart(e, tab.id)}
+          ondragend={onDragEnd}
+          ondragover={(e: DragEvent): void => onDragOverTab(e, tab.id, tab.permanent ? 'after' : undefined)}
+          ondrop={(e: DragEvent): void => onDropOnTab(e, tab.id)}
+          oncontextmenu={(e: MouseEvent): void => openContextMenu(e, tab.id)}
+          onclick={(): void => selectTab(tab.id)}
+          onkeydown={(e: KeyboardEvent): void => {
+            if (e.key === 'Enter' || e.key === ' ') onSelect(tab.id);
+          }}
+          class="group relative flex items-center gap-1.5 px-2.5 h-8 leading-4 border-r border-[var(--pd-content-divider)] whitespace-nowrap cursor-pointer select-none max-w-[220px]"
+          class:bg-[var(--pd-content-bg)]={tab.id === activeTabId}
+          class:text-[var(--pd-tab-text-highlight)]={tab.id === activeTabId}
+          class:text-[var(--pd-tab-text)]={tab.id !== activeTabId}
+          class:opacity-70={!!tab.stale}
+          title={tab.subtitle ? `${tab.title} — ${tab.subtitle}` : tab.title}>
+          {#if dragTarget?.tabId === tab.id}
+            <span
+              aria-hidden="true"
+              class="pointer-events-none absolute inset-y-1 z-10 w-1 rounded-full"
+              class:left-0={dragTarget.edge === 'before'}
+              class:right-0={dragTarget.edge === 'after'}
+              style:background-color={TAB_DRAG_PURPLE}></span>
+          {/if}
+          {#if tab.pinned && !tab.permanent}
+            <Icon class="w-3 text-xs opacity-70" icon={faThumbtack} />
+          {/if}
+          <Icon class="w-3 shrink-0 text-xs" icon={tab.tabIcon ?? tab.iconClass ?? 'fas fa-window-maximize'} ariaHidden />
+          <span class="overflow-hidden text-ellipsis">{tab.title}</span>
+          {#if tab.stale}
+            <span class="text-[10px] uppercase tracking-wide text-[var(--pd-status-degraded)]">missing</span>
+          {/if}
+          {#if !tab.permanent}
+            <button type="button" aria-label="Close {tab.title}"
+              class="shrink-0 rounded-sm p-0.5 hover:bg-[var(--pd-action-button-details-bg)] group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100"
+              class:opacity-0={tab.id !== activeTabId}
+              onclick={(event: MouseEvent): void => { event.stopPropagation(); onClose(tab.id); }}>
+              <Icon icon={faXmark} class="w-3 text-xs" ariaHidden />
+            </button>
+            <Tooltip tip="Tab actions" top>
+              <button
+                type="button"
+                aria-label="Actions for {tab.title}"
+                class="opacity-70 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 hover:bg-[var(--pd-action-button-details-bg)] rounded-sm p-0.5"
+                onclick={(event: MouseEvent): void => openActionsMenu(event, tab.id)}>
+                <Icon class="w-3 text-xs" icon={faEllipsisVertical} />
+              </button>
+            </Tooltip>
+          {/if}
+        </div>
+      {/each}
 
-  {#if onAddTab && tabs.length > 0}
-    <!-- Nothing to offer "another view" of with zero tabs open - the empty state already
-         covers that case, so skip the button rather than leave it floating alone in an
-         otherwise-empty bar. -->
-    <button
-      type="button"
-      aria-label="Open a new tab"
-      title="Open a new tab"
-      class="flex items-center px-2.5 border-l border-[var(--pd-content-divider)] hover:bg-[var(--pd-action-button-details-bg)]"
-      onclick={onAddTab}>
-      <Icon class="w-3 text-xs" icon={faPlus} />
-    </button>
-  {/if}
+      {#if tabs.length === 0 && emptyHint}
+        <div class="flex items-center px-3 text-xs text-[var(--pd-content-text)] opacity-60 whitespace-nowrap">
+          {@render emptyHint()}
+        </div>
+      {/if}
+
+      {#if beforeAdd}
+        {@render beforeAdd()}
+      {/if}
+    </div>
+
+    {#if onAddTab && tabs.length > 0}
+      <Tooltip hideOnClick tip="Open a new tab" top containerClass="flex items-stretch shrink-0" class="flex items-stretch">
+        <button
+          type="button"
+          aria-label="Open a new tab"
+          class="flex items-center h-8 px-2 shrink-0 border-l border-b border-[var(--pd-content-divider)] hover:bg-[var(--pd-action-button-details-bg)]"
+          onclick={onAddTab}>
+          <Icon class="w-3 text-xs" icon={faPlus} />
+        </button>
+      </Tooltip>
+    {/if}
+  </div>
 
   {#if overflowing}
     <div class="relative flex items-center border-l border-[var(--pd-content-divider)] px-1">
@@ -305,6 +493,12 @@ function contextMenuActions(tabId: string): ContextMenuAction[] {
           {/each}
         </div>
       {/if}
+    </div>
+  {/if}
+
+  {#if trailing}
+    <div class="flex items-stretch border-l border-[var(--pd-content-divider)]">
+      {@render trailing(panelId)}
     </div>
   {/if}
 </div>

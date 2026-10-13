@@ -21,16 +21,14 @@
 // Cursor/VS Code-style "new tab" command palette, opened from a panel's "+"
 // button (see TabBar's onAddTab). Replaces the old plain dropdown of
 // sub-views with a searchable list that also lets you jump straight to any
-// pod/container/image, or hand a free-text request to the (mocked) agent -
-// section 4.6/4.9 of the vision doc.
+// pod/container/image - section 4.6 of the vision doc.
 import { Modal } from '@podman-desktop/ui-svelte';
 import { tick } from 'svelte';
+import { router } from 'tinro';
 
-import { ContainerUtils } from '/@/lib/container/container-utils';
 import { ImageUtils } from '/@/lib/image/image-utils';
 import { containersInfos } from '/@/stores/containers';
 import { imagesInfos } from '/@/stores/images';
-import { runAgentPrompt } from '/@/stores/layout/layout-agent-demo.svelte';
 import { openTab } from '/@/stores/layout/layout-store.svelte';
 import type { WorkspaceTab } from '/@/stores/layout/layout-types';
 import { imageKey, podKey, subViewLabel, subViewsForResourceType } from '/@/stores/layout/layout-types';
@@ -53,7 +51,6 @@ interface PaletteEntry {
   onSelect: () => void;
 }
 
-const containerUtils = new ContainerUtils();
 const imageUtils = new ImageUtils();
 
 let query = $state('');
@@ -83,6 +80,7 @@ const subViewEntries = $derived.by((): PaletteEntry[] => {
             'newTab',
             panelId,
           );
+          router.goto('/workspace');
           onClose();
         },
       }),
@@ -108,6 +106,7 @@ const podEntries = $derived(
           'newTab',
           panelId,
         );
+        router.goto('/workspace');
         onClose();
       },
     }),
@@ -115,30 +114,29 @@ const podEntries = $derived(
 );
 
 const containerEntries = $derived(
-  $containersInfos
-    .map(c => containerUtils.getContainerInfoUI(c))
-    .map(
-      (container): PaletteEntry => ({
-        id: `container-${container.id}`,
-        title: container.name,
-        subtitle: 'Container',
-        iconClass: 'fas fa-cube',
-        group: 'Containers',
-        onSelect: (): void => {
-          openTab(
-            {
-              resourceType: 'container',
-              resourceId: container.id,
-              subView: 'summary',
-              title: `${container.name} · Summary`,
-            },
-            'newTab',
-            panelId,
-          );
-          onClose();
-        },
-      }),
-    ),
+  $containersInfos.map(
+    (container): PaletteEntry => ({
+      id: `container-${container.id}`,
+      title: container.name,
+      subtitle: 'Container',
+      iconClass: 'fas fa-cube',
+      group: 'Containers',
+      onSelect: (): void => {
+        openTab(
+          {
+            resourceType: 'container',
+            resourceId: container.id,
+            subView: 'logs',
+            title: `${container.name} · Logs`,
+          },
+          'newTab',
+          panelId,
+        );
+        router.goto('/workspace');
+        onClose();
+      },
+    }),
+  ),
 );
 
 const imageEntries = $derived(
@@ -163,6 +161,7 @@ const imageEntries = $derived(
             'newTab',
             panelId,
           );
+          router.goto('/workspace');
           onClose();
         },
       }),
@@ -170,20 +169,6 @@ const imageEntries = $derived(
 );
 
 const trimmedQuery = $derived(query.trim());
-
-const agentEntry = $derived.by(
-  (): PaletteEntry => ({
-    id: 'agent',
-    title: trimmedQuery ? `Ask agent: "${trimmedQuery}"` : 'Ask agent to prepare a layout for me',
-    subtitle: 'AI agent (prototype demo)',
-    iconClass: 'fas fa-wand-magic-sparkles',
-    group: 'Agent',
-    onSelect: (): void => {
-      runAgentPrompt(trimmedQuery);
-      onClose();
-    },
-  }),
-);
 
 const filteredResourceEntries = $derived.by((): PaletteEntry[] => {
   const q = trimmedQuery.toLowerCase();
@@ -193,7 +178,7 @@ const filteredResourceEntries = $derived.by((): PaletteEntry[] => {
 });
 
 const groupedEntries = $derived.by((): { name: string; entries: PaletteEntry[] }[] => {
-  const groups: { name: string; entries: PaletteEntry[] }[] = [{ name: 'Agent', entries: [agentEntry] }];
+  const groups: { name: string; entries: PaletteEntry[] }[] = [];
   for (const entry of filteredResourceEntries) {
     let group = groups.find(g => g.name === entry.group);
     if (!group) {
@@ -231,7 +216,7 @@ tick()
 </script>
 
 <Modal name="Open a new tab" top onclose={onClose}>
-  <div class="flex flex-col w-[560px] max-h-[70vh]">
+  <div class="flex w-full min-w-0 flex-col max-h-[70vh]">
     <div class="p-2 border-b border-[var(--pd-content-divider)]">
       <input
         bind:this={inputEl}
@@ -239,8 +224,8 @@ tick()
         oninput={onQueryInput}
         onkeydown={onKeydown}
         type="text"
-        aria-label="Search pods, containers, images, or ask the agent"
-        placeholder="Search pods, containers, images — or ask the agent…"
+        aria-label="Search pods, containers, and images"
+        placeholder="Search pods, containers, and images…"
         class="w-full px-3 py-2 rounded-sm bg-[var(--pd-input-field-focused-bg)] text-[var(--pd-input-field-text)] border border-[var(--pd-input-field-focused-bg)] focus:outline-hidden" />
     </div>
     <div class="overflow-y-auto py-1">
@@ -271,7 +256,7 @@ tick()
       {/each}
       {#if filteredResourceEntries.length === 0}
         <div class="px-3 py-6 text-center text-sm text-[var(--pd-modal-dropdown-text)] opacity-70">
-          No matching resources — press Enter to ask the agent instead.
+          No matching resources.
         </div>
       {/if}
     </div>

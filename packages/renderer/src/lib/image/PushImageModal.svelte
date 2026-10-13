@@ -102,7 +102,7 @@ $effect(() => {
         {/if}
 
         <select
-          class="text-sm rounded-lg block w-full p-2.5 bg-[var(--pd-dropdown-bg)] pl-6 border-r-8 border-transparent outline {isAuthenticatedForThisImage
+          class="text-sm rounded-lg block w-full p-2.5 pr-8 bg-[var(--pd-dropdown-bg)] pl-6 outline {isAuthenticatedForThisImage
             ? 'outline-[var(--pd-modal-border)]'
             : 'outline-[var(--pd-state-warning)]'} placeholder-[var(--pd-content-text)] text-[var(--pd-default-text)]"
           name="imageChoice"

@@ -57,7 +57,23 @@ function handleWindowClick(event: MouseEvent): void {
   }
 }
 
+$effect(() => {
+  if (menuEl) menuEl.querySelector<HTMLElement>('[role="menuitem"]:not([aria-disabled="true"])')?.focus();
+});
+
 function handleKeydown(event: KeyboardEvent): void {
+  if (['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key) && menuEl) {
+    event.preventDefault();
+    const items = [...menuEl.querySelectorAll<HTMLElement>('[role="menuitem"]:not([aria-disabled="true"])')];
+    const index = items.findIndex(item => item === document.activeElement);
+    const next =
+      event.key === 'Home'
+        ? 0
+        : event.key === 'End'
+          ? items.length - 1
+          : (index + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
+    items[next]?.focus();
+  }
   if (event.key === 'Escape') {
     onClose();
   }
@@ -83,6 +99,7 @@ function select(action: ContextMenuAction): void {
     {/if}
     <div
       role="menuitem"
+      aria-disabled={!!action.disabled}
       tabindex="-1"
       class="px-3 py-2 flex items-center gap-2 whitespace-nowrap text-sm"
       class:opacity-50={action.disabled}
@@ -91,14 +108,20 @@ function select(action: ContextMenuAction): void {
       class:hover:bg-[var(--pd-dropdown-item-hover-bg)]={!action.disabled}
       class:text-[var(--pd-dropdown-item-text)]={!action.danger}
       class:text-[var(--pd-danger-text)]={!!action.danger && !action.disabled}
+      title={action.tooltip}
       onclick={(): void => select(action)}
       onkeydown={(e: KeyboardEvent): void => {
         if (e.key === 'Enter' || e.key === ' ') select(action);
       }}>
       {#if action.iconClass}
-        <Icon class="w-4 text-md" icon={action.iconClass} />
+        <Icon class="relative top-px w-4 shrink-0 text-md" icon={action.iconClass} />
       {/if}
-      <span>{action.title}</span>
+      <span class="flex flex-col min-w-0">
+        <span>{action.title}</span>
+        {#if action.disabled && action.tooltip}
+          <span class="text-xs opacity-70 whitespace-normal">{action.tooltip}</span>
+        {/if}
+      </span>
     </div>
   {/each}
 </div>

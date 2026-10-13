@@ -28,7 +28,8 @@ import { router } from 'tinro';
 import { goBack, navigationHistory } from '/@/stores/navigation-history.svelte';
 
 import type { SubView, WorkspaceResourceType, WorkspaceTab } from './layout-types';
-import { tabKey } from './layout-types';
+import { tabKey, workspaceTabIcon, workspaceTabNavigationIcon } from './layout-types';
+import { getPageTabIcon, getPageTabTitle, PAGE_TAB_ID } from './page-tab.svelte';
 
 // Tracks the current route so closing the last tab can tell whether the user is
 // actually looking at /workspace right now (see closeTabInternal below) - closing a
@@ -46,7 +47,6 @@ export interface OpenTabInput {
   title: string;
   subtitle?: string;
   iconClass?: string;
-  agentCreated?: boolean;
 }
 
 let idCounter = 0;
@@ -99,6 +99,10 @@ export function findFirstLeaf(node: PanelNode): LeafPanelNode {
   return node.kind === 'leaf' ? node : findFirstLeaf(node.children[0]);
 }
 
+export function findLastLeaf(node: PanelNode): LeafPanelNode {
+  return node.kind === 'leaf' ? node : findLastLeaf(node.children[node.children.length - 1]);
+}
+
 function findParent(node: PanelNode, childId: string): SplitPanelNode | undefined {
   if (node.kind === 'leaf') return undefined;
   for (const child of node.children) {
@@ -142,6 +146,60 @@ function removeTabFromLeaf(leaf: LeafPanelNode, tabId: string): void {
   }
 }
 
+/** Keep the current app page as the first, permanent tab in the first section. */
+export function ensurePageTab(): void {
+  const title = getPageTabTitle();
+  const existing = layoutState.tabs[PAGE_TAB_ID];
+  if (!existing) {
+    layoutState.tabs[PAGE_TAB_ID] = {
+      id: PAGE_TAB_ID,
+      key: PAGE_TAB_ID,
+      title,
+      permanent: true,
+      pinned: true,
+      resourceType: 'app-page',
+      resourceId: 'app-page',
+      iconClass: 'fas fa-house',
+      tabIcon: getPageTabIcon(),
+    };
+  } else {
+    existing.title = title;
+    existing.tabIcon = getPageTabIcon();
+    existing.permanent = true;
+    existing.pinned = true;
+  }
+
+  const home = findFirstLeaf(layoutState.tree);
+  function removeFromOtherLeaves(node: PanelNode): void {
+    if (node.kind === 'leaf') {
+      if (node.id !== home.id) removeTabFromLeaf(node, PAGE_TAB_ID);
+      return;
+    }
+    node.children.forEach(removeFromOtherLeaves);
+  }
+  removeFromOtherLeaves(layoutState.tree);
+
+  const index = home.tabIds.indexOf(PAGE_TAB_ID);
+  if (index === -1) home.tabIds.unshift(PAGE_TAB_ID);
+  else if (index > 0) {
+    home.tabIds.splice(index, 1);
+    home.tabIds.unshift(PAGE_TAB_ID);
+  }
+  if (!home.activeTabId || !home.tabIds.includes(home.activeTabId)) home.activeTabId = PAGE_TAB_ID;
+}
+
+/** Select the permanent page tab while keeping the user in the workspace. */
+export function activatePageTab(): void {
+  ensurePageTab();
+  const home = findFirstLeaf(layoutState.tree);
+  home.activeTabId = PAGE_TAB_ID;
+  layoutState.focusedPanelId = home.id;
+}
+
+export function resourceTabCount(): number {
+  return Object.keys(layoutState.tabs).filter(id => id !== PAGE_TAB_ID).length;
+}
+
 /** Removes an empty leaf from the tree, collapsing its parent split if it drops to a single remaining child. */
 function pruneEmptyLeaf(leafId: string): void {
   if (layoutState.tree.kind === 'leaf') return; // never prune the last remaining panel
@@ -170,11 +228,14 @@ function pruneEmptyLeaf(leafId: string): void {
 }
 
 function closeTabInternal(panelId: string, tabId: string): void {
+  if (layoutState.tabs[tabId]?.permanent || tabId === PAGE_TAB_ID) return;
   const leaf = findLeaf(layoutState.tree, panelId);
   if (!leaf) return;
   removeTabFromLeaf(leaf, tabId);
   delete layoutState.tabs[tabId];
   if (leaf.tabIds.length === 0) pruneEmptyLeaf(leaf.id);
+
+  if (resourceTabCount() === 0) activatePageTab();
 
   // Match VS Code/Cursor: closing the very last open tab leaves nothing for
   // /workspace to show, so send the user back to whatever page they were on
@@ -227,9 +288,22 @@ function splitLeaf(targetLeafId: string, direction: SplitDirection, position: 'b
 // ---- public API ----
 
 export function openTab(input: OpenTabInput, mode: OpenMode = 'replace', targetPanelId?: string): string {
+  ensurePageTab();
   const key = tabKey(input.resourceType, input.resourceId, input.subView);
+  const basePanelId = targetPanelId ?? layoutState.focusedPanelId;
+  const baseLeaf = findLeaf(layoutState.tree, basePanelId) ?? findFirstLeaf(layoutState.tree);
   const existing = findExistingTabByKey(key);
   if (existing) {
+    // A summary link with default replace behavior should still replace the
+    // current resource tab when its destination is already open elsewhere.
+    // Otherwise the preference appears ineffective on repeat clicks because
+    // both modes only focus the existing destination.
+    const activeId = baseLeaf.activeTabId;
+    const active = activeId ? layoutState.tabs[activeId] : undefined;
+    if (mode === 'replace' && activeId && activeId !== existing.id && active && !active.pinned && !active.permanent) {
+      removeTabFromLeaf(baseLeaf, activeId);
+      delete layoutState.tabs[activeId];
+    }
     const leaf = findLeafContainingTab(layoutState.tree, existing.id);
     if (leaf) {
       leaf.activeTabId = existing.id;
@@ -244,16 +318,13 @@ export function openTab(input: OpenTabInput, mode: OpenMode = 'replace', targetP
     key,
     title: input.title,
     subtitle: input.subtitle,
-    iconClass: input.iconClass,
+    iconClass: input.iconClass ?? workspaceTabIcon(input.resourceType, input.subView),
+    tabIcon: workspaceTabNavigationIcon(input.resourceType),
     resourceType: input.resourceType,
     resourceId: input.resourceId,
     subView: input.subView,
-    agentCreated: input.agentCreated,
   };
   layoutState.tabs[id] = tab;
-
-  const basePanelId = targetPanelId ?? layoutState.focusedPanelId;
-  const baseLeaf = findLeaf(layoutState.tree, basePanelId) ?? findFirstLeaf(layoutState.tree);
 
   let destinationLeaf: LeafPanelNode;
   switch (mode) {
@@ -264,14 +335,31 @@ export function openTab(input: OpenTabInput, mode: OpenMode = 'replace', targetP
       destinationLeaf = splitLeaf(baseLeaf.id, 'column', 'after');
       break;
     case 'replace': {
-      // mirrors today's "clicking a list item replaces the current view" default,
-      // while leaving pinned tabs untouched
-      for (const existingTabId of [...baseLeaf.tabIds]) {
-        const existingTab = layoutState.tabs[existingTabId];
-        if (existingTab && !existingTab.pinned) {
-          removeTabFromLeaf(baseLeaf, existingTabId);
-          delete layoutState.tabs[existingTabId];
-        }
+      // A normal link replaces only the selected tab; sibling tabs stay open.
+      const activeId = baseLeaf.activeTabId;
+      const active = activeId ? layoutState.tabs[activeId] : undefined;
+      if (active && active.pinned && !active.permanent) {
+        // Pinned resource tabs are protected from closing, dragging, and moving,
+        // but ordinary in-tab navigation still replaces their resource. Keeping
+        // the same tab id preserves its pin and section while making the
+        // summary-link preference's disabled state behave as current-tab navigation.
+        active.key = key;
+        active.title = input.title;
+        active.subtitle = input.subtitle;
+        active.iconClass = input.iconClass ?? workspaceTabIcon(input.resourceType, input.subView);
+        active.tabIcon = workspaceTabNavigationIcon(input.resourceType);
+        active.resourceType = input.resourceType;
+        active.resourceId = input.resourceId;
+        active.subView = input.subView;
+        delete active.stale;
+        delete layoutState.tabs[id];
+        layoutState.focusedPanelId = baseLeaf.id;
+        return active.id;
+      }
+      if (activeId && active && !active.pinned && !active.permanent) {
+        const index = baseLeaf.tabIds.indexOf(activeId);
+        baseLeaf.tabIds[index] = id;
+        delete layoutState.tabs[activeId];
       }
       destinationLeaf = baseLeaf;
       break;
@@ -282,13 +370,14 @@ export function openTab(input: OpenTabInput, mode: OpenMode = 'replace', targetP
       break;
   }
 
-  destinationLeaf.tabIds.push(id);
+  if (!destinationLeaf.tabIds.includes(id)) destinationLeaf.tabIds.push(id);
   destinationLeaf.activeTabId = id;
   layoutState.focusedPanelId = destinationLeaf.id;
   return id;
 }
 
 export function selectTab(panelId: string, tabId: string): void {
+  ensurePageTab();
   const leaf = findLeaf(layoutState.tree, panelId);
   if (!leaf) return;
   leaf.activeTabId = tabId;
@@ -311,7 +400,7 @@ export function closeOthers(panelId: string, tabId: string): void {
   for (const otherId of [...leaf.tabIds]) {
     if (otherId === tabId) continue;
     const otherTab = layoutState.tabs[otherId];
-    if (otherTab?.pinned) continue;
+    if (otherTab?.pinned || otherTab?.permanent) continue;
     closeTabInternal(panelId, otherId);
   }
 }
@@ -321,23 +410,38 @@ export function closeAllInPanel(panelId: string): void {
   if (!leaf) return;
   for (const tabId of [...leaf.tabIds]) {
     const tab = layoutState.tabs[tabId];
-    if (tab?.pinned) continue;
+    if (tab?.pinned || tab?.permanent) continue;
     closeTabInternal(panelId, tabId);
   }
 }
 
+/** Close every unpinned resource tab in a section while preserving page and pinned tabs. */
+export function closeSection(panelId: string): void {
+  const leaf = findLeaf(layoutState.tree, panelId);
+  if (!leaf) return;
+  for (const tabId of [...leaf.tabIds]) {
+    const tab = layoutState.tabs[tabId];
+    if (tab?.permanent || tab?.pinned) continue;
+    removeTabFromLeaf(leaf, tabId);
+    delete layoutState.tabs[tabId];
+  }
+  if (leaf.tabIds.length === 0) pruneEmptyLeaf(leaf.id);
+  if (resourceTabCount() === 0) activatePageTab();
+}
+
 export function pinToggle(_panelId: string, tabId: string): void {
   const tab = layoutState.tabs[tabId];
-  if (tab) tab.pinned = !tab.pinned;
+  if (tab && !tab.permanent) tab.pinned = !tab.pinned;
 }
 
 export function reorderTab(panelId: string, tabId: string, beforeTabId: string | undefined): void {
+  if (layoutState.tabs[tabId]?.permanent || layoutState.tabs[tabId]?.pinned) return;
   const leaf = findLeaf(layoutState.tree, panelId);
   if (!leaf) return;
   const from = leaf.tabIds.indexOf(tabId);
   if (from === -1) return;
   leaf.tabIds.splice(from, 1);
-  const to = beforeTabId ? leaf.tabIds.indexOf(beforeTabId) : leaf.tabIds.length;
+  const to = beforeTabId === PAGE_TAB_ID ? 1 : beforeTabId ? leaf.tabIds.indexOf(beforeTabId) : leaf.tabIds.length;
   leaf.tabIds.splice(to === -1 ? leaf.tabIds.length : to, 0, tabId);
 }
 
@@ -347,26 +451,33 @@ export function moveTabFromOtherPanel(
   tabId: string,
   beforeTabId: string | undefined,
 ): void {
+  if (layoutState.tabs[tabId]?.permanent || layoutState.tabs[tabId]?.pinned) return;
   const sourceLeaf = findLeaf(layoutState.tree, sourcePanelId);
   const targetLeaf = findLeaf(layoutState.tree, targetPanelId);
   if (!sourceLeaf || !targetLeaf || sourceLeaf.id === targetLeaf.id) return;
   removeTabFromLeaf(sourceLeaf, tabId);
-  const to = beforeTabId ? targetLeaf.tabIds.indexOf(beforeTabId) : targetLeaf.tabIds.length;
+  const to =
+    beforeTabId === PAGE_TAB_ID ? 1 : beforeTabId ? targetLeaf.tabIds.indexOf(beforeTabId) : targetLeaf.tabIds.length;
   targetLeaf.tabIds.splice(to === -1 ? targetLeaf.tabIds.length : to, 0, tabId);
-  targetLeaf.activeTabId = tabId;
-  layoutState.focusedPanelId = targetLeaf.id;
+  // Dragging repositions the tab; it must not replace the content already
+  // selected in the destination panel. Select the moved tab only if this was
+  // an empty panel with no active content.
+  targetLeaf.activeTabId ??= tabId;
   if (sourceLeaf.tabIds.length === 0) pruneEmptyLeaf(sourceLeaf.id);
 }
 
 export function splitRight(panelId: string, tabId: string): void {
+  if (layoutState.tabs[tabId]?.permanent || layoutState.tabs[tabId]?.pinned) return;
   moveTabToNewLeaf(panelId, tabId, splitLeaf(panelId, 'row', 'after'));
 }
 
 export function splitDown(panelId: string, tabId: string): void {
+  if (layoutState.tabs[tabId]?.permanent || layoutState.tabs[tabId]?.pinned) return;
   moveTabToNewLeaf(panelId, tabId, splitLeaf(panelId, 'column', 'after'));
 }
 
 export function moveToNewPanel(panelId: string, tabId: string): void {
+  if (layoutState.tabs[tabId]?.permanent || layoutState.tabs[tabId]?.pinned) return;
   const root = layoutState.tree;
   const direction: SplitDirection = root.kind === 'split' ? root.direction : 'row';
   moveTabToNewLeaf(panelId, tabId, splitLeaf(panelId, direction, 'after'));
@@ -379,6 +490,36 @@ function moveTabToNewLeaf(sourcePanelId: string, tabId: string, newLeaf: LeafPan
   newLeaf.tabIds.push(tabId);
   newLeaf.activeTabId = tabId;
   layoutState.focusedPanelId = newLeaf.id;
+  if (sourceLeaf.tabIds.length === 0) pruneEmptyLeaf(sourceLeaf.id);
+}
+
+function findMoveUpContext(node: PanelNode, leafId: string): { parent: SplitPanelNode; index: number } | undefined {
+  if (node.kind === 'leaf') return undefined;
+  for (const child of node.children) {
+    const nested = findMoveUpContext(child, leafId);
+    if (nested) return nested;
+  }
+  if (node.direction !== 'column') return undefined;
+  const index = node.children.findIndex(child => !!findLeaf(child, leafId));
+  return index > 0 ? { parent: node, index } : undefined;
+}
+
+export function canMoveTabUp(tabId: string): boolean {
+  if (layoutState.tabs[tabId]?.permanent || layoutState.tabs[tabId]?.pinned) return false;
+  const leaf = findLeafContainingTab(layoutState.tree, tabId);
+  return !!leaf && !!findMoveUpContext(layoutState.tree, leaf.id);
+}
+
+export function moveTabUp(panelId: string, tabId: string): void {
+  if (layoutState.tabs[tabId]?.permanent || layoutState.tabs[tabId]?.pinned) return;
+  const sourceLeaf = findLeaf(layoutState.tree, panelId);
+  const context = sourceLeaf ? findMoveUpContext(layoutState.tree, sourceLeaf.id) : undefined;
+  if (!sourceLeaf || !context) return;
+  const destinationLeaf = findLastLeaf(context.parent.children[context.index - 1]);
+  removeTabFromLeaf(sourceLeaf, tabId);
+  destinationLeaf.tabIds.push(tabId);
+  destinationLeaf.activeTabId = tabId;
+  layoutState.focusedPanelId = destinationLeaf.id;
   if (sourceLeaf.tabIds.length === 0) pruneEmptyLeaf(sourceLeaf.id);
 }
 
@@ -410,7 +551,7 @@ export function closeActiveTab(): void {
   const leaf = findLeaf(layoutState.tree, layoutState.focusedPanelId);
   if (!leaf?.activeTabId) return;
   const tab = layoutState.tabs[leaf.activeTabId];
-  if (tab?.pinned) return;
+  if (tab?.pinned || tab?.permanent) return;
   closeTabInternal(leaf.id, leaf.activeTabId);
 }
 
@@ -420,7 +561,7 @@ export function markTabStale(tabId: string, stale: boolean): void {
 }
 
 export function hasAnyTabs(): boolean {
-  return Object.keys(layoutState.tabs).length > 0;
+  return resourceTabCount() > 0;
 }
 
 /** Total number of open tabs across every panel - used for the persistent global tab bar. */
@@ -468,20 +609,22 @@ export function selectTabAnyPanel(tabId: string): void {
 
 export function closeAllTabsExcept(tabId: string): void {
   for (const otherId of Object.keys(layoutState.tabs)) {
-    if (otherId === tabId || layoutState.tabs[otherId]?.pinned) continue;
+    if (otherId === tabId || layoutState.tabs[otherId]?.pinned || layoutState.tabs[otherId]?.permanent) continue;
     closeTabById(otherId);
   }
 }
 
 export function closeAllTabsEverywhere(): void {
   for (const id of Object.keys(layoutState.tabs)) {
-    if (layoutState.tabs[id]?.pinned) continue;
+    if (layoutState.tabs[id]?.pinned || layoutState.tabs[id]?.permanent) continue;
     closeTabById(id);
   }
+  activatePageTab();
 }
 
 /** Reordering in the flat bar can also move a tab between panels, resolved via the same primitives the per-panel drag-and-drop uses. */
 export function reorderTabGlobal(tabId: string, beforeTabId: string | undefined): void {
+  if (layoutState.tabs[tabId]?.permanent || layoutState.tabs[tabId]?.pinned) return;
   const sourceLeaf = findLeafContainingTab(layoutState.tree, tabId);
   if (!sourceLeaf) return;
   const targetLeaf = beforeTabId ? findLeafContainingTab(layoutState.tree, beforeTabId) : sourceLeaf;
@@ -494,18 +637,32 @@ export function reorderTabGlobal(tabId: string, beforeTabId: string | undefined)
 }
 
 export function splitRightAnyPanel(tabId: string): void {
+  if (layoutState.tabs[tabId]?.permanent) return;
   const leaf = findLeafContainingTab(layoutState.tree, tabId);
   if (leaf) splitRight(leaf.id, tabId);
 }
 
 export function splitDownAnyPanel(tabId: string): void {
+  if (layoutState.tabs[tabId]?.permanent) return;
   const leaf = findLeafContainingTab(layoutState.tree, tabId);
   if (leaf) splitDown(leaf.id, tabId);
 }
 
 export function moveToNewPanelAnyPanel(tabId: string): void {
+  if (layoutState.tabs[tabId]?.permanent) return;
   const leaf = findLeafContainingTab(layoutState.tree, tabId);
   if (leaf) moveToNewPanel(leaf.id, tabId);
+}
+
+export function moveTabUpAnyPanel(tabId: string): void {
+  const leaf = findLeafContainingTab(layoutState.tree, tabId);
+  if (leaf) moveTabUp(leaf.id, tabId);
+}
+
+export function canMoveTabToNewSection(tabId: string): boolean {
+  if (layoutState.tabs[tabId]?.permanent || layoutState.tabs[tabId]?.pinned) return false;
+  const leaf = findLeafContainingTab(layoutState.tree, tabId);
+  return !!leaf && leaf.tabIds.some(id => id !== tabId);
 }
 
 /** Test-only / reset hook used by the "apply preset" and "load named layout" flows. */
@@ -515,4 +672,49 @@ export function resetLayout(): void {
   layoutState.tabs = {};
   layoutState.focusedPanelId = leaf.id;
   layoutState.maximizedPanelId = undefined;
+  ensurePageTab();
+}
+
+ensurePageTab();
+
+/** Local production detail navigation changes the current workspace tab. */
+export function selectResourceView(tabId: string, subView: SubView): void {
+  const tab = layoutState.tabs[tabId];
+  if (!tab || tab.permanent) return;
+  tab.subView = subView;
+  tab.key = tabKey(tab.resourceType, tab.resourceId, subView);
+  tab.title = `${tab.title.split(' · ')[0]} · ${subView[0].toUpperCase() + subView.slice(1)}`;
+  tab.iconClass = workspaceTabIcon(tab.resourceType, subView);
+  tab.tabIcon = workspaceTabNavigationIcon(tab.resourceType);
+}
+
+export interface HiddenWhileMaximized {
+  otherPanelCount: number;
+  otherTabs: WorkspaceTab[];
+}
+
+/** While a panel is maximized (see toggleMaximize), every other panel disappears from view
+ * entirely (WorkspaceLayout only renders the maximized leaf) - with nothing on screen hinting
+ * they still exist, it's easy to forget a whole side-by-side comparison is sitting behind the
+ * maximized panel. Returns undefined when nothing is maximized, or when maximizing didn't
+ * actually hide anything (e.g. it's the only panel left). */
+export function getHiddenWhileMaximized(): HiddenWhileMaximized | undefined {
+  const maximizedId = layoutState.maximizedPanelId;
+  if (!maximizedId) return undefined;
+
+  const otherLeaves: LeafPanelNode[] = [];
+  function collectOtherLeaves(node: PanelNode): void {
+    if (node.kind === 'leaf') {
+      if (node.id !== maximizedId) otherLeaves.push(node);
+    } else {
+      for (const child of node.children) collectOtherLeaves(child);
+    }
+  }
+  collectOtherLeaves(layoutState.tree);
+  if (otherLeaves.length === 0) return undefined;
+
+  const otherTabs = otherLeaves.flatMap(leaf =>
+    leaf.tabIds.map(id => layoutState.tabs[id]).filter((t): t is WorkspaceTab => !!t),
+  );
+  return { otherPanelCount: otherLeaves.length, otherTabs };
 }

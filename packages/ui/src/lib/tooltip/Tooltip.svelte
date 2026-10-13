@@ -41,6 +41,7 @@ interface Props {
   bottomLeft?: boolean;
   bottomRight?: boolean;
   left?: boolean;
+  hideOnClick?: boolean;
   class?: string;
   containerClass?: string;
   tipSnippet?: Snippet;
@@ -57,6 +58,7 @@ let {
   bottomLeft = false,
   bottomRight = false,
   left = false,
+  hideOnClick = false,
   class: className,
   containerClass,
   tipSnippet,
@@ -72,7 +74,7 @@ let isPositioned = $state(false);
 let cleanupAutoUpdate: (() => void) | undefined;
 
 const tooltipInnerClasses =
-  'pt-[4px] pb-[5px] px-[8px] rounded-[9px] bg-[var(--pd-tooltip-bg)] text-[var(--pd-tooltip-text)] border-[1px] border-[var(--pd-tooltip-inner-border)] backdrop-blur-sm';
+  'pt-[4px] pb-[5px] px-[8px] rounded-[9px] bg-[var(--pd-tooltip-bg)] text-[var(--pd-tooltip-text)] text-center border-[1px] border-[var(--pd-tooltip-inner-border)] backdrop-blur-sm';
 
 const FOCUSABLE_SELECTOR =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]), [contenteditable="true"]';
@@ -202,6 +204,7 @@ $effect(() => {
     bind:this={referenceElement}
     onmouseenter={handleMouseEnter}
     onmouseleave={handleMouseLeave}
+    onclick={hideOnClick ? handleMouseLeave : undefined}
     onfocusin={handleMouseEnter}
     onfocusout={handleFocusOut}>
     {@render children?.()}
@@ -213,12 +216,12 @@ $effect(() => {
       class:opacity-0={!isPositioned}
       style="left: 0; top: 0;">
       {#if tip}
-        <div class="{tooltipInnerClasses} {className}" role="tooltip" id={tooltipId}>
+        <div class={tooltipInnerClasses} role="tooltip" id={tooltipId}>
           {tip}
         </div>
       {/if}
       {#if tipSnippet && !tip}
-        <div class="{tooltipInnerClasses} {className}" role="tooltip" id={tooltipId}>
+        <div class={tooltipInnerClasses} role="tooltip" id={tooltipId}>
           {@render tipSnippet?.()}
         </div>
       {/if}

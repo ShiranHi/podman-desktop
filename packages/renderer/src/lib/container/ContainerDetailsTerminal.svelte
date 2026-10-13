@@ -8,6 +8,7 @@ import { SerializeAddon } from '@xterm/addon-serialize';
 import type { IDisposable } from '@xterm/xterm';
 import { Terminal } from '@xterm/xterm';
 import { onDestroy, onMount } from 'svelte';
+import { router } from 'tinro';
 
 import { getTerminalTheme } from '/@/lib/terminal/terminal-theme';
 import NoLogIcon from '/@/lib/ui/NoLogIcon.svelte';
@@ -23,6 +24,7 @@ interface ContainerDetailsTerminalProps {
 let { container, screenReaderMode = false }: ContainerDetailsTerminalProps = $props();
 let terminalXtermDiv: HTMLDivElement;
 let shellTerminal: Terminal;
+let currentRouterPath: string;
 let sendCallbackId: number | undefined;
 let terminalContent: string = '';
 let serializeAddon: SerializeAddon;
@@ -81,6 +83,11 @@ function scheduleReconnect(): void {
     }
   }, 2000);
 }
+
+// update current route scheme
+router.subscribe(route => {
+  currentRouterPath = route.path;
+});
 
 let ignoreFirstData = false;
 
@@ -177,16 +184,15 @@ async function refreshTerminal(): Promise<void> {
 
   shellTerminal.open(terminalXtermDiv);
 
-  // Call fit addon each time we resize the window. This component only stays mounted while its
-  // tab is the active one in its panel (see WorkspaceLayout.svelte), so - unlike the old
-  // single-panel model - there's no need to gate this on the current router path anymore: if
-  // this instance exists, it's visible.
+  // call fit addon each time we resize the window
   window.addEventListener('resize', () => {
-    fitAddon.fit();
-    if (sendCallbackId) {
-      window
-        .shellInContainerResize(sendCallbackId, shellTerminal.cols, shellTerminal.rows)
-        .catch((err: unknown) => console.error(`Error resizing terminal for container ${container.id}`, err));
+    if (currentRouterPath === `/containers/${container.id}/terminal`) {
+      fitAddon.fit();
+      if (sendCallbackId) {
+        window
+          .shellInContainerResize(sendCallbackId, shellTerminal.cols, shellTerminal.rows)
+          .catch((err: unknown) => console.error(`Error resizing terminal for container ${container.id}`, err));
+      }
     }
   });
   fitAddon.fit();

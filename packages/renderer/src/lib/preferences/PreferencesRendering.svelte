@@ -9,6 +9,7 @@ import Route from '/@/Route.svelte';
 import { context } from '/@/stores/context';
 
 import PreferencesRenderingItem from './PreferencesRenderingItem.svelte';
+import PreferencesTabs from './PreferencesTabs.svelte';
 import SettingsPage from './SettingsPage.svelte';
 import { isDefaultScope, isPropertyValidInContext } from './Util';
 
@@ -23,6 +24,11 @@ let { properties = [], key, searchValue = '' }: Props = $props();
 // Context variables
 let contextsUnsubscribe: Unsubscriber;
 let globalContext: ContextUI;
+
+const showTabs = $derived(
+  (key === 'preferences' || key === 'preferences.tabs') &&
+    (!searchValue || matchValue('Tabs Open summary links in new tabs navigation', searchValue)),
+);
 
 // Search and matching records
 let updateSearchValueTimeout: NodeJS.Timeout;
@@ -77,7 +83,7 @@ function updateSearchValue(event: any): void {
         <SearchInput  title="preferences" class="mt-4" oninput={updateSearchValue} />
       {/snippet}
     <div class="flex flex-col space-y-5 text-[var(--pd-content-header)] pb-2">
-      {#if matchingRecords.size === 0}
+      {#if matchingRecords.size === 0 && !showTabs}
         <div>No Settings Found</div>
       {:else}
         {#each [...matchingRecords.keys()].toSorted((a, b) => a.localeCompare(b)) as configSection, index (index)}
@@ -94,6 +100,7 @@ function updateSearchValue(event: any): void {
           {/if}
         {/each}
       {/if}
+      {#if showTabs}<PreferencesTabs />{/if}
     </div>
   </SettingsPage>
 </Route>

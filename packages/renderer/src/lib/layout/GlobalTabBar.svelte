@@ -34,40 +34,78 @@ import { router } from 'tinro';
 
 import {
   activeTabIdOfFocusedPanel,
-  closeAllTabsEverywhere,
+  canMoveTabToNewSection,
+  canMoveTabUp,
   closeAllTabsExcept,
   closeTabById,
+  ensurePageTab,
+  findFirstLeaf,
   getAllTabsOrdered,
-  moveToNewPanelAnyPanel,
+  layoutState,
+  moveTabUpAnyPanel,
   pinToggle,
   reorderTabGlobal,
   selectTabAnyPanel,
   splitDownAnyPanel,
   splitRightAnyPanel,
 } from '/@/stores/layout/layout-store.svelte';
+import { getLastAppPageUrl, PAGE_TAB_ID } from '/@/stores/layout/page-tab.svelte';
+
+import LayoutToolbar from './LayoutToolbar.svelte';
+import NewTabPalette from './NewTabPalette.svelte';
+
+let showPalette = $state(false);
+function openPalette(): void {
+  showPalette = true;
+}
+function closePalette(): void {
+  showPalette = false;
+}
+
+let currentRouteUrl = $state('/');
+router.subscribe(route => {
+  currentRouteUrl = route.url;
+});
+
+$effect(() => {
+  ensurePageTab();
+});
 
 let tabs = $derived(getAllTabsOrdered());
-let activeTabId = $derived(activeTabIdOfFocusedPanel());
+let activeTabId = $derived(currentRouteUrl.startsWith('/workspace') ? activeTabIdOfFocusedPanel() : PAGE_TAB_ID);
 
 function onSelect(tabId: string): void {
+  if (tabId === PAGE_TAB_ID) {
+    selectTabAnyPanel(tabId);
+    router.goto(getLastAppPageUrl());
+    return;
+  }
   selectTabAnyPanel(tabId);
   router.goto('/workspace');
 }
 </script>
 
-{#if tabs.length > 0}
-  <TabBar
-    panelId="global-tab-bar"
-    {tabs}
-    {activeTabId}
-    {onSelect}
-    onClose={closeTabById}
-    onCloseOthers={closeAllTabsExcept}
-    onCloseAllInPanel={closeAllTabsEverywhere}
-    onPinToggle={(tabId): void => pinToggle('global-tab-bar', tabId)}
-    onReorder={reorderTabGlobal}
-    onMoveFromOtherPanel={(_sourcePanelId, tabId, beforeTabId): void => reorderTabGlobal(tabId, beforeTabId)}
-    onSplitRight={splitRightAnyPanel}
-    onSplitDown={splitDownAnyPanel}
-    onMoveToNewPanel={moveToNewPanelAnyPanel} />
-{/if}
+<TabBar
+  panelId="global-tab-bar"
+  {tabs}
+  {activeTabId}
+  {onSelect}
+  onAddTab={openPalette}
+  onClose={closeTabById}
+  onCloseOthers={closeAllTabsExcept}
+  onPinToggle={(tabId): void => pinToggle('global-tab-bar', tabId)}
+  onReorder={reorderTabGlobal}
+  onMoveFromOtherPanel={(_sourcePanelId, tabId, beforeTabId): void => reorderTabGlobal(tabId, beforeTabId)}
+  onSplitRight={splitRightAnyPanel}
+  onSplitDown={splitDownAnyPanel}
+  onMoveUp={moveTabUpAnyPanel}
+  canMoveUp={canMoveTabUp}
+  canOpenInNewSection={canMoveTabToNewSection}>
+  {#snippet trailing(_panelId)}
+    <div class="flex h-8 max-h-8 shrink-0 items-stretch border-b border-[var(--pd-content-divider)] bg-[var(--pd-content-card-bg)]">
+      <LayoutToolbar />
+    </div>
+  {/snippet}
+</TabBar>
+
+{#if showPalette}<NewTabPalette panelId={findFirstLeaf(layoutState.tree).id} activeTab={undefined} onClose={closePalette} />{/if}

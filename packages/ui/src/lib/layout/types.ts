@@ -21,6 +21,7 @@
 // These types intentionally know nothing about containers/pods/images so that
 // this whole `layout` folder can be reused as-is by other products (e.g. Kaiden)
 // built on the same design system.
+import type { Component } from 'svelte';
 
 /** A single open tab. `key` is what identifies "sameness" across opens (used to focus an existing tab instead of duplicating it). */
 export interface TabDescriptor {
@@ -31,11 +32,13 @@ export interface TabDescriptor {
   subtitle?: string;
   /** Font Awesome icon class list, e.g. 'fa-solid fa-box' */
   iconClass?: string;
+  /** App-provided icon used when the tab mirrors a navigation destination. */
+  tabIcon?: Component;
   pinned?: boolean;
+  /** Permanent tabs cannot be closed, pinned, dragged, or split (e.g. the app page tab). */
+  permanent?: boolean;
   /** Set when the underlying resource this tab points to no longer exists. */
   stale?: boolean;
-  /** Set when this tab/panel was opened programmatically (e.g. by an agent) rather than by the user. */
-  agentCreated?: boolean;
 }
 
 export type SplitDirection = 'row' | 'column';
@@ -64,6 +67,7 @@ export type OpenMode = 'replace' | 'newTab' | 'splitRight' | 'splitDown';
 export interface ContextMenuAction {
   id: string;
   title: string;
+  tooltip?: string;
   iconClass?: string;
   disabled?: boolean;
   danger?: boolean;

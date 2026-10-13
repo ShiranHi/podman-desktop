@@ -64,7 +64,6 @@ import PortForwardingList from './lib/kubernetes-port-forward/PortForwardingList
 import ContainerWorkspaceEntry from './lib/layout/ContainerWorkspaceEntry.svelte';
 import GlobalTabBar from './lib/layout/GlobalTabBar.svelte';
 import ImageWorkspaceEntry from './lib/layout/ImageWorkspaceEntry.svelte';
-import LayoutToolbar from './lib/layout/LayoutToolbar.svelte';
 import PodWorkspaceEntry from './lib/layout/PodWorkspaceEntry.svelte';
 import WorkspaceLayout from './lib/layout/WorkspaceLayout.svelte';
 import ManifestDetails from './lib/manifest/ManifestDetails.svelte';
@@ -211,21 +210,14 @@ initSessionAutosave();
         <SendFeedback />
         <ToastHandler />
         <ToastTaskNotifications />
-        {#if !meta.url.startsWith('/preferences')}
-          <!-- Tabs & Flexible Layout prototype: the "Layout" menu is mounted once, here, so
-               it's consistent, persistent chrome on every page (Dashboard, Containers, Pods,
-               Images, ...) - not a separate destination you have to navigate to. -->
-          <LayoutToolbar />
-          {#if !meta.url.startsWith('/workspace')}
-            <!-- The flat "everything I have open" tab strip only makes sense OUTSIDE the
-                 workspace itself: it's how you jump back into any tab from any other page.
-                 Once inside /workspace, the panel(s) below already show their own tab bar(s)
-                 - a single one normally, or one per split - so repeating the same tabs here
-                 would just be a second, redundant row. -->
-            <GlobalTabBar />
-          {/if}
+        {#if !meta.url.startsWith('/preferences') && !meta.url.startsWith('/workspace')}
+          <!-- Keep the open-tabs strip in the app chrome outside the workspace. Its trailing
+               Layout options button is part of the strip; inside /workspace, each panel's tab
+               bar carries that same button. -->
+          <GlobalTabBar />
         {/if}
-        <Route path="/" breadcrumb="Dashboard Page" navigationHint="root">
+        <div class="grow min-h-0 flex flex-col overflow-hidden">
+        <Route path="/" breadcrumb="Dashboard" navigationHint="root">
           <DashboardPage />
         </Route>
 
@@ -515,6 +507,7 @@ initSessionAutosave();
             <ExtensionDetails extensionId={meta.params.id} />
           </Route>
         </Route>
+        </div>
       </div>
     </div>
     <HelpActions/>

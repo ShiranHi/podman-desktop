@@ -10,7 +10,7 @@ interface Props {
   icon?: IconDefinition | Component | string;
   class?: string;
   children: Snippet;
-  onclick?: () => void;
+  onclick?: (event: MouseEvent) => void;
   'aria-label'?: string;
 }
 
@@ -34,7 +34,7 @@ let {
   onkeydown={(e): void => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
-      onclick();
+      onclick(e as unknown as MouseEvent);
     }
   }}
   aria-label={ariaLabel ?? ''}>

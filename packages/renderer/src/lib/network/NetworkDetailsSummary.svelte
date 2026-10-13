@@ -1,11 +1,10 @@
 <script lang="ts">
-import { NavigationPage } from '@desktop-framework/api';
 import { Link } from '@podman-desktop/ui-svelte';
 
 import DetailsCell from '/@/lib/details/DetailsCell.svelte';
 import DetailsTable from '/@/lib/details/DetailsTable.svelte';
 import DetailsTitle from '/@/lib/details/DetailsTitle.svelte';
-import { handleNavigation } from '/@/navigation';
+import { openSummaryLink } from '/@/lib/layout/open-summary-link';
 
 import type { NetworkInfoUI } from './NetworkInfoUI';
 
@@ -14,15 +13,6 @@ interface Props {
 }
 
 let { network }: Props = $props();
-
-function openContainer(containerID: string): void {
-  handleNavigation({
-    page: NavigationPage.CONTAINER_LOGS,
-    parameters: {
-      id: containerID,
-    },
-  });
-}
 </script>
 
 <DetailsTable>
@@ -64,7 +54,12 @@ function openContainer(containerID: string): void {
     {#each network.containers as container (container.id)}
       <tr>
         <DetailsCell>
-          <Link on:click={(): void => openContainer(container.id)}
+          <Link onclick={(event: MouseEvent): void => openSummaryLink(event, {
+            resourceType: 'container',
+            resourceId: container.id,
+            subView: 'logs',
+            title: `${container.name} · Logs`,
+          })}
             >{container.name}</Link>
         </DetailsCell>
         <DetailsCell>{container.id}</DetailsCell>

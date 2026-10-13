@@ -3,11 +3,12 @@ import { faCircleInfo, faExternalLink, faUpRightFromSquare } from '@fortawesome/
 import { ChevronExpander, Link, Tooltip } from '@podman-desktop/ui-svelte';
 import { Icon } from '@podman-desktop/ui-svelte/icons';
 import Fa from 'svelte-fa';
-import { router } from 'tinro';
 
 import DetailsCell from '/@/lib/details/DetailsCell.svelte';
 import DetailsTable from '/@/lib/details/DetailsTable.svelte';
 import DetailsTitle from '/@/lib/details/DetailsTitle.svelte';
+import { openSummaryLink } from '/@/lib/layout/open-summary-link';
+import { imageKey } from '/@/stores/layout/layout-types';
 
 import type { ContainerInfoUI } from './ContainerInfoUI';
 
@@ -72,7 +73,14 @@ function openPort(port: number): void {
     <tr>
       <DetailsCell>Image</DetailsCell>
       <DetailsCell>
-        <Link on:click={(): void => router.goto(container.imageHref ?? $router.path)}>{container.image}</Link>
+        <Link
+          onclick={(event: MouseEvent): void =>
+            openSummaryLink(event, {
+              resourceType: 'image',
+              resourceId: imageKey(container.imageId, container.engineId, container.imageBase64RepoTag),
+              subView: 'summary',
+              title: `${container.image} · Summary`,
+            })}>{container.image}</Link>
       </DetailsCell>
     </tr>
     {#if container.command}

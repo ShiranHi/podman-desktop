@@ -22,7 +22,6 @@
 import { Button } from '@podman-desktop/ui-svelte';
 import { router } from 'tinro';
 
-import { ContainerUtils } from '/@/lib/container/container-utils';
 import Dialog from '/@/lib/dialogs/Dialog.svelte';
 import { ImageUtils } from '/@/lib/image/image-utils';
 import { containersInfos } from '/@/stores/containers';
@@ -36,6 +35,8 @@ import {
 } from '/@/stores/layout/layout-presets';
 import { podsInfos } from '/@/stores/pods';
 
+import { autofocus } from './autofocus';
+
 interface Props {
   presetId: PresetId;
   onClose: () => void;
@@ -43,10 +44,9 @@ interface Props {
 
 let { presetId, onClose }: Props = $props();
 
-const containerUtils = new ContainerUtils();
 const imageUtils = new ImageUtils();
 
-const containerOptions = $derived($containersInfos.map(c => containerUtils.getContainerInfoUI(c)));
+const containerOptions = $derived($containersInfos);
 const podOptions = $derived($podsInfos);
 const imageOptions = $derived(
   $imagesInfos.flatMap(i => imageUtils.getImagesInfoUI(i, $containersInfos, undefined, [], $imagesInfos)),
@@ -74,6 +74,7 @@ const canApply = $derived.by(() => {
 });
 
 function apply(): void {
+  if (!canApply) return;
   switch (presetId) {
     case 'debug-duo': {
       const a = containerOptions.find(c => c?.id === containerAId);
@@ -121,6 +122,7 @@ const titles: Record<PresetId, string> = {
 <Dialog title={titles[presetId]} onclose={onClose}>
   {#snippet content()}
     <div class="w-full flex flex-col gap-3">
+      <p class="text-sm">Applying a preset replaces the current layout. Save it first to keep it.</p>
       {#if presetId === 'debug-duo' || presetId === 'logs-terminal'}
         <div>
           <label for="containerA" class="block my-1 text-sm font-bold text-[var(--pd-modal-text)]">
@@ -128,11 +130,12 @@ const titles: Record<PresetId, string> = {
           </label>
           <select
             id="containerA"
-            class="w-full p-2 rounded-sm bg-[var(--pd-input-field-focused-bg)] text-[var(--pd-input-field-text)]"
+            use:autofocus
+            class="w-full p-2 pr-8 rounded-sm bg-[var(--pd-input-field-focused-bg)] text-[var(--pd-input-field-text)]"
             bind:value={containerAId}>
             <option value="">Select a container...</option>
             {#each containerOptions as c (c?.id)}
-              {#if c}<option value={c.id}>{c.name}</option>{/if}
+              {#if c}<option value={c.id} disabled={c.id === (presetId === 'debug-duo' ? containerBId : '')}>{c.name}</option>{/if}
             {/each}
           </select>
         </div>
@@ -142,11 +145,11 @@ const titles: Record<PresetId, string> = {
           <label for="containerB" class="block my-1 text-sm font-bold text-[var(--pd-modal-text)]">Second container</label>
           <select
             id="containerB"
-            class="w-full p-2 rounded-sm bg-[var(--pd-input-field-focused-bg)] text-[var(--pd-input-field-text)]"
+            class="w-full p-2 pr-8 rounded-sm bg-[var(--pd-input-field-focused-bg)] text-[var(--pd-input-field-text)]"
             bind:value={containerBId}>
             <option value="">Select a container...</option>
             {#each containerOptions as c (c?.id)}
-              {#if c}<option value={c.id}>{c.name}</option>{/if}
+              {#if c}<option value={c.id} disabled={c.id === containerAId}>{c.name}</option>{/if}
             {/each}
           </select>
         </div>
@@ -156,7 +159,8 @@ const titles: Record<PresetId, string> = {
           <label for="pod" class="block my-1 text-sm font-bold text-[var(--pd-modal-text)]">Pod</label>
           <select
             id="pod"
-            class="w-full p-2 rounded-sm bg-[var(--pd-input-field-focused-bg)] text-[var(--pd-input-field-text)]"
+            use:autofocus
+            class="w-full p-2 pr-8 rounded-sm bg-[var(--pd-input-field-focused-bg)] text-[var(--pd-input-field-text)]"
             bind:value={podResourceId}>
             <option value="">Select a pod...</option>
             {#each podOptions as p (p.id)}
@@ -170,11 +174,12 @@ const titles: Record<PresetId, string> = {
           <label for="imageA" class="block my-1 text-sm font-bold text-[var(--pd-modal-text)]">First image</label>
           <select
             id="imageA"
-            class="w-full p-2 rounded-sm bg-[var(--pd-input-field-focused-bg)] text-[var(--pd-input-field-text)]"
+            use:autofocus
+            class="w-full p-2 pr-8 rounded-sm bg-[var(--pd-input-field-focused-bg)] text-[var(--pd-input-field-text)]"
             bind:value={imageAId}>
             <option value="">Select an image...</option>
             {#each imageOptions as i (i?.id)}
-              {#if i}<option value={i.id}>{i.name}:{i.tag}</option>{/if}
+              {#if i}<option value={i.id} disabled={i.id === imageBId}>{i.name}:{i.tag}</option>{/if}
             {/each}
           </select>
         </div>
@@ -182,11 +187,11 @@ const titles: Record<PresetId, string> = {
           <label for="imageB" class="block my-1 text-sm font-bold text-[var(--pd-modal-text)]">Second image</label>
           <select
             id="imageB"
-            class="w-full p-2 rounded-sm bg-[var(--pd-input-field-focused-bg)] text-[var(--pd-input-field-text)]"
+            class="w-full p-2 pr-8 rounded-sm bg-[var(--pd-input-field-focused-bg)] text-[var(--pd-input-field-text)]"
             bind:value={imageBId}>
             <option value="">Select an image...</option>
             {#each imageOptions as i (i?.id)}
-              {#if i}<option value={i.id}>{i.name}:{i.tag}</option>{/if}
+              {#if i}<option value={i.id} disabled={i.id === imageAId}>{i.name}:{i.tag}</option>{/if}
             {/each}
           </select>
         </div>

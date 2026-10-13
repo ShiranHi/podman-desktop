@@ -36,14 +36,22 @@ const NAV_BAR_WIDTH_KEY = `${AppearanceSettings.SectionName}.${AppearanceSetting
 
 const minWidth = 50;
 const maxWidth = 240;
+const productionDefaultWidth = 160;
 const expandedThreshold = 70;
 
-let navWidth = $state(160);
+let navWidth = $state(minWidth);
 let expanded = $derived(navWidth > expandedThreshold);
 let isDragging = $state(false);
+let wasInPreferences = false;
 
 $effect(() => {
   document.documentElement.style.setProperty('--spacing-leftnavbar', `${navWidth}px`);
+});
+
+$effect(() => {
+  const isInPreferences = meta.url.startsWith('/preferences');
+  if (isInPreferences && !wasInPreferences) navWidth = minWidth;
+  wasInPreferences = isInPreferences;
 });
 
 /** Custom overlay scrollbar: thumb position and height (0–1) */
@@ -158,7 +166,16 @@ let scrollRegionCleanup: (() => void) | undefined;
 onMount(async () => {
   const commandRegistry = new CommandRegistry();
   commandRegistry.init();
-  navWidth = (await window.getConfigurationValue<number>(NAV_BAR_WIDTH_KEY)) ?? maxWidth;
+  const savedNavWidth = await window.getConfigurationValue<number>(NAV_BAR_WIDTH_KEY);
+  // Collapse inherited production defaults for this prototype. Keep custom widths
+  // so a user's deliberate navigation resize still takes effect.
+  navWidth =
+    meta.url.startsWith('/preferences') ||
+    savedNavWidth === undefined ||
+    savedNavWidth === productionDefaultWidth ||
+    savedNavWidth === maxWidth
+      ? minWidth
+      : savedNavWidth;
   await tick();
   const el = scrollRegionEl;
   if (el) {
@@ -196,6 +213,11 @@ function onDidChangeConfigurationCallback(e: Event): void {
   if ('detail' in e) {
     const detail = e.detail as { key: string; value: unknown };
     if (NAV_BAR_WIDTH_KEY === detail?.key && typeof detail.value === 'number') {
+      // Opening Preferences can re-emit the inherited production default. Keep the
+      // prototype collapsed in that case; direct resize interactions update navWidth first.
+      if ((detail.value === productionDefaultWidth || detail.value === maxWidth) && navWidth <= expandedThreshold) {
+        return;
+      }
       navWidth = Math.max(minWidth, Math.min(maxWidth, detail.value));
     }
   }

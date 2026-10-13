@@ -8,6 +8,7 @@ interface Props {
   readonly?: boolean;
   disabled?: boolean;
   left?: boolean;
+  onCheckedChange?: (checked: boolean) => void;
   'aria-invalid'?: boolean | 'grammar' | 'spelling';
   'aria-label'?: string;
   children?: Snippet;
@@ -20,6 +21,7 @@ let {
   readonly = false,
   disabled = false,
   left = false,
+  onCheckedChange,
   'aria-invalid': ariaInvalid,
   'aria-label': ariaLabel,
   children,
@@ -29,8 +31,11 @@ const enabled = $derived(!readonly && !disabled);
 
 const dispatch = createEventDispatcher();
 
-function onInput(): void {
-  dispatch('checked', !checked);
+function onInput(event: Event): void {
+  const nextChecked = (event.currentTarget as HTMLInputElement).checked;
+  checked = nextChecked;
+  onCheckedChange?.(nextChecked);
+  dispatch('checked', nextChecked);
 }
 </script>
 

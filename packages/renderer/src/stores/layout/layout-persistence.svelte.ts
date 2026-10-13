@@ -25,9 +25,16 @@
 // backed storage other persisted UI state uses, so it survives profile
 // migrations and isn't subject to localStorage size limits.
 import type { PanelNode } from '@podman-desktop/ui-svelte';
+import { SvelteSet } from 'svelte/reactivity';
 
-import { layoutState } from './layout-store.svelte';
-import type { WorkspaceTab } from './layout-types';
+import { ensurePageTab, layoutState } from './layout-store.svelte';
+import {
+  subViewsForResourceType,
+  tabKey,
+  type WorkspaceTab,
+  workspaceTabIcon,
+  workspaceTabNavigationIcon,
+} from './layout-types';
 
 const SESSION_KEY = 'podman-desktop.workspace.session.v1';
 const NAMED_LAYOUTS_KEY = 'podman-desktop.workspace.named-layouts.v1';
@@ -52,11 +59,73 @@ function serializeCurrentLayout(): SerializedLayout {
   };
 }
 
+/** Validate before mutation so a bad import cannot destroy the current workspace. */
+export function validateLayout(value: unknown): asserts value is SerializedLayout {
+  const fail = (): never => {
+    throw new Error('This file is not a supported first-version layout. Your current layout was kept.');
+  };
+  if (!value || typeof value !== 'object') fail();
+  const data = value as SerializedLayout;
+  if (!data.tabs || typeof data.tabs !== 'object' || Array.isArray(data.tabs)) fail();
+  const ids = new SvelteSet<string>();
+  const tabIds = new SvelteSet<string>();
+  const visit = (node: PanelNode, depth: number): void => {
+    if (!node || depth > 12 || typeof node.id !== 'string' || ids.has(node.id)) fail();
+    ids.add(node.id);
+    if (node.kind === 'leaf') {
+      if (!Array.isArray(node.tabIds) || (node.activeTabId && !node.tabIds.includes(node.activeTabId))) fail();
+      for (const id of node.tabIds) {
+        if (typeof id !== 'string' || tabIds.has(id) || !Object.hasOwn(data.tabs, id)) fail();
+        tabIds.add(id);
+      }
+    } else if (node.kind === 'split') {
+      if (
+        !['row', 'column'].includes(node.direction) ||
+        !Array.isArray(node.children) ||
+        node.children.length < 2 ||
+        !Array.isArray(node.sizes) ||
+        node.sizes.length !== node.children.length ||
+        node.sizes.some(size => !Number.isFinite(size) || size <= 0)
+      )
+        fail();
+      node.children.forEach(child => visit(child, depth + 1));
+    } else fail();
+  };
+  visit(data.tree, 0);
+  if (!ids.has(data.focusedPanelId)) fail();
+  for (const [id, tab] of Object.entries(data.tabs)) {
+    if (id !== tab?.id || !tabIds.has(id) || typeof tab.title !== 'string' || typeof tab.resourceId !== 'string')
+      fail();
+    if (tab.resourceType === 'app-page') {
+      if (id !== 'app-page-tab') fail();
+    } else if (!subViewsForResourceType(tab.resourceType).includes(tab.subView!)) fail();
+  }
+}
+
 export function applySerializedLayout(serialized: SerializedLayout): void {
-  layoutState.tree = serialized.tree;
-  layoutState.tabs = serialized.tabs;
-  layoutState.focusedPanelId = serialized.focusedPanelId;
+  validateLayout(serialized);
+  const copy = JSON.parse(JSON.stringify(serialized)) as SerializedLayout;
+  for (const tab of Object.values(copy.tabs)) {
+    // Only migrate known sample identities from the earlier prototype fixtures.
+    if (
+      tab.resourceId.includes('mock') ||
+      tab.resourceId.startsWith('backend-pod::') ||
+      tab.resourceId.startsWith('demo-')
+    ) {
+      tab.resourceId = tab.resourceId.replace('podman.podman-machine-default', 'prototype.demo');
+    }
+    tab.iconClass = workspaceTabIcon(tab.resourceType, tab.subView);
+    tab.tabIcon = tab.resourceType === 'app-page' ? undefined : workspaceTabNavigationIcon(tab.resourceType);
+    if (tab.resourceType !== 'app-page') {
+      delete tab.permanent;
+      tab.key = tabKey(tab.resourceType, tab.resourceId, tab.subView);
+    }
+  }
+  layoutState.tree = copy.tree;
+  layoutState.tabs = copy.tabs;
+  layoutState.focusedPanelId = copy.focusedPanelId;
   layoutState.maximizedPanelId = undefined;
+  ensurePageTab();
 }
 
 // ---- session autosave/restore ----

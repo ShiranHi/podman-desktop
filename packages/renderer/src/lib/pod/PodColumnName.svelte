@@ -2,6 +2,8 @@
 import { ContextMenu } from '@podman-desktop/ui-svelte';
 
 import { buildOpenContextMenuActions, openPodInWorkspace } from '/@/lib/layout/resource-open-actions';
+import { activatePageTab } from '/@/stores/layout/layout-store.svelte';
+import { linkOpenMode } from '/@/stores/layout/tab-preferences.svelte';
 
 import type { PodInfoUI } from './PodInfoUI';
 
@@ -11,12 +13,12 @@ interface Props {
 
 let { object }: Props = $props();
 
-let contextMenu: { x: number; y: number } | undefined;
+let contextMenu: { x: number; y: number } | undefined = $state();
 
-// A plain click opens straight into the workspace tab (replacing whatever was showing),
-// same destination Cmd/Ctrl+click uses for a new tab - no intermediate detail route/flash.
+// Keep existing tabs open when browsing resources; use the context menu for replace/split actions.
 function onClick(event: MouseEvent): void {
-  openPodInWorkspace(object, event.metaKey || event.ctrlKey ? 'newTab' : 'replace');
+  activatePageTab();
+  openPodInWorkspace(object, linkOpenMode(event));
 }
 
 function onContextMenu(event: MouseEvent): void {

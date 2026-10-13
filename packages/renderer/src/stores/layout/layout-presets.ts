@@ -42,7 +42,7 @@ export const PRESETS: PresetDefinition[] = [
   {
     id: 'logs-terminal',
     title: 'Logs + Terminal',
-    description: 'One container: live logs on top, a shell below.',
+    description: 'One container: sample logs above a static terminal transcript.',
     iconClass: 'fas fa-terminal',
   },
   {
@@ -113,22 +113,22 @@ export function applyPodInspectorPreset(
 }
 
 export function applyImageDiffPreset(
-  imageA: { id: string; engineId: string; base64RepoTag: string; name: string },
-  imageB: { id: string; engineId: string; base64RepoTag: string; name: string },
+  imageA: { id: string; engineId: string; base64RepoTag: string; name: string; tag?: string },
+  imageB: { id: string; engineId: string; base64RepoTag: string; name: string; tag?: string },
 ): void {
   resetLayout();
   const firstPanel = openTabAndGetPanel({
     resourceType: 'image',
     resourceId: imageKey(imageA.id, imageA.engineId, imageA.base64RepoTag),
     subView: 'inspect',
-    title: `${imageA.name} · Inspect`,
+    title: `${imageA.name}${imageA.tag ? ':' + imageA.tag : ''} · Inspect`,
   });
   openTab(
     {
       resourceType: 'image',
       resourceId: imageKey(imageB.id, imageB.engineId, imageB.base64RepoTag),
       subView: 'inspect',
-      title: `${imageB.name} · Inspect`,
+      title: `${imageB.name}${imageB.tag ? ':' + imageB.tag : ''} · Inspect`,
     },
     'splitRight',
     firstPanel,

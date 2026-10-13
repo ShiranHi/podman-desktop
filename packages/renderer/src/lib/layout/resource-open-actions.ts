@@ -31,7 +31,16 @@ import type { ContextMenuAction, OpenMode } from '@podman-desktop/ui-svelte';
 import { router } from 'tinro';
 
 import { openTab } from '/@/stores/layout/layout-store.svelte';
-import { imageKey, podKey } from '/@/stores/layout/layout-types';
+import {
+  composeKey,
+  type ComposeSubView,
+  imageKey,
+  manifestKey,
+  networkKey,
+  podKey,
+  secretKey,
+  volumeKey,
+} from '/@/stores/layout/layout-types';
 
 function gotoWorkspace(): void {
   // openTab() has already updated the shared layout state; navigating to the
@@ -41,7 +50,7 @@ function gotoWorkspace(): void {
 
 export function openContainerInWorkspace(container: { id: string; name: string }, mode: OpenMode): void {
   openTab(
-    { resourceType: 'container', resourceId: container.id, subView: 'summary', title: `${container.name} · Summary` },
+    { resourceType: 'container', resourceId: container.id, subView: 'logs', title: `${container.name} · Logs` },
     mode,
   );
   gotoWorkspace();
@@ -68,6 +77,82 @@ export function openImageInWorkspace(
     {
       resourceType: 'image',
       resourceId: imageKey(image.id, image.engineId, image.base64RepoTag),
+      subView: 'summary',
+      title: `${image.name}:${image.tag} · Summary`,
+    },
+    mode,
+  );
+  gotoWorkspace();
+}
+
+export function openVolumeInWorkspace(
+  volume: { name: string; shortName: string; engineId: string },
+  mode: OpenMode,
+): void {
+  openTab(
+    {
+      resourceType: 'volume',
+      resourceId: volumeKey(volume.name, volume.engineId),
+      subView: 'summary',
+      title: `${volume.shortName} · Summary`,
+    },
+    mode,
+  );
+  gotoWorkspace();
+}
+
+export function openNetworkInWorkspace(network: { name: string; engineId: string }, mode: OpenMode): void {
+  openTab(
+    {
+      resourceType: 'network',
+      resourceId: networkKey(network.name, network.engineId),
+      subView: 'summary',
+      title: `${network.name} · Summary`,
+    },
+    mode,
+  );
+  gotoWorkspace();
+}
+
+export function openSecretInWorkspace(secret: { Id: string; Name: string; engineId: string }, mode: OpenMode): void {
+  openTab(
+    {
+      resourceType: 'secret',
+      resourceId: secretKey(secret.Id, secret.engineId),
+      subView: 'summary',
+      title: `${secret.Name} · Summary`,
+    },
+    mode,
+  );
+  gotoWorkspace();
+}
+
+export function openComposeInWorkspace(
+  compose: { name: string; engineId: string },
+  mode: OpenMode,
+  subView: ComposeSubView = 'summary',
+): void {
+  const label = subView === 'summary' ? 'Summary' : subView[0].toUpperCase() + subView.slice(1);
+  openTab(
+    {
+      resourceType: 'compose',
+      resourceId: composeKey(compose.name, compose.engineId),
+      subView,
+      title: `${compose.name} · ${label}`,
+    },
+    mode,
+  );
+  gotoWorkspace();
+}
+
+export function openManifestInWorkspace(
+  image: { id: string; engineId: string; name: string; base64RepoTag: string },
+  mode: OpenMode,
+): void {
+  openTab(
+    {
+      resourceType: 'manifest',
+      resourceId: manifestKey(image.id, image.engineId, image.base64RepoTag),
       subView: 'summary',
       title: `${image.name} · Summary`,
     },

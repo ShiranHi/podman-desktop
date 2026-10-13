@@ -32,12 +32,13 @@ interface Props {
   node: PanelNode;
   getTabs: (panelId: string) => TabDescriptor[];
   focusedPanelId?: string;
+  /** When set, that leaf is shown full-width and should use the restore icon/tooltip. */
+  maximizedPanelId?: string;
   panelCount: number;
   onFocusPanel: (panelId: string) => void;
   onSelectTab: (panelId: string, tabId: string) => void;
   onCloseTab: (panelId: string, tabId: string) => void;
   onCloseOthers: (panelId: string, tabId: string) => void;
-  onCloseAllInPanel: (panelId: string) => void;
   onPinToggle: (panelId: string, tabId: string) => void;
   onReorder: (panelId: string, tabId: string, beforeTabId: string | undefined) => void;
   onMoveFromOtherPanel: (
@@ -48,11 +49,24 @@ interface Props {
   ) => void;
   onSplitRight: (panelId: string, tabId: string) => void;
   onSplitDown: (panelId: string, tabId: string) => void;
-  onMoveToNewPanel: (panelId: string, tabId: string) => void;
+  onMoveUp?: (panelId: string, tabId: string) => void;
+  canMoveUp?: (tabId: string) => boolean;
   onToggleMaximize: (panelId: string) => void;
   onResizeSplit: (splitId: string, sizes: number[]) => void;
   /** See Panel's `onAddTab`. */
   onAddTab?: (panelId: string, activeTab: TabDescriptor | undefined) => void;
+  /** See Panel's `canOpenInNewSection`. */
+  canOpenInNewSection?: (tabId: string) => boolean;
+  /** See Panel's `trailing` — after maximize, before globalTrailing (e.g. close section). */
+  trailing?: Snippet<[string, TabDescriptor[]]>;
+  /** See Panel's `globalTrailing` — far-right after trailing. */
+  globalTrailing?: Snippet<[string]>;
+  /** Only this leaf receives the globally unique trailing control. */
+  globalTrailingPanelId?: string;
+  /** See Panel's `beforeAdd`. */
+  beforeAdd?: Snippet<[string]>;
+  /** See Panel's `showTabBar`. Defaults true; set false when a global tab strip owns chrome. */
+  showTabBar?: boolean;
   tabContent: Snippet<[TabDescriptor]>;
   emptyState?: Snippet;
 }
@@ -119,22 +133,27 @@ function equalize(_index: number): void {
     tabs={props.getTabs(leaf.id)}
     activeTabId={leaf.activeTabId}
     focused={props.focusedPanelId === leaf.id}
-    maximized={!!leaf.maximized}
-    canMaximize={props.panelCount > 1}
+    maximized={leaf.id === props.maximizedPanelId}
+    canMaximize={props.panelCount > 1 || leaf.id === props.maximizedPanelId}
     onFocus={(): void => props.onFocusPanel(leaf.id)}
     onSelect={(tabId): void => props.onSelectTab(leaf.id, tabId)}
     onClose={(tabId): void => props.onCloseTab(leaf.id, tabId)}
     onCloseOthers={(tabId): void => props.onCloseOthers(leaf.id, tabId)}
-    onCloseAllInPanel={(): void => props.onCloseAllInPanel(leaf.id)}
     onPinToggle={(tabId): void => props.onPinToggle(leaf.id, tabId)}
     onReorder={(tabId, beforeTabId): void => props.onReorder(leaf.id, tabId, beforeTabId)}
     onMoveFromOtherPanel={(sourcePanelId, tabId, beforeTabId): void =>
       props.onMoveFromOtherPanel(leaf.id, sourcePanelId, tabId, beforeTabId)}
     onSplitRight={(tabId): void => props.onSplitRight(leaf.id, tabId)}
     onSplitDown={(tabId): void => props.onSplitDown(leaf.id, tabId)}
-    onMoveToNewPanel={(tabId): void => props.onMoveToNewPanel(leaf.id, tabId)}
+    onMoveUp={props.onMoveUp ? (tabId): void => props.onMoveUp?.(leaf.id, tabId) : undefined}
+    canMoveUp={props.canMoveUp}
     onToggleMaximize={(): void => props.onToggleMaximize(leaf.id)}
     onAddTab={props.onAddTab}
+    canOpenInNewSection={props.canOpenInNewSection}
+    trailing={props.trailing}
+    globalTrailing={leaf.id === props.globalTrailingPanelId ? props.globalTrailing : undefined}
+    beforeAdd={props.beforeAdd}
+    showTabBar={props.showTabBar}
     tabContent={props.tabContent}
     emptyState={props.emptyState} />
 {:else}
@@ -152,21 +171,28 @@ function equalize(_index: number): void {
           node={child}
           getTabs={props.getTabs}
           focusedPanelId={props.focusedPanelId}
+          maximizedPanelId={props.maximizedPanelId}
           panelCount={props.panelCount}
           onFocusPanel={props.onFocusPanel}
           onSelectTab={props.onSelectTab}
           onCloseTab={props.onCloseTab}
           onCloseOthers={props.onCloseOthers}
-          onCloseAllInPanel={props.onCloseAllInPanel}
           onPinToggle={props.onPinToggle}
           onReorder={props.onReorder}
           onMoveFromOtherPanel={props.onMoveFromOtherPanel}
           onSplitRight={props.onSplitRight}
           onSplitDown={props.onSplitDown}
-          onMoveToNewPanel={props.onMoveToNewPanel}
+          onMoveUp={props.onMoveUp}
+          canMoveUp={props.canMoveUp}
           onToggleMaximize={props.onToggleMaximize}
           onResizeSplit={props.onResizeSplit}
           onAddTab={props.onAddTab}
+          canOpenInNewSection={props.canOpenInNewSection}
+          trailing={props.trailing}
+          globalTrailing={props.globalTrailing}
+          globalTrailingPanelId={props.globalTrailingPanelId}
+          beforeAdd={props.beforeAdd}
+          showTabBar={props.showTabBar}
           tabContent={props.tabContent}
           emptyState={props.emptyState} />
       </div>
