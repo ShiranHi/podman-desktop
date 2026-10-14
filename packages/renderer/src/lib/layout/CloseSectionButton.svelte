@@ -25,7 +25,7 @@ import type { TabDescriptor } from '@podman-desktop/ui-svelte';
 import { Tooltip } from '@podman-desktop/ui-svelte';
 import { Icon } from '@podman-desktop/ui-svelte/icons';
 
-import { closeSection } from '/@/stores/layout/layout-store.svelte';
+import { closeAllTabsEverywhere, closeSection } from '/@/stores/layout/layout-store.svelte';
 import { PAGE_TAB_ID } from '/@/stores/layout/page-tab.svelte';
 
 interface Props {
@@ -42,9 +42,14 @@ const tip = $derived(
   canClose ? (sectionCount === 1 ? 'Close all tabs' : 'Close section') : 'No unpinned tabs to close in this section',
 );
 
-function onClose(): void {
+function onClose(event: MouseEvent): void {
   if (!canClose) return;
-  closeSection(panelId);
+  event.stopPropagation();
+  if (sectionCount === 1) {
+    closeAllTabsEverywhere();
+  } else {
+    closeSection(panelId);
+  }
 }
 </script>
 
