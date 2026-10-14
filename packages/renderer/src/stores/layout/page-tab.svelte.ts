@@ -28,6 +28,7 @@ import ImageIcon from '/@/lib/images/ImageIcon.svelte';
 import NetworkIcon from '/@/lib/images/NetworkIcon.svelte';
 import PodIcon from '/@/lib/images/PodIcon.svelte';
 import SecretIcon from '/@/lib/images/SecretIcon.svelte';
+import SettingsIcon from '/@/lib/images/SettingsIcon.svelte';
 import VolumeIcon from '/@/lib/images/VolumeIcon.svelte';
 import { currentPage } from '/@/stores/breadcrumb';
 
@@ -66,7 +67,7 @@ function listRootForDetail(url: string): { url: string; name: string } {
 
 function shouldTrackAsPageTab(url: string): boolean {
   const path = url.split('?')[0] || '/';
-  if (path.startsWith('/workspace') || path.startsWith('/preferences')) return false;
+  if (path.startsWith('/workspace')) return false;
   if (isResourceDetailBridge(path)) return false;
   return true;
 }
@@ -80,16 +81,20 @@ export function rememberAppPage(url: string, name?: string): void {
 
 router.subscribe(route => {
   currentRouteUrl = route.url;
-  if (route.url.startsWith('/workspace') || route.url.startsWith('/preferences')) return;
+  if (route.url.startsWith('/workspace')) return;
   if (isResourceDetailBridge(route.url)) return;
   if (shouldTrackAsPageTab(route.url)) {
-    rememberAppPage(route.url);
+    rememberAppPage(route.url, route.url.startsWith('/preferences') ? 'Settings' : undefined);
   }
 });
 
 currentPage.subscribe(page => {
-  if (!page?.name) return;
   if (!shouldTrackAsPageTab(currentRouteUrl)) return;
+  if (currentRouteUrl.startsWith('/preferences')) {
+    lastAppPageName = 'Settings';
+    return;
+  }
+  if (!page?.name) return;
   lastAppPageName = page.name;
   if (page.path && shouldTrackAsPageTab(page.path)) {
     lastAppPageUrl = page.path.split('?')[0] || lastAppPageUrl;
@@ -112,6 +117,7 @@ export function getPageTabIcon(): NonNullable<TabDescriptor['tabIcon']> {
   if (path.startsWith('/volumes')) return VolumeIcon;
   if (path.startsWith('/networks')) return NetworkIcon;
   if (path.startsWith('/secrets')) return SecretIcon;
+  if (path.startsWith('/preferences')) return SettingsIcon;
   return DashboardIcon;
 }
 
@@ -130,7 +136,7 @@ export function getPageTab(): {
     title: lastAppPageName,
     permanent: true,
     pinned: true,
-    iconClass: 'fas fa-house',
+    iconClass: lastAppPageUrl.startsWith('/preferences') ? 'fas fa-gear' : 'fas fa-house',
   };
 }
 

@@ -27,6 +27,7 @@ import ComposeDetails from './lib/compose/ComposeDetails.svelte';
 import ConfigMapDetails from './lib/configmaps-secrets/ConfigMapDetails.svelte';
 import ConfigMapSecretList from './lib/configmaps-secrets/ConfigMapSecretList.svelte';
 import KubernetesSecretDetails from './lib/configmaps-secrets/SecretDetails.svelte';
+import ContainerDetails from './lib/container/ContainerDetails.svelte';
 import ContainerExport from './lib/container/ContainerExport.svelte';
 import ContainerList from './lib/container/ContainerList.svelte';
 import CreateContainerFromExistingImage from './lib/container/CreateContainerFromExistingImage.svelte';
@@ -45,6 +46,7 @@ import ExtensionList from './lib/extensions/ExtensionList.svelte';
 import SendFeedback from './lib/feedback/SendFeedback.svelte';
 import HelpActions from './lib/help/HelpActions.svelte';
 import BuildImageFromContainerfile from './lib/image/BuildImageFromContainerfile.svelte';
+import ImageDetails from './lib/image/ImageDetails.svelte';
 import ImagesList from './lib/image/ImagesList.svelte';
 import ImportContainersImages from './lib/image/ImportContainersImages.svelte';
 import LoadImages from './lib/image/LoadImages.svelte';
@@ -75,6 +77,7 @@ import NodesList from './lib/node/NodesList.svelte';
 import Onboarding from './lib/onboarding/Onboarding.svelte';
 import DeployPodToKube from './lib/pod/DeployPodToKube.svelte';
 import PodCreateFromContainers from './lib/pod/PodCreateFromContainers.svelte';
+import PodDetails from './lib/pod/PodDetails.svelte';
 import PodsList from './lib/pod/PodsList.svelte';
 import PreferencesPage from './lib/preferences/PreferencesPage.svelte';
 import PVCDetails from './lib/pvc/PVCDetails.svelte';
@@ -96,6 +99,8 @@ import Webview from './lib/webview/Webview.svelte';
 import WelcomePage from './lib/welcome/WelcomePage.svelte';
 import PreferencesNavigation from './PreferencesNavigation.svelte';
 import Route from './Route.svelte';
+import { getLastAppPageUrl } from './stores/layout/page-tab.svelte';
+import { tabPreferences } from './stores/layout/tab-preferences.svelte';
 import { navigationRegistry } from './stores/navigation/navigation-registry';
 import SubmenuNavigation from './SubmenuNavigation.svelte';
 
@@ -120,6 +125,11 @@ router.subscribe(function (navigation) {
   if (!subscribeReady) return;
   if (navigation.url === undefined || navigation.url.includes('.html')) return;
   if (!navigation.url.startsWith('/')) return;
+
+  if (!tabPreferences.tabsEnabled && navigation.url.startsWith('/workspace')) {
+    router.goto(getLastAppPageUrl(), true);
+    return;
+  }
 
   if ((savedRoute !== undefined || savedSettingsPage !== undefined) && navigation.url === '/') {
     if (savedRoute) {
@@ -210,7 +220,7 @@ initSessionAutosave();
         <SendFeedback />
         <ToastHandler />
         <ToastTaskNotifications />
-        {#if !meta.url.startsWith('/preferences') && !meta.url.startsWith('/workspace')}
+        {#if tabPreferences.tabsEnabled && !meta.url.startsWith('/workspace')}
           <!-- Keep the open-tabs strip in the app chrome outside the workspace. Its trailing
                Layout options button is part of the strip; inside /workspace, each panel's tab
                bar carries that same button. -->
@@ -226,7 +236,7 @@ initSessionAutosave();
              resource type (Container/Pod/Image) a tab was opened from. Resource list rows and
              legacy detail routes redirect here after opening/focusing their tab. -->
         <Route path="/workspace" breadcrumb="Workspace" navigationHint="root">
-          <WorkspaceLayout />
+          {#if tabPreferences.tabsEnabled}<WorkspaceLayout />{/if}
         </Route>
 
         <Route path="/containers/*" breadcrumb="Containers" navigationHint="root" firstmatch>
@@ -238,7 +248,11 @@ initSessionAutosave();
               <ContainerExport containerID={meta.params.id} />
             </Route>
             <Route breadcrumb="Container Details" navigationHint="details" path="/*">
-              <ContainerWorkspaceEntry containerID={meta.params.id} />
+              {#if tabPreferences.tabsEnabled}
+                <ContainerWorkspaceEntry containerID={meta.params.id} />
+              {:else}
+                <ContainerDetails containerID={meta.params.id} />
+              {/if}
             </Route>
           </Route>
         </Route>
@@ -287,10 +301,17 @@ initSessionAutosave();
               path="/*"
               breadcrumb="Image Details"
               navigationHint="details">
-              <ImageWorkspaceEntry
-                imageID={meta.params.id}
-                engineId={decodeURI(meta.params.engineId)}
-                base64RepoTag={meta.params.base64RepoTag} />
+              {#if tabPreferences.tabsEnabled}
+                <ImageWorkspaceEntry
+                  imageID={meta.params.id}
+                  engineId={decodeURI(meta.params.engineId)}
+                  base64RepoTag={meta.params.base64RepoTag} />
+              {:else}
+                <ImageDetails
+                  imageID={meta.params.id}
+                  engineId={decodeURI(meta.params.engineId)}
+                  base64RepoTag={meta.params.base64RepoTag} />
+              {/if}
             </Route>
           </Route>
         </Route>
@@ -337,9 +358,15 @@ initSessionAutosave();
           <ComposeDetails composeName={decodeURI(meta.params.name)} engineId={decodeURI(meta.params.engineId)} />
         </Route>
         <Route path="/pods/podman/:name/:engineId/*" breadcrumb="Pod Details" let:meta navigationHint="details">
-          <PodWorkspaceEntry
-            podName={decodeURI(meta.params.name)}
-            engineId={decodeURIComponent(meta.params.engineId)} />
+          {#if tabPreferences.tabsEnabled}
+            <PodWorkspaceEntry
+              podName={decodeURI(meta.params.name)}
+              engineId={decodeURIComponent(meta.params.engineId)} />
+          {:else}
+            <PodDetails
+              podName={decodeURI(meta.params.name)}
+              engineId={decodeURIComponent(meta.params.engineId)} />
+          {/if}
         </Route>
         <Route path="/pod-create-from-containers" breadcrumb="Create Pod">
           <PodCreateFromContainers />

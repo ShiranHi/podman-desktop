@@ -17,8 +17,9 @@
  ***********************************************************************/
 
 import type { OpenTabInput } from '/@/stores/layout/layout-store.svelte';
-import { openTab } from '/@/stores/layout/layout-store.svelte';
 import { linkOpenMode } from '/@/stores/layout/tab-preferences.svelte';
+
+import { openWorkspaceResource } from './resource-open-actions';
 
 /** Open an internal resource link using the current summary-link preference. */
 export function openSummaryLink(event: MouseEvent, destination: OpenTabInput): void {
@@ -27,5 +28,7 @@ export function openSummaryLink(event: MouseEvent, destination: OpenTabInput): v
 
   const target = event.currentTarget instanceof Element ? event.currentTarget : undefined;
   const panelId = target?.closest('[data-panel-id]')?.getAttribute('data-panel-id');
-  openTab(destination, linkOpenMode(event, true), panelId ?? undefined);
+  openWorkspaceResource(destination, linkOpenMode(event, true), panelId ?? undefined, {
+    allowDuplicate: event.metaKey || event.ctrlKey,
+  });
 }

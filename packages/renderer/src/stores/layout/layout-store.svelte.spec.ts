@@ -14,7 +14,7 @@ import {
   selectTab,
   splitRight,
 } from './layout-store.svelte';
-import { linkOpenMode, setSummaryLinksInNewTabs } from './tab-preferences.svelte';
+import { linkOpenMode, setTabsEnabled } from './tab-preferences.svelte';
 
 vi.mock(import('tinro'), async importOriginal => {
   const original = await importOriginal();
@@ -40,7 +40,7 @@ const resource = (id: string): OpenTabInput => ({
 });
 beforeEach(() => {
   resetLayout();
-  setSummaryLinksInNewTabs(false);
+  setTabsEnabled(false);
 });
 
 describe('first-version tab navigation', () => {
@@ -91,14 +91,18 @@ describe('first-version tab navigation', () => {
 });
 
 describe('summary preference and modifiers', () => {
-  test('normal links replace by default', () =>
-    expect(linkOpenMode({ metaKey: false, ctrlKey: false }, true)).toBe('replace'));
-  test('Cmd and Ctrl explicitly open new tabs', () => {
+  test('disabled tabs keep links and modifier clicks in production navigation', () => {
+    expect(linkOpenMode({ metaKey: false, ctrlKey: false }, true)).toBe('replace');
+    expect(linkOpenMode({ metaKey: true, ctrlKey: false })).toBe('replace');
+    expect(linkOpenMode({ metaKey: false, ctrlKey: true })).toBe('replace');
+  });
+  test('Cmd and Ctrl explicitly open new tabs when tabs are enabled', () => {
+    setTabsEnabled(true);
     expect(linkOpenMode({ metaKey: true, ctrlKey: false })).toBe('newTab');
     expect(linkOpenMode({ metaKey: false, ctrlKey: true })).toBe('newTab');
   });
-  test('preference applies to summary links only', () => {
-    setSummaryLinksInNewTabs(true);
+  test('enabled tabs apply the default new-tab behavior to summary links only', () => {
+    setTabsEnabled(true);
     expect(linkOpenMode({ metaKey: false, ctrlKey: false }, true)).toBe('newTab');
     expect(linkOpenMode({ metaKey: false, ctrlKey: false })).toBe('replace');
   });

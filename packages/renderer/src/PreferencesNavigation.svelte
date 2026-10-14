@@ -308,14 +308,6 @@ onMount(() => {
         onClick={scheduleNavigationWidthUpdate}
         bind:expanded={sectionExpanded[configSection]} />
       {#if sectionExpanded[configSection]}
-        {#if configSection === 'preferences'}
-          <SettingsNavItem
-            title="Tabs"
-            href="/preferences/default/preferences.tabs"
-            child={true}
-            onClick={scheduleNavigationWidthUpdate}
-            selected={meta.url === '/preferences/default/preferences.tabs'} />
-        {/if}
         {#each sortItems(configItems) as configItem (configItem.id)}
           <SettingsNavItem
             title={configItem.title}

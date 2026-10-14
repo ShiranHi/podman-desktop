@@ -30,17 +30,25 @@
 import type { ContextMenuAction, OpenMode } from '@podman-desktop/ui-svelte';
 import { router } from 'tinro';
 
-import { openTab } from '/@/stores/layout/layout-store.svelte';
+import { openTab, type OpenTabInput } from '/@/stores/layout/layout-store.svelte';
 import {
   composeKey,
   type ComposeSubView,
   imageKey,
   manifestKey,
   networkKey,
+  parseComposeKey,
+  parseImageKey,
+  parseManifestKey,
+  parseNetworkKey,
+  parsePodKey,
+  parseSecretKey,
+  parseVolumeKey,
   podKey,
   secretKey,
   volumeKey,
 } from '/@/stores/layout/layout-types';
+import { tabPreferences } from '/@/stores/layout/tab-preferences.svelte';
 
 function gotoWorkspace(): void {
   // openTab() has already updated the shared layout state; navigating to the
@@ -48,16 +56,71 @@ function gotoWorkspace(): void {
   router.goto('/workspace');
 }
 
-export function openContainerInWorkspace(container: { id: string; name: string }, mode: OpenMode): void {
-  openTab(
-    { resourceType: 'container', resourceId: container.id, subView: 'logs', title: `${container.name} · Logs` },
-    mode,
-  );
+/** Convert a prototype tab destination back to its normal production detail route. */
+function productionResourceUrl(destination: OpenTabInput): string {
+  const view = destination.subView ? `/${destination.subView}` : '';
+  switch (destination.resourceType) {
+    case 'container':
+      return `/containers/${encodeURIComponent(destination.resourceId)}${view}`;
+    case 'pod': {
+      const { name, engineId } = parsePodKey(destination.resourceId);
+      return `/pods/podman/${encodeURIComponent(name)}/${encodeURIComponent(engineId)}${view}`;
+    }
+    case 'image': {
+      const { imageId, engineId, base64RepoTag } = parseImageKey(destination.resourceId);
+      return `/images/${encodeURIComponent(imageId)}/${encodeURIComponent(engineId)}/${encodeURIComponent(base64RepoTag)}${view}`;
+    }
+    case 'manifest': {
+      const { imageId, engineId, base64RepoTag } = parseManifestKey(destination.resourceId);
+      return `/manifests/${encodeURIComponent(imageId)}/${encodeURIComponent(engineId)}/${encodeURIComponent(base64RepoTag)}${view}`;
+    }
+    case 'volume': {
+      const { name, engineId } = parseVolumeKey(destination.resourceId);
+      return `/volumes/${encodeURIComponent(name)}/${encodeURIComponent(engineId)}${view}`;
+    }
+    case 'network': {
+      const { name, engineId } = parseNetworkKey(destination.resourceId);
+      return `/networks/${encodeURIComponent(name)}/${encodeURIComponent(engineId)}${view}`;
+    }
+    case 'secret': {
+      const { secretId, engineId } = parseSecretKey(destination.resourceId);
+      return `/secrets/${encodeURIComponent(engineId)}/${encodeURIComponent(secretId)}${view}`;
+    }
+    case 'compose': {
+      const { name, engineId } = parseComposeKey(destination.resourceId);
+      return `/compose/details/${encodeURIComponent(name)}/${encodeURIComponent(engineId)}${view}`;
+    }
+    case 'kube-play':
+      return '/kube/play';
+    case 'app-page':
+      return '/';
+  }
+}
+
+/** Open a resource in the prototype workspace, or use the standard production route when off. */
+export function openWorkspaceResource(
+  destination: OpenTabInput,
+  mode: OpenMode,
+  panelId?: string,
+  options?: { allowDuplicate?: boolean },
+): void {
+  if (!tabPreferences.tabsEnabled) {
+    router.goto(productionResourceUrl(destination));
+    return;
+  }
+  openTab(destination, mode, panelId, options);
   gotoWorkspace();
 }
 
+export function openContainerInWorkspace(container: { id: string; name: string }, mode: OpenMode): void {
+  openWorkspaceResource(
+    { resourceType: 'container', resourceId: container.id, subView: 'logs', title: `${container.name} · Logs` },
+    mode,
+  );
+}
+
 export function openPodInWorkspace(pod: { name: string; engineId: string }, mode: OpenMode): void {
-  openTab(
+  openWorkspaceResource(
     {
       resourceType: 'pod',
       resourceId: podKey(pod.name, pod.engineId),
@@ -66,14 +129,13 @@ export function openPodInWorkspace(pod: { name: string; engineId: string }, mode
     },
     mode,
   );
-  gotoWorkspace();
 }
 
 export function openImageInWorkspace(
   image: { id: string; engineId: string; name: string; tag: string; base64RepoTag: string },
   mode: OpenMode,
 ): void {
-  openTab(
+  openWorkspaceResource(
     {
       resourceType: 'image',
       resourceId: imageKey(image.id, image.engineId, image.base64RepoTag),
@@ -82,14 +144,13 @@ export function openImageInWorkspace(
     },
     mode,
   );
-  gotoWorkspace();
 }
 
 export function openVolumeInWorkspace(
   volume: { name: string; shortName: string; engineId: string },
   mode: OpenMode,
 ): void {
-  openTab(
+  openWorkspaceResource(
     {
       resourceType: 'volume',
       resourceId: volumeKey(volume.name, volume.engineId),
@@ -98,11 +159,10 @@ export function openVolumeInWorkspace(
     },
     mode,
   );
-  gotoWorkspace();
 }
 
 export function openNetworkInWorkspace(network: { name: string; engineId: string }, mode: OpenMode): void {
-  openTab(
+  openWorkspaceResource(
     {
       resourceType: 'network',
       resourceId: networkKey(network.name, network.engineId),
@@ -111,11 +171,10 @@ export function openNetworkInWorkspace(network: { name: string; engineId: string
     },
     mode,
   );
-  gotoWorkspace();
 }
 
 export function openSecretInWorkspace(secret: { Id: string; Name: string; engineId: string }, mode: OpenMode): void {
-  openTab(
+  openWorkspaceResource(
     {
       resourceType: 'secret',
       resourceId: secretKey(secret.Id, secret.engineId),
@@ -124,7 +183,6 @@ export function openSecretInWorkspace(secret: { Id: string; Name: string; engine
     },
     mode,
   );
-  gotoWorkspace();
 }
 
 export function openComposeInWorkspace(
@@ -133,7 +191,7 @@ export function openComposeInWorkspace(
   subView: ComposeSubView = 'summary',
 ): void {
   const label = subView === 'summary' ? 'Summary' : subView[0].toUpperCase() + subView.slice(1);
-  openTab(
+  openWorkspaceResource(
     {
       resourceType: 'compose',
       resourceId: composeKey(compose.name, compose.engineId),
@@ -142,14 +200,13 @@ export function openComposeInWorkspace(
     },
     mode,
   );
-  gotoWorkspace();
 }
 
 export function openManifestInWorkspace(
   image: { id: string; engineId: string; name: string; base64RepoTag: string },
   mode: OpenMode,
 ): void {
-  openTab(
+  openWorkspaceResource(
     {
       resourceType: 'manifest',
       resourceId: manifestKey(image.id, image.engineId, image.base64RepoTag),
@@ -158,12 +215,14 @@ export function openManifestInWorkspace(
     },
     mode,
   );
-  gotoWorkspace();
 }
 
 export function buildOpenContextMenuActions(open: (mode: OpenMode) => void): ContextMenuAction[] {
-  return [
+  const actions: ContextMenuAction[] = [
     { id: 'open', title: 'Open', iconClass: 'fas fa-arrow-right', onSelect: (): void => open('replace') },
+  ];
+  if (!tabPreferences.tabsEnabled) return actions;
+  return actions.concat([
     { id: 'open-new-tab', title: 'Open in New Tab', iconClass: 'fas fa-plus', onSelect: (): void => open('newTab') },
     {
       id: 'split-right',
@@ -178,5 +237,5 @@ export function buildOpenContextMenuActions(open: (mode: OpenMode) => void): Con
       iconClass: 'fas fa-table-columns',
       onSelect: (): void => open('splitDown'),
     },
-  ];
+  ]);
 }

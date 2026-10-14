@@ -126,7 +126,7 @@ function onImportFile(event: Event): void {
 
 <svelte:window onkeyup={handleEscape} onclick={onWindowClick} />
 
-<div class="relative flex h-8 shrink-0 items-stretch text-left">
+<div class="relative flex h-8 shrink-0 items-stretch text-left" class:z-50={showMenu}>
   <Tooltip top tip="Layout options" containerClass="flex items-stretch self-stretch" class="flex items-stretch">
     <button
       bind:this={menuAnchor}

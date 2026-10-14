@@ -1,4 +1,5 @@
 <script lang="ts">
+import { AppearanceSettings } from '@desktop-framework/api/appearance';
 import type { IConfigurationPropertyRecordedSchema } from '@desktop-framework/api/configuration';
 import { SearchInput } from '@podman-desktop/ui-svelte';
 import { onDestroy, onMount } from 'svelte';
@@ -26,8 +27,9 @@ let contextsUnsubscribe: Unsubscriber;
 let globalContext: ContextUI;
 
 const showTabs = $derived(
-  (key === 'preferences' || key === 'preferences.tabs') &&
-    (!searchValue || matchValue('Tabs Open summary links in new tabs navigation', searchValue)),
+  key === `${AppearanceSettings.SectionName}.${AppearanceSettings.Appearance}` &&
+    (!searchValue ||
+      matchValue('Tabs Enable tabs tabbed workspace layouts tab actions standard page navigation', searchValue)),
 );
 
 // Search and matching records

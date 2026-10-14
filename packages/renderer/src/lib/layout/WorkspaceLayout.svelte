@@ -62,6 +62,7 @@ import {
   parseSecretKey,
   parseVolumeKey,
 } from '/@/stores/layout/layout-types';
+import { tabPreferences } from '/@/stores/layout/tab-preferences.svelte';
 
 import AppPageTabContent from './AppPageTabContent.svelte';
 import CloseSectionButton from './CloseSectionButton.svelte';
@@ -110,6 +111,7 @@ const displayedNode = $derived.by(() => {
 const layoutToolbarPanelId = $derived(findTopRightLeaf(displayedNode).id);
 
 function onWindowKeydown(event: KeyboardEvent): void {
+  if (!tabPreferences.tabsEnabled) return;
   if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'w') {
     event.preventDefault();
     closeActiveTab();

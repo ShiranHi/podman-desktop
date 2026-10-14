@@ -30,6 +30,8 @@ export interface TabDescriptor {
   key: string;
   title: string;
   subtitle?: string;
+  /** Optional hover text. Apps can add resource context without changing the visible tab label. */
+  tooltip?: string;
   /** Font Awesome icon class list, e.g. 'fa-solid fa-box' */
   iconClass?: string;
   /** App-provided icon used when the tab mirrors a navigation destination. */

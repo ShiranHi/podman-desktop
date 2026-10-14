@@ -41,6 +41,19 @@ export type WorkspaceResourceType =
   | 'manifest'
   | 'kube-play';
 
+const RESOURCE_CATEGORIES: Record<WorkspaceResourceType, string> = {
+  'app-page': 'Page',
+  container: 'Container',
+  pod: 'Pod',
+  image: 'Image',
+  volume: 'Volume',
+  network: 'Network',
+  secret: 'Secret',
+  compose: 'Compose',
+  manifest: 'Manifest',
+  'kube-play': 'Kubernetes',
+};
+
 export const CONTAINER_SUB_VIEWS = ['summary', 'logs', 'inspect', 'terminal', 'tty', 'kube'] as const;
 export type ContainerSubView = (typeof CONTAINER_SUB_VIEWS)[number];
 
@@ -81,6 +94,11 @@ export interface WorkspaceTab extends TabDescriptor {
   /** Opaque per-resource-type identity, e.g. containerId, `${podName}::${engineId}`, `${imageId}::${engineId}::${base64RepoTag}` */
   resourceId: string;
   subView?: SubView;
+}
+
+export function workspaceTabTooltip(tab: WorkspaceTab): string {
+  const details = tab.subtitle ? ` — ${tab.subtitle}` : '';
+  return `${RESOURCE_CATEGORIES[tab.resourceType]}: ${tab.title}${details}`;
 }
 
 /** The sub-views offered by the tab strip's "+" menu for a given resource type (see WorkspaceLayout's addTabActions). */
@@ -212,7 +230,9 @@ export function workspaceTabIcon(type: WorkspaceResourceType, _view?: SubView): 
 }
 
 /** Navigation icon for a resource tab; stays the same across its internal views. */
-export function workspaceTabNavigationIcon(type: WorkspaceResourceType): NonNullable<TabDescriptor['tabIcon']> | undefined {
+export function workspaceTabNavigationIcon(
+  type: WorkspaceResourceType,
+): NonNullable<TabDescriptor['tabIcon']> | undefined {
   return {
     'app-page': undefined,
     container: ContainerIcon,

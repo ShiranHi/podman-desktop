@@ -397,7 +397,7 @@ function contextMenuActions(tabId: string): ContextMenuAction[] {
           class:text-[var(--pd-tab-text-highlight)]={tab.id === activeTabId}
           class:text-[var(--pd-tab-text)]={tab.id !== activeTabId}
           class:opacity-70={!!tab.stale}
-          title={tab.subtitle ? `${tab.title} — ${tab.subtitle}` : tab.title}>
+          title={tab.tooltip ?? (tab.subtitle ? `${tab.title} — ${tab.subtitle}` : tab.title)}>
           {#if dragTarget?.tabId === tab.id}
             <span
               aria-hidden="true"

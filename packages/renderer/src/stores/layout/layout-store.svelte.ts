@@ -28,8 +28,9 @@ import { router } from 'tinro';
 import { goBack, navigationHistory } from '/@/stores/navigation-history.svelte';
 
 import type { SubView, WorkspaceResourceType, WorkspaceTab } from './layout-types';
-import { tabKey, workspaceTabIcon, workspaceTabNavigationIcon } from './layout-types';
+import { tabKey, workspaceTabIcon, workspaceTabNavigationIcon, workspaceTabTooltip } from './layout-types';
 import { getPageTabIcon, getPageTabTitle, PAGE_TAB_ID } from './page-tab.svelte';
+import { tabPreferences } from './tab-preferences.svelte';
 
 // Tracks the current route so closing the last tab can tell whether the user is
 // actually looking at /workspace right now (see closeTabInternal below) - closing a
@@ -120,7 +121,10 @@ export function countLeaves(node: PanelNode): number {
 export function getTabsForPanel(panelId: string): WorkspaceTab[] {
   const leaf = findLeaf(layoutState.tree, panelId);
   if (!leaf) return [];
-  return leaf.tabIds.map(id => layoutState.tabs[id]).filter((t): t is WorkspaceTab => !!t);
+  return leaf.tabIds
+    .map(id => layoutState.tabs[id])
+    .filter((t): t is WorkspaceTab => !!t)
+    .map(tab => ({ ...tab, tooltip: workspaceTabTooltip(tab) }));
 }
 
 export function findExistingTabByKey(key: string): WorkspaceTab | undefined {
@@ -190,6 +194,7 @@ export function ensurePageTab(): void {
 
 /** Select the permanent page tab while keeping the user in the workspace. */
 export function activatePageTab(): void {
+  if (!tabPreferences.tabsEnabled) return;
   ensurePageTab();
   const home = findFirstLeaf(layoutState.tree);
   home.activeTabId = PAGE_TAB_ID;
@@ -287,12 +292,17 @@ function splitLeaf(targetLeafId: string, direction: SplitDirection, position: 'b
 
 // ---- public API ----
 
-export function openTab(input: OpenTabInput, mode: OpenMode = 'replace', targetPanelId?: string): string {
+export function openTab(
+  input: OpenTabInput,
+  mode: OpenMode = 'replace',
+  targetPanelId?: string,
+  options: { allowDuplicate?: boolean } = {},
+): string {
   ensurePageTab();
   const key = tabKey(input.resourceType, input.resourceId, input.subView);
   const basePanelId = targetPanelId ?? layoutState.focusedPanelId;
   const baseLeaf = findLeaf(layoutState.tree, basePanelId) ?? findFirstLeaf(layoutState.tree);
-  const existing = findExistingTabByKey(key);
+  const existing = options.allowDuplicate ? undefined : findExistingTabByKey(key);
   if (existing) {
     // A summary link with default replace behavior should still replace the
     // current resource tab when its destination is already open elsewhere.
@@ -591,7 +601,7 @@ export function getAllTabsOrdered(): WorkspaceTab[] {
   for (const leaf of leaves) {
     for (const tabId of leaf.tabIds) {
       const tab = layoutState.tabs[tabId];
-      if (tab) ordered.push(tab);
+      if (tab) ordered.push({ ...tab, tooltip: workspaceTabTooltip(tab) });
     }
   }
   return ordered;
