@@ -303,14 +303,14 @@ initSessionAutosave();
               navigationHint="details">
               {#if tabPreferences.tabsEnabled}
                 <ImageWorkspaceEntry
-                  imageID={meta.params.id}
-                  engineId={decodeURI(meta.params.engineId)}
-                  base64RepoTag={meta.params.base64RepoTag} />
+                  imageID={decodeURIComponent(meta.params.id)}
+                  engineId={decodeURIComponent(meta.params.engineId)}
+                  base64RepoTag={decodeURIComponent(meta.params.base64RepoTag)} />
               {:else}
                 <ImageDetails
-                  imageID={meta.params.id}
-                  engineId={decodeURI(meta.params.engineId)}
-                  base64RepoTag={meta.params.base64RepoTag} />
+                  imageID={decodeURIComponent(meta.params.id)}
+                  engineId={decodeURIComponent(meta.params.engineId)}
+                  base64RepoTag={decodeURIComponent(meta.params.base64RepoTag)} />
               {/if}
             </Route>
           </Route>
@@ -321,9 +321,9 @@ initSessionAutosave();
           let:meta
           navigationHint="details">
           <ManifestDetails
-            imageID={meta.params.id}
-            engineId={decodeURI(meta.params.engineId)}
-            base64RepoTag={meta.params.base64RepoTag} />
+            imageID={decodeURIComponent(meta.params.id)}
+            engineId={decodeURIComponent(meta.params.engineId)}
+            base64RepoTag={decodeURIComponent(meta.params.base64RepoTag)} />
         </Route>
 
         <Route path="/networks/*" breadcrumb="Networks" navigationHint="root" firstmatch>
