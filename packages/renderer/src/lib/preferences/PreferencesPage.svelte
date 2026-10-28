@@ -1,17 +1,20 @@
 <script lang="ts">
 import type { IConfigurationPropertyRecordedSchema } from '@desktop-framework/api/configuration';
-import { onMount } from 'svelte';
+import { onDestroy, onMount } from 'svelte';
+import { router } from 'tinro';
 
 import Onboarding from '/@/lib/onboarding/Onboarding.svelte';
 import ExperimentalPage from '/@/lib/preferences/ExperimentalPage.svelte';
 import PreferencesContainerConnectionEdit from '/@/lib/preferences/PreferencesContainerConnectionEdit.svelte';
 import Route from '/@/Route.svelte';
 import { configurationProperties } from '/@/stores/configurationProperties';
+import { isDesignProposal } from '/@/stores/preferences-prototype';
 
 import PreferencesDockerCompatibilityRendering from './docker-compat/PreferencesDockerCompatibilityRendering.svelte';
 import PreferencesAuthenticationProvidersRendering from './PreferencesAuthenticationProvidersRendering.svelte';
 import PreferencesCliToolsRendering from './PreferencesCliToolsRendering.svelte';
 import PreferencesContainerConnectionRendering from './PreferencesContainerConnectionRendering.svelte';
+import PreferencesExtensionSettingsRendering from './PreferencesExtensionSettingsRendering.svelte';
 import PreferencesKubernetesConnectionRendering from './PreferencesKubernetesConnectionRendering.svelte';
 import PreferencesKubernetesContextsRendering from './PreferencesKubernetesContextsRendering.svelte';
 import PreferencesProviderRendering from './PreferencesProviderRendering.svelte';
@@ -24,6 +27,28 @@ import { isDefaultScope } from './Util';
 
 let properties: IConfigurationPropertyRecordedSchema[];
 let defaultPrefPageId: string;
+
+const EXTENSION_SETTINGS_URL = '/preferences/extensions';
+const GLOBAL_SETTINGS_URL = '/preferences/default/preferences';
+
+// The extension settings hub only exists in the design proposal. When the switcher goes back
+// to the current experience while that page is open, fall back to the global settings page
+// instead of leaving an empty content pane (the route does not exist there).
+let currentUrl = '';
+const routerUnsubscribe = router.subscribe(navigation => {
+  currentUrl = navigation.url ?? '';
+});
+
+const prototypeUnsubscribe = isDesignProposal.subscribe(proposal => {
+  if (!proposal && currentUrl.startsWith(EXTENSION_SETTINGS_URL)) {
+    router.goto(GLOBAL_SETTINGS_URL, true);
+  }
+});
+
+onDestroy(() => {
+  routerUnsubscribe();
+  prototypeUnsubscribe();
+});
 
 onMount(async () => {
   configurationProperties.subscribe(value => {
@@ -43,12 +68,19 @@ onMount(async () => {
 
 <div class="flex flex-col h-full bg-[var(--pd-invert-content-bg)]">
   <Route path="/*" breadcrumb="Preferences">
-    {#if defaultPrefPageId !== undefined}
+    {#if $isDesignProposal}
+      <PreferencesRendering key="preferences" properties={properties} globalOnly={true} />
+    {:else if defaultPrefPageId !== undefined}
       <PreferencesRendering key={defaultPrefPageId} properties={properties} />
     {:else}
       empty
     {/if}
   </Route>
+  {#if $isDesignProposal}
+    <Route path="/extensions" breadcrumb="Extension settings" let:meta>
+      <PreferencesExtensionSettingsRendering properties={properties} focus={meta.query.focus} />
+    </Route>
+  {/if}
   <Route path="/experimental" breadcrumb="Experimental Features">
     <ExperimentalPage properties={properties}/>
   </Route>

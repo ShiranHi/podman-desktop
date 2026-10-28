@@ -1,6 +1,9 @@
 <script lang="ts">
 import { DockerCompatibilitySettings } from '@desktop-framework/api';
-import { CONFIGURATION_DEFAULT_SCOPE } from '@desktop-framework/api/configuration';
+import {
+  CONFIGURATION_DEFAULT_SCOPE,
+  type IConfigurationPropertyRecordedSchema,
+} from '@desktop-framework/api/configuration';
 import { SettingsNavItem } from '@podman-desktop/ui-svelte';
 import { onMount, tick } from 'svelte';
 import type { TinroRouteMeta } from 'tinro';
@@ -10,6 +13,7 @@ import ShortcutArrowIcon from '/@/lib/images/ShortcutArrowIcon.svelte';
 import { type NavItem, settingsNavigationEntries, type SettingsNavItemConfig } from '/@/PreferencesNavigation';
 
 import { configurationProperties } from './stores/configurationProperties';
+import { isDesignProposal } from './stores/preferences-prototype';
 import { onDidChangeRegisteredFeatures, registeredFeatures } from './stores/registered-features';
 
 interface Props {
@@ -30,6 +34,54 @@ let settingsNavigationItems: SettingsNavItemConfig[] = $state(settingsNavigation
 let navigationElement: HTMLElement | undefined = $state();
 let navigationWidthPx: number | undefined = $state();
 const MIN_CONTENT_WIDTH_PX = 80;
+
+let designProposal = $derived($isDesignProposal);
+let latestProperties: IConfigurationPropertyRecordedSchema[] = [];
+
+function buildConfigProperties(
+  properties: IConfigurationPropertyRecordedSchema[],
+  hideExtensionSettings: boolean,
+): Map<string, NavItem[]> {
+  return properties.reduce((map, current) => {
+    // filter on default scope
+    if (current.scope !== CONFIGURATION_DEFAULT_SCOPE) return map;
+
+    // do not include hidden property
+    if (current.hidden) return map;
+
+    // extension settings are listed in their own hub instead of the settings navigation
+    if (hideExtensionSettings && current.extension) return map;
+
+    const [parentLeftId] = current.parentId.split('.');
+
+    // the general settings page lists all global preferences, so its raw group is not duplicated in the navigation
+    if (hideExtensionSettings && parentLeftId === 'preferences') return map;
+
+    const array: NavItem[] = map.get(parentLeftId) ?? [];
+
+    let children = array.find((item: NavItem) => item.id === current.parentId);
+    if (children === undefined) {
+      map.set(parentLeftId, [...array, { id: current.parentId, title: current.title }]);
+    }
+    return map;
+  }, new Map<string, NavItem[]>());
+}
+
+function applyConfigProperties(): void {
+  const nextConfigProperties = buildConfigProperties(latestProperties, designProposal);
+
+  configProperties = nextConfigProperties;
+
+  // Drop expansion flags for dynamic config sections no longer present to avoid stale widened width.
+  // Preserve expansion state for static navigation entries.
+  sectionExpanded = Object.fromEntries(
+    Object.entries(sectionExpanded).filter(
+      ([sectionId]) => nextConfigProperties.has(sectionId) || settingsNavigationItems.some(e => e.title === sectionId),
+    ),
+  );
+
+  scheduleNavigationWidthUpdate();
+}
 
 function measureTitleTextWidth(titleElement: HTMLElement): number {
   const titleText = titleElement.textContent ?? '';
@@ -164,6 +216,20 @@ function sortItems(items: NavItem[]): NavItem[] {
 
 const kubernetesContextsManagerFeature = 'kubernetes-contexts-manager';
 
+function updateProposalEntriesVisibility(): void {
+  // the design proposal gathers the experimental features in the advanced tab of the general page
+  const experimentalIndex = settingsNavigationItems.findIndex(entry => entry.title === 'Experimental');
+  if (experimentalIndex !== -1) {
+    settingsNavigationItems[experimentalIndex].visible = experimentalSection && !designProposal;
+  }
+
+  // ... and the proxy settings in the network tab of the general page
+  const proxyIndex = settingsNavigationItems.findIndex(entry => entry.title === 'Proxy');
+  if (proxyIndex !== -1) {
+    settingsNavigationItems[proxyIndex].visible = !designProposal;
+  }
+}
+
 function updateKubernetesVisibility(enabled: boolean): void {
   const kubernetesIndex = settingsNavigationItems.findIndex(entry => entry.title === 'Kubernetes');
   if (kubernetesIndex !== -1) {
@@ -207,41 +273,17 @@ onMount(() => {
     // check for experimental configuration
     experimentalSection = value.some(configuration => !!configuration.experimental);
 
-    const experimentalIndex = settingsNavigationEntries.findIndex(entry => entry.title === 'Experimental');
-    if (experimentalIndex !== -1) {
-      settingsNavigationItems[experimentalIndex].visible = experimentalSection;
-    }
+    updateProposalEntriesVisibility();
 
-    // update config properties
-    const nextConfigProperties = value.reduce((map, current) => {
-      // filter on default scope
-      if (current.scope !== CONFIGURATION_DEFAULT_SCOPE) return map;
+    latestProperties = value;
+    applyConfigProperties();
+  });
 
-      // do not include hidden property
-      if (current.hidden) return map;
-
-      let [parentLeftId] = current.parentId.split('.');
-      const array: NavItem[] = map.get(parentLeftId) ?? [];
-
-      let children = array.find((item: NavItem) => item.id === current.parentId);
-      if (children === undefined) {
-        map.set(parentLeftId, [...array, { id: current.parentId, title: current.title }]);
-      }
-      return map;
-    }, new Map<string, NavItem[]>());
-
-    configProperties = nextConfigProperties;
-
-    // Drop expansion flags for dynamic config sections no longer present to avoid stale widened width.
-    // Preserve expansion state for static navigation entries.
-    sectionExpanded = Object.fromEntries(
-      Object.entries(sectionExpanded).filter(
-        ([sectionId]) =>
-          nextConfigProperties.has(sectionId) || settingsNavigationItems.some(e => e.title === sectionId),
-      ),
-    );
-
-    scheduleNavigationWidthUpdate();
+  // the design proposal moves extension settings out of the settings navigation
+  // and into a dedicated hub, so the navigation has to be rebuilt on switch
+  const unsubDesignProposal = isDesignProposal.subscribe(() => {
+    updateProposalEntriesVisibility();
+    applyConfigProperties();
   });
 
   scheduleNavigationWidthUpdate();
@@ -252,6 +294,7 @@ onMount(() => {
     }
     resizeObserver?.disconnect();
     unsubConfig();
+    unsubDesignProposal();
     unsubFeatures();
     onDidChangeRegisteredFeatures.removeEventListener(kubernetesContextsManagerFeature, featureListener);
   };
@@ -272,6 +315,14 @@ onMount(() => {
     </div>
   </div>
   <div class="h-full overflow-y-auto" style="margin-bottom:auto">
+    {#if designProposal}
+      <SettingsNavItem
+        title="General"
+        href="/preferences"
+        icon={PreferencesIcon}
+        onClick={scheduleNavigationWidthUpdate}
+        selected={meta.url === '/preferences'} />
+    {/if}
     {#each settingsNavigationItems as navItem, index (index)}
       {#if navItem.visible}
         {@const visibleChildren = navItem.children?.filter(c => c.visible) ?? []}
@@ -319,6 +370,15 @@ onMount(() => {
       {/if}
     {/each}
     <!-- Default configuration properties end -->
+    {#if designProposal}
+      <div class="mx-3 my-2 border-t border-(--pd-global-nav-bg-border)"></div>
+      <SettingsNavItem
+        title="Extension settings"
+        href="/preferences/extensions"
+        icon="fas fa-puzzle-piece"
+        onClick={scheduleNavigationWidthUpdate}
+        selected={meta.url.startsWith('/preferences/extensions')} />
+    {/if}
     <div class="mx-3 my-2 border-t border-(--pd-global-nav-bg-border)"></div>
     <SettingsNavItem
       icon='fas fa-crosshairs'

@@ -1,5 +1,5 @@
 <script lang="ts">
-import { faFilePen, faGear } from '@fortawesome/free-solid-svg-icons';
+import { faFilePen, faGear, faSliders } from '@fortawesome/free-solid-svg-icons';
 import { Button } from '@podman-desktop/ui-svelte';
 import { Icon } from '@podman-desktop/ui-svelte/icons';
 import { onDestroy, onMount } from 'svelte';
@@ -13,6 +13,9 @@ import type { CombinedExtensionInfoUI } from '/@/stores/all-installed-extensions
 import { configurationProperties } from '/@/stores/configurationProperties';
 import { context } from '/@/stores/context';
 import { onboardingList } from '/@/stores/onboarding';
+import { isDesignProposal } from '/@/stores/preferences-prototype';
+
+import ExtensionSettingsModal from './ExtensionSettingsModal.svelte';
 
 interface Props {
   extension: CombinedExtensionInfoUI;
@@ -26,6 +29,8 @@ let onboardingEnabledReadable: Readable<boolean>;
 let isOnboardingEnabled = $state(false);
 
 let hasAnyConfiguration = $state(false);
+let showSettingsModal = $state(false);
+let designProposal = $derived($isDesignProposal);
 
 onMount(() => {
   configurationPropertiesUnsubscribe = configurationProperties.subscribe(properties => {
@@ -88,12 +93,36 @@ function handleProperties(): void {
   <Icon size="1x" icon={faGear} />
 </Button>
 
-<Button
-  aria-label="Edit properties of {extension.name} extension"
-  title="Edit properties of {extension.name} extension"
-  type="secondary"
-  class="m-auto {!hasAnyConfiguration ? 'cursor-not-allowed' : ''}"
-  disabled={!hasAnyConfiguration}
-  on:click={handleProperties}>
-  <Icon size="1x" icon={faFilePen} />
-</Button>
+{#if designProposal}
+  <Button
+    aria-label="Settings for {extension.name} extension"
+    title="Settings for {extension.name} extension"
+    type="secondary"
+    icon={faSliders}
+    padding="px-3 py-1"
+    class="m-auto {!hasAnyConfiguration ? 'cursor-not-allowed' : ''}"
+    disabled={!hasAnyConfiguration}
+    on:click={(): void => {
+      showSettingsModal = true;
+    }}>
+    Settings
+  </Button>
+{:else}
+  <Button
+    aria-label="Edit properties of {extension.name} extension"
+    title="Edit properties of {extension.name} extension"
+    type="secondary"
+    class="m-auto {!hasAnyConfiguration ? 'cursor-not-allowed' : ''}"
+    disabled={!hasAnyConfiguration}
+    on:click={handleProperties}>
+    <Icon size="1x" icon={faFilePen} />
+  </Button>
+{/if}
+
+{#if showSettingsModal}
+  <ExtensionSettingsModal
+    {extension}
+    onclose={(): void => {
+      showSettingsModal = false;
+    }} />
+{/if}
