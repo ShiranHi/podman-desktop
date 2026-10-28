@@ -1,6 +1,7 @@
 <script lang="ts">
 import './app.css';
 import '@fortawesome/fontawesome-free/css/all.min.css';
+import '/@/stores/preferences-prototype';
 
 import type { KubernetesNavigationRequest, NavigationRequest } from '@desktop-framework/api';
 import { tablePersistence } from '@podman-desktop/ui-svelte';

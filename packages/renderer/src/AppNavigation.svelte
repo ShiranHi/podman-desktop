@@ -6,7 +6,7 @@
 import { NavigationPage } from '@desktop-framework/api';
 import { AppearanceSettings } from '@desktop-framework/api/appearance';
 import { onDestroy, onMount, tick } from 'svelte';
-import type { TinroRouteMeta } from 'tinro';
+import { router, type TinroRouteMeta } from 'tinro';
 
 import AuthActions from './lib/authentication/AuthActions.svelte';
 import { CommandRegistry } from './lib/CommandRegistry';
@@ -20,6 +20,7 @@ import NavRegistryEntry from './lib/ui/NavRegistryEntry.svelte';
 import { handleNavigation } from './navigation';
 import { onDidChangeConfiguration } from './stores/configurationProperties';
 import { navigationRegistry } from './stores/navigation/navigation-registry';
+import { isDesignProposal } from './stores/preferences-prototype';
 
 interface Props {
   exitSettingsCallback: () => void;
@@ -184,6 +185,10 @@ onDestroy(() => {
 function handleClick(): void {
   if (meta.url.startsWith('/preferences')) {
     exitSettingsCallback();
+  } else if ($isDesignProposal) {
+    // the design proposal opens on the general settings page, which gathers all global
+    // preferences, so the settings entry point should land there instead of resources
+    router.goto('/preferences');
   } else {
     handleNavigation({ page: NavigationPage.RESOURCES });
   }
