@@ -217,7 +217,7 @@ function sortItems(items: NavItem[]): NavItem[] {
 const kubernetesContextsManagerFeature = 'kubernetes-contexts-manager';
 
 function updateProposalEntriesVisibility(): void {
-  // the design proposal gathers the experimental features in the advanced tab of the general page
+  // Keep the complete experimental settings page available, including non-default scopes.
   const experimentalIndex = settingsNavigationItems.findIndex(entry => entry.title === 'Experimental');
   if (experimentalIndex !== -1) {
     settingsNavigationItems[experimentalIndex].visible = experimentalSection && !designProposal;

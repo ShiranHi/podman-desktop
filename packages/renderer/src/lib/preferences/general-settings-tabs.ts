@@ -93,6 +93,7 @@ export const GENERAL_SETTINGS_TABS: SettingsTab[] = [
     id: 'advanced',
     label: 'Advanced',
     sections: [
+      'Experimental features',
       'Experimental (Enhanced Dashboard)',
       'Experimental (Status Bar Providers)',
       'Kubernetes',

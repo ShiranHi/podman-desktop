@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { IConfigurationPropertyRecordedSchema } from '@desktop-framework/api/configuration';
-import { SearchInput } from '@podman-desktop/ui-svelte';
+import { Button, SearchInput } from '@podman-desktop/ui-svelte';
 import { onDestroy, onMount } from 'svelte';
 import { type Unsubscriber } from 'svelte/store';
 
@@ -8,7 +8,7 @@ import type { ContextUI } from '/@/lib/context/context';
 import Route from '/@/Route.svelte';
 import { context } from '/@/stores/context';
 
-import ExperimentalMasterToggle from './ExperimentalMasterToggle.svelte';
+import ExperimentalSettings from './ExperimentalSettings.svelte';
 import { groupSectionsIntoTabs, type SettingsSection, type SettingsTab } from './general-settings-tabs';
 import PreferencesProxiesForm from './PreferencesProxiesForm.svelte';
 import PreferencesSections from './PreferencesSections.svelte';
@@ -34,7 +34,7 @@ let updateSearchValueTimeout: NodeJS.Timeout;
 const matchingRecords = $derived(
   properties
     .filter(property => property.parentId.startsWith(key) && isDefaultScope(property.scope) && !property.hidden)
-    .filter(property => (globalOnly ? !property.extension : true))
+    .filter(property => (globalOnly ? !property.extension && !property.experimental : true))
     .filter(property => isPropertyValidInContext(property.when, globalContext))
     .filter(
       property =>
@@ -65,12 +65,23 @@ const sections: SettingsSection[] = $derived(
 
 // the general page gathers every global setting: spread its sections over tabs to keep it
 // navigable, while the other pages keep a single list
-const tabs: SettingsTab[] = $derived(globalOnly ? groupSectionsIntoTabs(sections.map(section => section.title)) : []);
+const settingsTabs: SettingsTab[] = $derived(
+  globalOnly
+    ? groupSectionsIntoTabs([
+        ...sections.map(section => section.title),
+        ...(!searchValue && properties.some(property => property.experimental && !property.hidden)
+          ? ['Experimental features']
+          : []),
+      ])
+    : [],
+);
 
 // searching looks into every tab at once, so the tabs are only useful outside of a search
-const showTabs: boolean = $derived(tabs.length > 1 && !searchValue);
+const showTabs: boolean = $derived(settingsTabs.length > 1 && !searchValue);
 
-const activeTab: SettingsTab | undefined = $derived(tabs.find(tab => tab.id === activeTabId) ?? tabs[0]);
+const activeTab: SettingsTab | undefined = $derived(
+  settingsTabs.find(tab => tab.id === activeTabId) ?? settingsTabs[0],
+);
 
 const visibleSections: SettingsSection[] = $derived(
   showTabs && activeTab ? sections.filter(section => activeTab.sections.includes(section.title)) : sections,
@@ -101,7 +112,7 @@ function updateSearchValue(event: any): void {
 </script>
 
 <Route path="/" breadcrumb={globalOnly ? 'General' : key}>
-  <SettingsPage title={globalOnly ? 'General' : 'Preferences'}>
+  <SettingsPage title={globalOnly ? 'General' : 'Preferences'} {showTabs}>
     {#snippet subtitle()}
       {#if globalOnly}
         Global application settings. Extension settings are managed on the
@@ -111,39 +122,30 @@ function updateSearchValue(event: any): void {
       {/if}
     {/snippet}
     {#snippet header()}
-        <SearchInput  title="preferences" class="mt-4" oninput={updateSearchValue} />
-      {/snippet}
-    {#if showTabs}
-      <div
-        class="flex flex-wrap gap-1 border-b border-[var(--pd-global-nav-bg-border)] mb-3"
-        role="tablist"
-        aria-label="Settings categories">
-        {#each tabs as tab (tab.id)}
-          <button
-            role="tab"
-            aria-selected={activeTab?.id === tab.id}
-            class="px-4 py-2 text-sm whitespace-nowrap border-b-[3px] -mb-px cursor-pointer"
-            class:border-[var(--pd-tab-highlight)]={activeTab?.id === tab.id}
-            class:border-transparent={activeTab?.id !== tab.id}
-            class:text-[var(--pd-tab-text-highlight)]={activeTab?.id === tab.id}
-            class:text-[var(--pd-tab-text)]={activeTab?.id !== tab.id}
-            class:hover:border-[var(--pd-tab-hover)]={activeTab?.id !== tab.id}
-            onclick={(): void => {
-              activeTabId = tab.id;
-            }}>
-            {tab.label}
-          </button>
-        {/each}
-      </div>
-    {/if}
+      <SearchInput title="preferences" class="mt-4" oninput={updateSearchValue} />
+    {/snippet}
+    {#snippet tabs()}
+      {#if showTabs}
+        <div class="flex flex-row" role="tablist" aria-label="Settings categories">
+          {#each settingsTabs as tab (tab.id)}
+            <Button type="tab" selected={activeTab?.id === tab.id} onclick={(): void => { activeTabId = tab.id; }}>{tab.label}</Button>
+          {/each}
+        </div>
+      {/if}
+    {/snippet}
     <div class="flex flex-col space-y-5 text-[var(--pd-content-header)] pb-2">
       {#if showTabs && activeTab?.content === 'proxy'}
         <PreferencesProxiesForm />
       {:else}
-        {#if showTabs && activeTab?.id === 'advanced'}
-          <ExperimentalMasterToggle {properties} />
+        {#if globalOnly && (showTabs ? activeTab?.id === 'advanced' : !!searchValue)}
+          <section aria-label="Experimental features">
+            <h2 class="text-lg font-medium mb-2">Experimental features</h2>
+            <ExperimentalSettings {properties} {searchValue} />
+          </section>
         {/if}
-        <PreferencesSections sections={visibleSections} />
+        {#if visibleSections.length || (showTabs && activeTab?.id !== 'advanced')}
+          <PreferencesSections sections={visibleSections} />
+        {/if}
       {/if}
     </div>
   </SettingsPage>

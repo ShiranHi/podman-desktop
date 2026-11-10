@@ -140,8 +140,9 @@ async function openGitHubDiscussion(): Promise<void> {
   </div>
   {#if record.experimental?.githubDiscussionLink}
     <Button
+      type="secondary"
       padding="px-3 py-1"
-      class="w-min"
+      class="w-min whitespace-nowrap"
       title="Share feedback on GitHub discussion"
       icon={faArrowUpRightFromSquare}
       on:click={openGitHubDiscussion}

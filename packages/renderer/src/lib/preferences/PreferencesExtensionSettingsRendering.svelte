@@ -137,7 +137,7 @@ function settingsCount(count: number): string {
 }
 </script>
 
-<SettingsPage title="Extension settings">
+<SettingsPage title="Extension settings" reserveScrollbarGutter={true}>
   {#snippet subtitle()}
     Settings provided by the extensions installed in Podman Desktop. Only extensions that expose settings are listed.
   {/snippet}

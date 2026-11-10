@@ -16,7 +16,7 @@ let { sections = [] }: Props = $props();
     <div>
       <div class="text-lg font-medium first-letter:uppercase">{section.records.at(0)?.title}</div>
       {#each section.records as configItem (configItem.id)}
-        <div class="bg-[var(--pd-invert-content-card-bg)] rounded-md mt-2 ml-2">
+        <div class="bg-[var(--pd-invert-content-card-bg)] rounded-md mt-2">
           <PreferencesRenderingItem record={configItem} />
         </div>
       {/each}

@@ -1,10 +1,11 @@
 <script lang="ts">
 interface Props {
   selected: boolean;
-  url: string;
+  url?: string;
+  onclick?: () => void;
   title: string;
 }
-let { selected, url, title }: Props = $props();
+let { selected, url, title, onclick }: Props = $props();
 </script>
 
 <div
@@ -12,6 +13,17 @@ let { selected, url, title }: Props = $props();
   class:border-[var(--pd-tab-highlight)]={selected}
   class:border-transparent={!selected}
   class:hover:border-[var(--pd-tab-hover)]={!selected}>
+  {#if onclick}
+    <button
+      type="button"
+      role="tab"
+      aria-selected={selected}
+      class="px-4 py-2 text-[var(--pd-tab-text)] whitespace-nowrap cursor-pointer"
+      class:text-[var(--pd-tab-text-highlight)]={selected}
+      {onclick}>
+      {title}
+    </button>
+  {:else}
   <a
     href={url}
     class="px-4 py-2 text-[var(--pd-tab-text)] no-underline"
@@ -20,4 +32,5 @@ let { selected, url, title }: Props = $props();
     id="open-tabs-list-{title.toLowerCase()}-link">
     {title}
   </a>
+  {/if}
 </div>

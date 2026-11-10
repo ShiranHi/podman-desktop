@@ -7,9 +7,23 @@ interface Props {
   actions?: Snippet;
   header?: Snippet;
   children?: Snippet;
+  tabs?: Snippet;
+  showTabs?: boolean;
+  fullWidth?: boolean;
+  reserveScrollbarGutter?: boolean;
 }
 
-let { title, subtitle, actions, header, children }: Props = $props();
+let {
+  title,
+  subtitle,
+  actions,
+  header,
+  children,
+  tabs,
+  showTabs = false,
+  fullWidth = false,
+  reserveScrollbarGutter = false,
+}: Props = $props();
 </script>
 
 <div class="flex flex-col w-full h-full" role="region" aria-label={title}>
@@ -36,8 +50,12 @@ let { title, subtitle, actions, header, children }: Props = $props();
 
     {@render header?.()}
   </div>
-  <div class="flex flex-row min-w-full flex-1 min-h-0 px-5 py-4 overflow-y-auto" role="region" aria-label="Content">
-    <div class="flex flex-col grow max-w-[905px] mx-auto">
+  {#if tabs && showTabs}
+    <div class="flex flex-row mx-5 px-2 mb-2 border-b border-[var(--pd-content-divider)]">{@render tabs()}</div>
+  {/if}
+  <div class="flex flex-row min-w-full flex-1 min-h-0 px-5 py-4 overflow-y-auto"
+    style:scrollbar-gutter={reserveScrollbarGutter ? 'stable' : undefined} role="region" aria-label="Content">
+    <div class="flex flex-col grow min-w-0" class:max-w-[905px]={!fullWidth} class:mx-auto={!fullWidth}>
       {@render children?.()}
     </div>
   </div>
