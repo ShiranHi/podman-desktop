@@ -82,6 +82,24 @@ test('Expect to see one record when filtering with unknown keyword', async () =>
   expect(noSettingsDiv[0].parentElement).toHaveClass('text-[var(--pd-content-header)]');
 });
 
+test('General search shows an empty state without an unrelated experimental heading', () => {
+  render(PreferencesRendering, { properties: records, key: 'key', globalOnly: true, searchValue: 'unknown' });
+  expect(screen.getByText('No Settings Found')).toBeInTheDocument();
+  expect(screen.queryByRole('region', { name: 'Experimental features' })).not.toBeInTheDocument();
+});
+
+test('General search finds experimental settings by title without an empty state', () => {
+  render(PreferencesRendering, {
+    properties: [{ ...record, experimental: true }],
+    key: 'key',
+    globalOnly: true,
+    searchValue: 'boolean',
+  });
+  expect(screen.getByRole('region', { name: 'Experimental features' })).toBeInTheDocument();
+  expect(screen.getByRole('checkbox', { name: 'record' })).toBeInTheDocument();
+  expect(screen.queryByText('No Settings Found')).not.toBeInTheDocument();
+});
+
 test('Expect to see the record when filtering with a keyword from its id', async () => {
   const feedbackRecord: IConfigurationPropertyRecordedSchema = {
     title: 'Feedback reminder',

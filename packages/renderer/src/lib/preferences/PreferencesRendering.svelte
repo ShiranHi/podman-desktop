@@ -87,6 +87,26 @@ const visibleSections: SettingsSection[] = $derived(
   showTabs && activeTab ? sections.filter(section => activeTab.sections.includes(section.title)) : sections,
 );
 
+const showExperimental = $derived(
+  globalOnly &&
+    (showTabs
+      ? activeTab?.id === 'advanced'
+      : !!searchValue &&
+        (matchValue('enable all experimental features', searchValue) ||
+          properties.some(
+            property =>
+              property.experimental &&
+              !property.hidden &&
+              [
+                property.title,
+                property.displayName,
+                property.id,
+                property.description,
+                property.markdownDescription,
+              ].some(value => !!value && matchValue(value, searchValue)),
+          ))),
+);
+
 onMount(async () => {
   contextsUnsubscribe = context.subscribe(value => {
     globalContext = value;
@@ -137,13 +157,13 @@ function updateSearchValue(event: any): void {
       {#if showTabs && activeTab?.content === 'proxy'}
         <PreferencesProxiesForm />
       {:else}
-        {#if globalOnly && (showTabs ? activeTab?.id === 'advanced' : !!searchValue)}
+        {#if showExperimental}
           <section aria-label="Experimental features">
             <h2 class="text-lg font-medium mb-2">Experimental features</h2>
             <ExperimentalSettings {properties} {searchValue} />
           </section>
         {/if}
-        {#if visibleSections.length || (showTabs && activeTab?.id !== 'advanced')}
+        {#if visibleSections.length || !showExperimental}
           <PreferencesSections sections={visibleSections} />
         {/if}
       {/if}
